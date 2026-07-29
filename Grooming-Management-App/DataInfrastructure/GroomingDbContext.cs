@@ -9,6 +9,7 @@ public class GroomingDbContext : DbContext
     
     public DbSet<Breed> Breeds { get; set; }
     public DbSet<Salon> Salons { get; set; }
+    public DbSet<User> Users { get; set; }
 
 
 
