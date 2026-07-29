@@ -10,6 +10,13 @@ public class GroomingDbContext : DbContext
     public DbSet<Breed> Breeds { get; set; }
     public DbSet<Salon> Salons { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Groomer> Groomers { get; set; }
+    public DbSet<DogOwner> DogOwners { get; set; }
+    public DbSet<Dog> Dogs { get; set; }
+    public DbSet<Service> Services { get; set; }
+    public DbSet<ServiceBreed> ServiceBreeds { get; set; }
+    public DbSet<Visit> Visits { get; set; }
+
 
 
 

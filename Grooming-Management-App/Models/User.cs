@@ -15,6 +15,6 @@ public class User
     public int SalonId { get; set; }
     public Salon Salon { get; set; }
 
-    public Groomer? Groomer { get; set; } = new();
+    public Groomer? Groomer { get; set; }
 
 }

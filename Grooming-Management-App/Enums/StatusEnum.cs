@@ -2,5 +2,7 @@
 
 public enum StatusEnum
 {
-    
+    Scheduled,
+    Completed,
+    Canceled,
 }

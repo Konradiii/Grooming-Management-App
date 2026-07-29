@@ -2,5 +2,6 @@
 
 public enum StatusUserEnum
 {
-    
+    Active,
+    Inactive,
 }
