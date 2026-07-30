@@ -1,10 +1,14 @@
-﻿namespace Grooming_Management_App.Models;
+﻿using Grooming_Management_App.Enums;
+
+namespace Grooming_Management_App.Models;
 
 public class Groomer
 {
     public int Id { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
+    
+    public StatusUserGroomerEnum Status  { get; set; }
     
     
     public int SalonId { get; set; }

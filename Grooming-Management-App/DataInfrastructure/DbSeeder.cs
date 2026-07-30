@@ -28,7 +28,7 @@ public static class DbSeeder
             Email = "owner@test.com",
             PasswordHash = "TEMP_NIE_ZAHASHOWANE",
             Role = RoleEnum.Owner,
-            Status = StatusUserEnum.Active,
+            Status = StatusUserGroomerEnum.Active,
             RequiresPasswordChange = false,
             CreatedAt = DateTime.UtcNow,
             Salon = salon
@@ -45,7 +45,7 @@ public static class DbSeeder
                 Email = "anna@test.com",
                 PasswordHash = "TEMP_NIE_ZAHASHOWANE",
                 Role = RoleEnum.Groomer,
-                Status = StatusUserEnum.Active,
+                Status = StatusUserGroomerEnum.Active,
                 RequiresPasswordChange = true,
                 CreatedAt = DateTime.UtcNow,
                 Salon = salon
