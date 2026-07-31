@@ -5,7 +5,7 @@ public class Dog
     public int Id { get; set; }
     public string Name { get; set; }
     public int? AgeInMonths { get; set; } 
-    public string Notes { get; set; }
+    public string? Notes { get; set; }
     
     public int SalonId { get; set; }
     public Salon Salon { get; set; }

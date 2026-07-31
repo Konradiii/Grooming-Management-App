@@ -18,7 +18,6 @@ public class DogConfiguration :IEntityTypeConfiguration<Dog>
             .IsRequired(false);
         
         builder.Property(p => p.Notes)
-            .IsRequired()
             .HasMaxLength(1000);
         
         builder.HasOne(p => p.Salon)
