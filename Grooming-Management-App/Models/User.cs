@@ -8,7 +8,7 @@ public class User
     public string Email { get; set; }
     public string PasswordHash { get; set; }
     public RoleEnum Role { get; set; }
-    public StatusUserGroomerEnum Status { get; set; }
+    public ActiveStatusEnum ActiveStatus { get; set; }
     public bool RequiresPasswordChange { get; set; }
     public DateTime CreatedAt { get; set; }
     

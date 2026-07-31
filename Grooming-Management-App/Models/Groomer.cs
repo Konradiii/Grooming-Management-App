@@ -8,7 +8,7 @@ public class Groomer
     public string FirstName { get; set; }
     public string LastName { get; set; }
     
-    public StatusUserGroomerEnum Status  { get; set; }
+    public ActiveStatusEnum ActiveStatus  { get; set; }
     
     
     public int SalonId { get; set; }

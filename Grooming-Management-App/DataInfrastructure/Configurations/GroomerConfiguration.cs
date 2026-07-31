@@ -29,7 +29,7 @@ public class GroomerConfiguration : IEntityTypeConfiguration<Groomer>
         builder.Property(e => e.LastName)
             .IsRequired()
             .HasMaxLength(50);
-        builder.Property(e=> e.Status)
+        builder.Property(e=> e.ActiveStatus)
             .IsRequired();
         
 

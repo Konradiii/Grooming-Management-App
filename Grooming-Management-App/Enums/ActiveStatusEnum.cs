@@ -1,6 +1,6 @@
 ﻿namespace Grooming_Management_App.Enums;
 
-public enum StatusUserGroomerEnum
+public enum ActiveStatusEnum
 {
     Active,
     Inactive,

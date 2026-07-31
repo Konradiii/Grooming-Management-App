@@ -9,14 +9,20 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
     public void Configure(EntityTypeBuilder<Service> builder)
     {
         builder.HasKey(s => s.Id);
+        
         builder.Property(s => s.Name)
             .IsRequired()
             .HasMaxLength(50);
+                
+        builder.Property(s => s.Status)
+            .IsRequired();
         
         builder.HasOne(s=>s.Salon)
             .WithMany(s=>s.Services)
             .HasForeignKey(s=>s.SalonId)
             .OnDelete(DeleteBehavior.Restrict);
+
     }
+
     
 }

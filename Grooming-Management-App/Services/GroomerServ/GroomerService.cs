@@ -20,12 +20,12 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerService
             throw new NotFoundException("Groomer not found");
         }
 
-        if (groomer.Status == StatusUserGroomerEnum.Inactive)
+        if (groomer.ActiveStatus == ActiveStatusEnum.Inactive)
         {
             return;
         }
         
-        groomer.Status = StatusUserGroomerEnum.Inactive;
+        groomer.ActiveStatus = ActiveStatusEnum.Inactive;
         await ctx.SaveChangesAsync(ct);
         
     }
@@ -42,12 +42,12 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerService
             throw new NotFoundException("Groomer not found");
         }
 
-        if (groomer.Status == StatusUserGroomerEnum.Active)
+        if (groomer.ActiveStatus == ActiveStatusEnum.Active)
         {
             return;
         }
         
-        groomer.Status = StatusUserGroomerEnum.Active;
+        groomer.ActiveStatus = ActiveStatusEnum.Active;
         await ctx.SaveChangesAsync(ct);
         
     }
@@ -62,7 +62,7 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerService
                 Id = e.Id,
                 FirstName = e.FirstName,
                 LastName = e.LastName,
-                Status = e.Status,
+                ActiveStatus = e.ActiveStatus,
             }).FirstOrDefaultAsync(ct);
         if (result == null)
         {
@@ -81,7 +81,7 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerService
                 Id = e.Id,
                 FirstName = e.FirstName,
                 LastName = e.LastName,
-                Status = e.Status,
+                ActiveStatus = e.ActiveStatus,
             }).ToListAsync(ct);
         
     }
@@ -109,7 +109,7 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerService
                 SalonId = salonId,
                 FirstName = dto.FirstName,
                 LastName = dto.LastName ,
-                Status = StatusUserGroomerEnum.Active
+                ActiveStatus = ActiveStatusEnum.Active
             });
         await ctx.SaveChangesAsync(ct);
 

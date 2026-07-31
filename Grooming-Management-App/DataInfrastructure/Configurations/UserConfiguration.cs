@@ -17,7 +17,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(e => e.Role)
             .IsRequired();
-        builder.Property(e=>e.Status)
+        builder.Property(e=>e.ActiveStatus)
             .IsRequired();
         builder.Property(e => e.PasswordHash)
             .IsRequired()
