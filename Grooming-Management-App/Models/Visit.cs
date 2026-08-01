@@ -9,7 +9,7 @@ public class Visit
     public DateTime Date { get; set; }
     public int EstimatedDuration { get; set; }
     public decimal ProposedPrice { get; set; }
-    public decimal FinalPrice { get; set; }
+    public decimal? FinalPrice { get; set; }
     public StatusEnum Status { get; set; }
     public string? Notes { get; set; }
     
