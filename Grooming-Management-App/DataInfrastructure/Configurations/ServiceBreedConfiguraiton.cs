@@ -13,6 +13,8 @@ public class ServiceBreedConfiguraiton : IEntityTypeConfiguration<ServiceBreed>
         builder.Property(e=>e.Price)
             .IsRequired()
             .HasColumnType("decimal(18,2)");
+        builder.Property(e => e.Status)
+            .IsRequired();
 
         builder.Property(e => e.Duration)
             .IsRequired();

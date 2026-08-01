@@ -1,10 +1,14 @@
-﻿namespace Grooming_Management_App.Models;
+﻿using Grooming_Management_App.Enums;
+
+namespace Grooming_Management_App.Models;
 
 public class ServiceBreed
 {
     public int Id { get; set; }
     public decimal Price { get; set; }
     public int Duration { get; set; }
+    
+    public ActiveStatusEnum Status { get; set; }
     
     public int SalonId { get; set; }
     public Salon Salon { get; set; }
