@@ -16,7 +16,9 @@ public class GroomingDbContext : DbContext
     public DbSet<Service> Services { get; set; }
     public DbSet<ServiceBreed> ServiceBreeds { get; set; }
     public DbSet<Visit> Visits { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
+    
 
 
 
