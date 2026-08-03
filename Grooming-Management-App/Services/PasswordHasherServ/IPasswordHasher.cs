@@ -4,6 +4,6 @@ public interface IPasswordHasher
 {
     string HashPassword(string password);
     
-    bool VerifyHashedPasswordAsync(string providedPassword, string hashedPassword);
+    bool VerifyHashedPassword(string providedPassword, string hashedPassword);
 
 }

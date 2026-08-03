@@ -8,6 +8,9 @@ public interface ITokenService
     string GenerateAccessToken(int userId, int salonId, RoleEnum role);
     
     string GenerateRefreshToken();
-    
-    
+
+    string HashToken(string token);
+
+
+
 }

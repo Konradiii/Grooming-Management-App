@@ -1,15 +1,17 @@
 ﻿using System.Security.Cryptography;
+using Azure.Core;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.DTOs.AuthDTO;
 using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Models;
 using Grooming_Management_App.Services.PasswordHasherServ;
+using Grooming_Management_App.Services.TokenServ;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.AuthServ;
 
-public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwordHasher) : IAuthenticationService
+public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwordHasher, ITokenService tokenService) : IAuthenticationService
 {
     public async Task<CreateGroomerAccountResultDto> RegisterGroomerAccountAsync(int salonId, int groomerId, CreateAccountDto dto, CancellationToken ct)
     {
@@ -64,8 +66,6 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
     public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, CancellationToken ct)
     {
         
-
-
         if (dto.Password != dto.ConfirmPassword)
         {
             throw new ConflictException("Passwords don't match");
@@ -97,22 +97,117 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         };
         ctx.Users.Add(ownerUser);
         await ctx.SaveChangesAsync(ct);
+        
+        var refreshToken= tokenService.GenerateRefreshToken();
+        var accessToken = tokenService.GenerateAccessToken(ownerUser.Id, ownerUser.SalonId, ownerUser.Role);
+        
+        var newTokens = new RefreshToken
+        {
+            TokenHash = tokenService.HashToken(refreshToken),
+            ExpiresAt = DateTime.UtcNow.AddDays(3),
+            CreatedAt = DateTime.UtcNow,
+            RevokedAt = null,
+            User = ownerUser
+        };
+        ctx.RefreshTokens.Add(newTokens);
+        await ctx.SaveChangesAsync(ct);
 
-        return new LoginResponseDto { };
-
-
+        return new LoginResponseDto
+        {
+            RefreshToken = refreshToken,
+            AccessToken = accessToken,
+        };
     }
     
     public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken ct)
     {
+        var user = await ctx.Users.Where(u => u.Email == dto.Email).FirstOrDefaultAsync(ct);
 
-        return null;
+        if (user == null)
+        {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+
+        if (!passwordHasher.VerifyHashedPassword(dto.Password, user.PasswordHash))
+        {
+            throw new UnauthorizedException("Password or Email not found");
+        }
+
+        if (user.ActiveStatus == ActiveStatusEnum.Inactive)
+        {
+            throw new UnauthorizedException("User is inactive");
+        }
+        
+        
+            var accessToken = tokenService.GenerateAccessToken(user.Id, user.SalonId, user.Role);
+            var refreshToken = tokenService.GenerateRefreshToken();
+
+
+            var newTokens = new RefreshToken
+            {
+                TokenHash = tokenService.HashToken(refreshToken),
+                ExpiresAt = DateTime.UtcNow.AddDays(3),
+                CreatedAt = DateTime.UtcNow,
+                RevokedAt = null,
+                User =  user
+            };
+            ctx.RefreshTokens.Add(newTokens);
+            await ctx.SaveChangesAsync(ct);
+            
+            return new LoginResponseDto
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+
+            };
+        
+
 
     }
     
     public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
-        return null;
+        
+        var hashedRefresh = tokenService.HashToken(refreshToken);
+        
+        var refreshExists = await ctx.RefreshTokens.Where(e=> hashedRefresh == e.TokenHash).FirstOrDefaultAsync(ct);
+        if (refreshExists == null)
+        {
+            throw new UnauthorizedException("Refresh token not found");
+        }
+
+        if (refreshExists.RevokedAt != null)
+        {
+         throw new UnauthorizedException("Refresh token is already revoked");   
+        }
+
+        if (refreshExists.ExpiresAt < DateTime.UtcNow)
+        {
+            throw new UnauthorizedException("Refresh token is expired");
+        }
+        
+        refreshExists.RevokedAt = DateTime.UtcNow;
+        
+        var user = await ctx.Users.Where(e=>e.Id ==  refreshExists.UserId).FirstOrDefaultAsync(ct);
+
+        var newRefreshToken= tokenService.GenerateRefreshToken();
+        var newAccessToken = tokenService.GenerateAccessToken(refreshExists.UserId, user.SalonId, user.Role);
+        
+        var newTokens = new RefreshToken
+        {
+            TokenHash = tokenService.HashToken(newRefreshToken),
+            ExpiresAt = DateTime.UtcNow.AddDays(3),
+            CreatedAt = DateTime.UtcNow,
+            RevokedAt = null,
+            User =  user
+        };
+        ctx.RefreshTokens.Add(newTokens);
+        await ctx.SaveChangesAsync(ct);
+        
+        return new LoginResponseDto{AccessToken = newAccessToken, RefreshToken = newRefreshToken};
+
+
+
     }
     
     public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct)
