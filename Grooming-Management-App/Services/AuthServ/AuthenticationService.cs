@@ -1,5 +1,4 @@
 ﻿using System.Security.Cryptography;
-using Azure.Core;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.DTOs.AuthDTO;
 using Grooming_Management_App.Enums;
@@ -103,7 +102,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         
         var newTokens = new RefreshToken
         {
-            TokenHash = tokenService.HashToken(refreshToken),
+            TokenHash = tokenService.HasherSH256(refreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
@@ -145,7 +144,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
             var newTokens = new RefreshToken
             {
-                TokenHash = tokenService.HashToken(refreshToken),
+                TokenHash = tokenService.HasherSH256(refreshToken),
                 ExpiresAt = DateTime.UtcNow.AddDays(3),
                 CreatedAt = DateTime.UtcNow,
                 RevokedAt = null,
@@ -160,15 +159,13 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
                 RefreshToken = refreshToken,
 
             };
-        
-
 
     }
     
     public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
         
-        var hashedRefresh = tokenService.HashToken(refreshToken);
+        var hashedRefresh = tokenService.HasherSH256(refreshToken);
         
         var refreshExists = await ctx.RefreshTokens.Where(e=> hashedRefresh == e.TokenHash).FirstOrDefaultAsync(ct);
         if (refreshExists == null)
@@ -190,12 +187,17 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         
         var user = await ctx.Users.Where(e=>e.Id ==  refreshExists.UserId).FirstOrDefaultAsync(ct);
 
+        if (user == null)
+        {
+            throw new NotFoundException("User not found");
+        }
+
         var newRefreshToken= tokenService.GenerateRefreshToken();
         var newAccessToken = tokenService.GenerateAccessToken(refreshExists.UserId, user.SalonId, user.Role);
         
         var newTokens = new RefreshToken
         {
-            TokenHash = tokenService.HashToken(newRefreshToken),
+            TokenHash = tokenService.HasherSH256(newRefreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
@@ -206,22 +208,103 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         
         return new LoginResponseDto{AccessToken = newAccessToken, RefreshToken = newRefreshToken};
 
-
-
     }
     
-    public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct)
+    public async Task<LoginResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct)
     {
+        var user = await ctx.Users
+            .Where(e => e.Id == userId)
+            .FirstOrDefaultAsync(ct);
         
+        if (user == null)
+        {
+            throw new NotFoundException("User not found");
+        }
+        if (dto.NewPassword != dto.ConfirmNewPassword)
+        {
+            throw new ConflictException("Passwords do not match");
+        }
+        if (!passwordHasher.VerifyHashedPassword(dto.CurrentPassword, user.PasswordHash))
+        {
+            throw new UnauthorizedException("Invalid password");
+        }
+        
+      
+        user.PasswordHash = passwordHasher.HashPassword(dto.NewPassword);
+        await ctx.SaveChangesAsync(ct);
+                
+        
+        var activeTokens = await ctx.RefreshTokens
+            .Where(e => e.UserId == user.Id)
+            .Where(e=> e.RevokedAt == null)
+           .ToListAsync(ct);
+
+        foreach (var token in activeTokens)
+        {
+            token.RevokedAt = DateTime.UtcNow;
+        }
+        await ctx.SaveChangesAsync(ct);
+        
+        var newRefreshToken= tokenService.GenerateRefreshToken();
+        var newAccessToken = tokenService.GenerateAccessToken(user.Id, user.SalonId, user.Role);
+
+        var newtoken = new RefreshToken
+        {
+            TokenHash = tokenService.HasherSH256(newRefreshToken),
+            ExpiresAt = DateTime.UtcNow.AddDays(3),
+            CreatedAt = DateTime.UtcNow,
+            RevokedAt = null,
+            User = user
+        };
+        
+        ctx.RefreshTokens.Add(newtoken);
+        await ctx.SaveChangesAsync(ct);
+
+        return new LoginResponseDto
+        {
+            RefreshToken = newRefreshToken,
+            AccessToken = newAccessToken,
+        };
+
+
     }
 
     public async Task LogoutAsync(string refreshToken, CancellationToken ct)
     {
+        var hashedToken = tokenService.HasherSH256(refreshToken);
+        
+        var token = await ctx.RefreshTokens
+            .Where(e => e.TokenHash == hashedToken)
+            .FirstOrDefaultAsync(ct);
+
+        if (token == null)
+        {
+            throw new NotFoundException("Refresh token not found");
+        }
+
+        if (token.RevokedAt != null)
+        {
+            return; 
+        }
+
+        token.RevokedAt = DateTime.UtcNow;
+        await ctx.SaveChangesAsync(ct);
         
     }
     
     public async Task LogoutAllDevicesAsync(int userId, CancellationToken ct)
     {
+        
+        var activeTokens = await ctx.RefreshTokens
+            .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
+            .ToListAsync(ct);
+
+        foreach (var token in activeTokens)
+        {
+            token.RevokedAt = DateTime.UtcNow;
+        }
+
+        await ctx.SaveChangesAsync(ct);
         
     }
 }

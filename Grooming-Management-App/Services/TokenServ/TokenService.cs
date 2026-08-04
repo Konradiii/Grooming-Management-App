@@ -37,7 +37,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         return  Convert.ToBase64String(randomBytes);
         
     }
-    public string HashToken(string token)
+    public string HasherSH256(string token)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
         return Convert.ToBase64String(bytes);

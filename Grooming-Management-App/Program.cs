@@ -1,6 +1,7 @@
 
 
 using Grooming_Management_App.DataInfrastructure;
+using Grooming_Management_App.Services.AuthServ;
 using Grooming_Management_App.Services.PasswordHasherServ;
 using Grooming_Management_App.Services.TokenServ;
 using Microsoft.AspNetCore.Identity;
@@ -12,6 +13,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddDbContext<GroomingDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

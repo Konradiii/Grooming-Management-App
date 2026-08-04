@@ -12,7 +12,7 @@ public interface IAuthenticationService
     
     Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct);
     
-    Task ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct);
+    Task<LoginResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct);
 
     Task LogoutAsync(string refreshToken, CancellationToken ct);
     

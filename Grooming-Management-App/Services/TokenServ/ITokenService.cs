@@ -9,7 +9,7 @@ public interface ITokenService
     
     string GenerateRefreshToken();
 
-    string HashToken(string token);
+    string HasherSH256(string token);
 
 
 
