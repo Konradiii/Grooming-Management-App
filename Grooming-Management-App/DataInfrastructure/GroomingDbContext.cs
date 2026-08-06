@@ -1,11 +1,18 @@
 ﻿using Grooming_Management_App.Models;
+using Grooming_Management_App.Services.CurrentUserServ;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.DataInfrastructure;
 
 public class GroomingDbContext : DbContext
 {
-    public GroomingDbContext(DbContextOptions<GroomingDbContext> options) : base(options){}
+    private readonly ICurrentUserService _currentUser;
+
+    public GroomingDbContext(DbContextOptions<GroomingDbContext> options, ICurrentUserService currentUser) : base(options)
+    {
+        _currentUser = currentUser;
+        
+    }
     
     public DbSet<Breed> Breeds { get; set; }
     public DbSet<Salon> Salons { get; set; }
@@ -26,6 +33,14 @@ public class GroomingDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GroomingDbContext).Assembly);
+
+        modelBuilder.Entity<Salon>().HasQueryFilter(d => d.Id == _currentUser.SalonId);
+        modelBuilder.Entity<Dog>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<Groomer>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<DogOwner>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<Service>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<ServiceBreed>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<Visit>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
     }
     
 }
