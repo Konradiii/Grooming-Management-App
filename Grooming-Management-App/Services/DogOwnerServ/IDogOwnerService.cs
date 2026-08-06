@@ -10,5 +10,5 @@ public interface IDogOwnerService
     
     Task CreateDogOwnerAsync(CreateDogOwnerDto dto, int salonId, CancellationToken ct);
     
-    Task EditDogOwnerAnync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct);
+    Task EditDogOwnerAsync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct);
 }

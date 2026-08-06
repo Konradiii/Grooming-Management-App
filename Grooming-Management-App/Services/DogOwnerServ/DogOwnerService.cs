@@ -65,7 +65,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
         
     }
 
-    public async Task EditDogOwnerAnync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct)
+    public async Task EditDogOwnerAsync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct)
     {
 
         var dogOwner = await ctx.DogOwners

@@ -28,7 +28,7 @@ public class BreedService(GroomingDbContext ctx) : IBreedService
         return breed;
     }
 
-    public async Task<List<GetBreedDto>> GetAllAsync(CancellationToken ct)
+    public async Task<List<GetBreedDto>> GetAllBreedsAsync(CancellationToken ct)
     {
 
         
