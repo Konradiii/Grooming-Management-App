@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.EarningServ;
 
-public class EarningService(GroomingDbContext ctx) : IEarningsService
+public class EarningsService(GroomingDbContext ctx) : IEarningsService
 {
     public async Task<GetEarningForPeriodDto> GetEarningsForPeriodAsync(int salonId, int? groomerId, DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
