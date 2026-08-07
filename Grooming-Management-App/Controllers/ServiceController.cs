@@ -14,6 +14,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
 {
     [HttpGet]
     [Authorize]
+    [EndpointSummary("Zwraca listę usług, opcjonalnie filtrowaną po statusie")]
     public async Task<List<GetServiceDto>> GetAllServices(ActiveStatusEnum? status, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -23,6 +24,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
 
     [HttpGet("{serviceId:int}")]
     [Authorize]
+    [EndpointSummary("Zwraca dane pojedynczej usługi")]
     public async Task<GetServiceDto> GetService(int serviceId , CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -32,6 +34,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
 
     [HttpPut("{serviceId:int}/ActivateService")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Aktywuje wcześniej dezaktywowaną usługę")]
     public async Task<IActionResult> ActivateService(int serviceId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -40,6 +43,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     }
     [HttpPut("{serviceId:int}/DeactivateService")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Dezaktywuje usługę, bez usuwania historii")]
     public async Task<IActionResult> DeactivateService(int serviceId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -49,6 +53,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
 
     [HttpPost]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Dodaje nową usługę do oferty salonu")]
     public async Task<IActionResult> AddService(string newName, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -57,6 +62,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     }
     [HttpPut("{serviceId:int}/EditServiceName")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zmienia nazwę istniejącej usługi")]
     public async Task<IActionResult> EditNameService(int serviceId, string newName, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;

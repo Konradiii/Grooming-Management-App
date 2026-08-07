@@ -14,6 +14,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
 {
     [HttpGet]
     [Authorize]
+    [EndpointSummary("Zwraca listę wizyt, z filtrami po statusie, groomerze i zakresie dat")]
     public async Task<List<GetAllVisitsDto>> GetAllVisits(VisitFilterDto filter, CancellationToken ct)
     {
         var salonId = userService.SalonId;
@@ -23,6 +24,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
 
     [HttpGet("{visitId:int}")]
     [Authorize]
+    [EndpointSummary("Zwraca szczegóły pojedynczej wizyty")]
     public async Task<GetVisitDetailsDto> GetVisit(int visitId, CancellationToken ct)
     {
         var salonId = userService.SalonId;
@@ -31,6 +33,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     }
     [HttpPost]
     [Authorize]
+    [EndpointSummary("Edytuje termin, groomera lub notatki wizyty")]
     public async Task<IActionResult> AddVisit(AddVisitDto dto, CancellationToken ct)
     {
         var salonId = userService.SalonId;
@@ -39,6 +42,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     }
     [HttpPut("{visitId:int}")]
     [Authorize]
+    [EndpointSummary("Tworzy nową wizytę - cena i czas pobierane automatycznie z cennika")]
     public async Task<IActionResult> EditVisit(int visitId, EditVisitDto dto, CancellationToken ct)
     {
         var salonId = userService.SalonId;
@@ -47,6 +51,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     }
     [HttpPut("{visitId:int}/status")]
     [Authorize]
+    [EndpointSummary("Zmienia status wizyty, np. na Ukończona lub Anulowana")]
     public async Task<IActionResult> ChangeVisitStatus(int visitId, StatusEnum status, CancellationToken ct)
     {
         var salonId = userService.SalonId;
@@ -56,6 +61,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
 
     [HttpPut("{visitId:int}/final-price")]
     [Authorize]
+    [EndpointSummary("Nadpisuje cenę finalną wizyty")]
     public async Task<IActionResult> UpdateFinalPrice(int visitId, decimal finalPrice, CancellationToken ct)
     {
         var salonId = userService.SalonId;

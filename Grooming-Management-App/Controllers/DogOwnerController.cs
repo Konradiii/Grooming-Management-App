@@ -12,6 +12,7 @@ public class DogOwnerController(IDogOwnerService service, ICurrentUserService cu
 {
     [HttpGet("{id:int}")]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Zwraca dane pojedynczego właściciela psa")]
     public async Task<GetDogOwnerDto> GetDogOwner(int id, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -21,6 +22,7 @@ public class DogOwnerController(IDogOwnerService service, ICurrentUserService cu
 
     [HttpGet]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Zwraca listę wszystkich właścicieli psów w salonie")]
     public async Task<List<GetDogOwnerDto>> GetAllDogOwners(CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -30,6 +32,7 @@ public class DogOwnerController(IDogOwnerService service, ICurrentUserService cu
 
     [HttpPost]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Tworzy nowego właściciela psa")]
     public async Task<IActionResult> CreateDogOwner(CreateDogOwnerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -39,6 +42,7 @@ public class DogOwnerController(IDogOwnerService service, ICurrentUserService cu
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Edytuje dane istniejącego właściciela psa")]
     public async Task<IActionResult> EditDogOwner(EditDogOwnerDto dto, int id, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;

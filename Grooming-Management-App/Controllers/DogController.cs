@@ -14,6 +14,7 @@ public class DogController(IDogService service, ICurrentUserService currentUser)
 {
     [HttpGet]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Zwraca listę psów, opcjonalnie filtrowaną po właścicielu lub rasie")]
     public async Task<List<GetDogDto>> GetAllDogs(int? dogOwnerId, int? breedId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -23,6 +24,7 @@ public class DogController(IDogService service, ICurrentUserService currentUser)
 
     [HttpGet("{dogId:int}")]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Zwraca szczegółowe dane pojedynczego psa")]
     public async Task<GetDogDetailsDto> GetDogDto(int dogId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -32,6 +34,7 @@ public class DogController(IDogService service, ICurrentUserService currentUser)
 
     [HttpPost]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Dodaje nowego psa do kartoteki")]
     public async Task<IActionResult> CreateDog(CreateDogDto createDogDto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -41,6 +44,7 @@ public class DogController(IDogService service, ICurrentUserService currentUser)
 
     [HttpPut("{dogId:int}")]
     [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Edytuje dane istniejącego psa")]
     public async Task<IActionResult> UpdateDog(int dogId, UpdateDogDto updateDogDto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;

@@ -12,6 +12,7 @@ public class SalonController(ISalonService service, ICurrentUserService currentU
 {
     [HttpGet]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca dane własnego salonu")]
     public async Task<GetSalonDto> GetSalon(CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -20,6 +21,7 @@ public class SalonController(ISalonService service, ICurrentUserService currentU
 
     [HttpPut]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zmienia nazwę salonu")]
     public async Task<IActionResult> UpdateSalon(UpdateSalonDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;

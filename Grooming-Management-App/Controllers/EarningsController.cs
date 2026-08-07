@@ -12,6 +12,7 @@ public class EarningsController(IEarningsService service, ICurrentUserService cu
 {
     [HttpGet("GetByPeriod")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca łączne zarobki za wybrany okres, opcjonalnie dla jednego pracownika")]
     public async Task<GetEarningForPeriodDto> GetEarningForPeriod(int? groomerId, DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -20,6 +21,7 @@ public class EarningsController(IEarningsService service, ICurrentUserService cu
     }
     [HttpGet("GetByGroomer")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca zarobki w podziale na poszczególnych pracowników")]
     public async Task<List<GetEarningsByGroomerDto>> GetEarningByGroomer(DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -28,6 +30,7 @@ public class EarningsController(IEarningsService service, ICurrentUserService cu
     }
     [HttpGet("GetByDay")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca zarobki w podziale na poszczególne dni")]
     public async Task<List<GetEarningsByDayDto>> GetEarningsByDay(DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;

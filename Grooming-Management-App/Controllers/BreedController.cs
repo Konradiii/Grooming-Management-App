@@ -12,6 +12,7 @@ public class BreedController(IBreedService service, ICurrentUserService currentU
 {
     [HttpGet]
     [Authorize]
+    [EndpointSummary("Zwraca listę wszystkich dostępnych ras")]
     public async Task<List<GetBreedDto>> GetAllBreeds(CancellationToken ct)
     {
         return await service.GetAllBreedsAsync(ct);
@@ -19,6 +20,7 @@ public class BreedController(IBreedService service, ICurrentUserService currentU
 
     [HttpGet("{Id:int}")]
     [Authorize]
+    [EndpointSummary("Zwraca szczegóły pojedynczej rasy")]
     public async Task<GetBreedDto> GetBreedAsync(int Id, CancellationToken ct)
     {
         return await service.GetBreedAsync(Id, ct);

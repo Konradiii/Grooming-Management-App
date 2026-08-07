@@ -13,6 +13,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
 {
     [HttpPost("RegisterGroomer")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Tworzy konto logowania dla istniejącego pracownika - dostępne tylko dla właściciela")]
     public async Task<CreateGroomerAccountResultDto> RegisterGroomerAccount(int groomerId, CreateAccountDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -22,6 +23,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
     
     [HttpPost("RegisterSalon")]
     [AllowAnonymous]
+    [EndpointSummary("Rejestruje nowy salon wraz z pierwszym kontem właściciela")]
     public async Task<LoginResponseDto> RegisterSalon(RegisterNewSalonDto dto, CancellationToken ct)
     {
         return await service.RegisterSalonAsync(dto, ct);
@@ -29,6 +31,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
     
     [HttpPost("Login")]
     [AllowAnonymous]
+    [EndpointSummary("Loguje użytkownika i zwraca komplet tokenów dostępu")]
     public async Task<LoginResponseDto> Login(LoginDto dto, CancellationToken ct)
     {
         return await service.LoginAsync(dto, ct);
@@ -36,6 +39,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
     
     [HttpPost("RefreshToken")]
     [AllowAnonymous]
+    [EndpointSummary("Wymienia ważny refresh token na nowy komplet tokenów")]
     public async Task<LoginResponseDto> RefreshToken(string refreshToken, CancellationToken ct)
     {
         return await service.RefreshTokenAsync(refreshToken, ct);
@@ -43,6 +47,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
     
     [HttpPost("ChangePassword")]
     [Authorize]
+    [EndpointSummary("Zmienia hasło zalogowanego użytkownika")]
     public async Task<LoginResponseDto> ChangePassword(ChangePasswordDto dto, CancellationToken ct)
     {
         var userId = currentUser.UserId;
@@ -51,6 +56,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
 
     [HttpPost("Logout")]
     [Authorize]
+    [EndpointSummary("Wylogowuje z jednego urządzenia - unieważnia podany refresh token")]
     public async Task<IActionResult> Logout(string refreshToken, CancellationToken ct)
     {
         await  service.LogoutAsync(refreshToken, ct);
@@ -59,6 +65,7 @@ public class AuthController(IAuthenticationService service, ICurrentUserService 
 
     [HttpPost("LogoutEverywhere")]
     [Authorize]
+    [EndpointSummary("Wylogowuje ze wszystkich urządzeń - unieważnia wszystkie aktywne tokeny")]
     public async Task<IActionResult> LogoutAllDevicesAsync(CancellationToken ct)
     {
         var userId =  currentUser.UserId; 

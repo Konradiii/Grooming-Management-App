@@ -12,6 +12,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
 {
     [HttpPut("{id:int}/DeactivateGroomer")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Dezaktywuje pracownika, bez usuwania historii wizyt")]
     public async Task<IActionResult> DeactivateGroomer(int id, CancellationToken ct)
     {
         var salonId =  currentUser.SalonId;
@@ -20,6 +21,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     }
     [HttpPut("{id:int}/ActivateGroomer")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Ponownie aktywuje wcześniej dezaktywowanego pracownika")]
     public async Task<IActionResult> ActivateGroomer(int id, CancellationToken ct)
     {
         var salonId =  currentUser.SalonId;
@@ -29,6 +31,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
 
     [HttpGet("{id:int}")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca dane pojedynczego pracownika")]
     public async Task<GetGroomerDto> GetGroomer(int id, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -38,6 +41,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
 
     [HttpGet]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca listę wszystkich pracowników salonu")]
     public async Task<List<GetGroomerDto>> GetAllGroomers(CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -47,6 +51,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
 
     [HttpPut("{id:int}/EditGroomer")]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Edytuje dane pracownika")]
     public async Task<IActionResult> EditGroomer(int id, [FromBody] EditGroomerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
@@ -56,6 +61,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
 
     [HttpPost]
     [Authorize(Roles = "Owner")]
+    [EndpointSummary("Dodaje nowego pracownika, bez konta logowania")]
     public async Task<IActionResult> CreateGroomer([FromBody] CreateGroomerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
