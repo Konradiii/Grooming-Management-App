@@ -95,6 +95,12 @@ public class ServiceService(GroomingDbContext ctx) : IServiceService
     public async Task<int> AddServiceAsync(int salonId, string newName, CancellationToken ct)
     {
 
+        var serviceExist = await ctx.Services.AnyAsync(s =>s.Name == newName, ct);
+        if (serviceExist)
+        {
+            throw new ConflictException("Service already exist");
+        }
+        
         var newService = new Service
         {
             Name = newName,
