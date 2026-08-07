@@ -1,5 +1,6 @@
 
 
+using System.Text;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.AuthServ;
@@ -15,7 +16,10 @@ using Grooming_Management_App.Services.ServiceBreedServ;
 using Grooming_Management_App.Services.ServiceServ;
 using Grooming_Management_App.Services.TokenServ;
 using Grooming_Management_App.Services.VisitServ;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +44,23 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+var secretKey = builder.Configuration["JwtSettings:SecretKey"] 
+                ?? throw new InvalidOperationException("JWT SecretKey is not configured");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 
 var app = builder.Build();
 
@@ -53,6 +74,8 @@ if (app.Environment.IsDevelopment())
 }
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
