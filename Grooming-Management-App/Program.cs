@@ -24,6 +24,7 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddScoped<IBreedService, BreedService>();
 builder.Services.AddScoped<ISalonService, SalonService>();
@@ -67,6 +68,8 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<GroomingDbContext>();
     

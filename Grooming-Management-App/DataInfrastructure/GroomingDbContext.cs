@@ -34,7 +34,6 @@ public class GroomingDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(GroomingDbContext).Assembly);
 
-        modelBuilder.Entity<Salon>().HasQueryFilter(d => d.Id == _currentUser.SalonId);
         modelBuilder.Entity<Dog>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<Groomer>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<DogOwner>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
