@@ -13,7 +13,7 @@ public interface IServiceService
     
     Task DeactivateServiceAsync(int salonId, int serviceId, CancellationToken ct);
     
-    Task AddServiceAsync(int salonId, string newName, CancellationToken ct);
+    Task<int> AddServiceAsync(int salonId, string newName, CancellationToken ct);
     
     Task EditNameServiceAsync(int salonId, int serviceId, string newName, CancellationToken ct);
 }

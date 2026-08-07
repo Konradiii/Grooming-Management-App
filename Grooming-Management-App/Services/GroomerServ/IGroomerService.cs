@@ -15,6 +15,6 @@ public interface IGroomerService
     
     Task EditGroomerAsync(EditGroomerDto dto, int id, int salonId,  CancellationToken ct);
     
-    Task CreateGroomerAsync(CreateGroomerDto dto, int salonId, CancellationToken ct);
+    Task<int> CreateGroomerAsync(CreateGroomerDto dto, int salonId, CancellationToken ct);
     
 }

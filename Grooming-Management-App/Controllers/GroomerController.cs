@@ -59,8 +59,8 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<IActionResult> CreateGroomer([FromBody] CreateGroomerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.CreateGroomerAsync(dto, salonId, ct);
-        return NoContent();
+        var newGroomerId = await service.CreateGroomerAsync(dto, salonId, ct);
+        return Created($"api/Groomer/{newGroomerId}", null);
     }
     
 }

@@ -35,8 +35,8 @@ public class DogController(IDogService service, ICurrentUserService currentUser)
     public async Task<IActionResult> CreateDog(CreateDogDto createDogDto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.CreateDogAsync(salonId, createDogDto, ct);
-        return NoContent();
+        var newDogId = await service.CreateDogAsync(salonId, createDogDto, ct);
+        return Created($"api/dog/{newDogId}", null);
     }
 
     [HttpPut("{dogId:int}")]

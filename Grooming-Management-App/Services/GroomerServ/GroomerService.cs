@@ -102,16 +102,20 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerService
         
     }
     
-    public async Task CreateGroomerAsync(CreateGroomerDto dto, int salonId, CancellationToken ct)
+    public async Task<int> CreateGroomerAsync(CreateGroomerDto dto, int salonId, CancellationToken ct)
     {
-        ctx.Groomers.Add(new Groomer 
-            { 
-                SalonId = salonId,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName ,
-                ActiveStatus = ActiveStatusEnum.Active
-            });
+        var newGroomer = new Groomer
+        {
+            SalonId = salonId,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            ActiveStatus = ActiveStatusEnum.Active
+        };
+
+        ctx.Groomers.Add(newGroomer);
         await ctx.SaveChangesAsync(ct);
+
+        return newGroomer.Id;
 
     }
 }

@@ -62,7 +62,7 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
 
     }
     
-    public async Task AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct)
+    public async Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct)
     {
     
         var serviceBreed = await ctx.ServiceBreeds
@@ -107,6 +107,7 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
         
         ctx.Visits.Add(newVisit);
         await ctx.SaveChangesAsync(ct);
+        return newVisit.Id;
         
         
     }

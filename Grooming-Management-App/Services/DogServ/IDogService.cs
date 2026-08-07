@@ -8,7 +8,7 @@ public interface IDogService
     
     Task<GetDogDetailsDto> GetDogDetailsAsync(int salonId, int dogId, CancellationToken ct);
 
-    Task CreateDogAsync(int salonId, CreateDogDto dto, CancellationToken ct );
+    Task<int> CreateDogAsync(int salonId, CreateDogDto dto, CancellationToken ct );
     
     Task UpdateDogAsync(int salonId, int dogId, UpdateDogDto dto, CancellationToken ct );
 

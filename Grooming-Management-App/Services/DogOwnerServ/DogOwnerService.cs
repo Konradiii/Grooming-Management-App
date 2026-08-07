@@ -46,7 +46,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
 
     }
 
-    public async Task CreateDogOwnerAsync(CreateDogOwnerDto dto, int salonId, CancellationToken ct)
+    public async Task<int> CreateDogOwnerAsync(CreateDogOwnerDto dto, int salonId, CancellationToken ct)
     {
         var ownerExists = await ctx.DogOwners
             .AnyAsync(e => e.Phone == dto.Phone && e.SalonId == salonId, ct);
@@ -67,6 +67,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
         
         ctx.DogOwners.Add(dogOwner);
         await ctx.SaveChangesAsync(ct);
+        return dogOwner.Id;
         
         
     }

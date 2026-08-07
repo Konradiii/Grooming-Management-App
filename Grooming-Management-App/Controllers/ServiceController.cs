@@ -52,8 +52,8 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<IActionResult> AddService(string newName, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.AddServiceAsync(salonId, newName, ct);
-        return Created($"api/Service/{salonId}" ,null);
+        var newServiceId = await service.AddServiceAsync(salonId, newName, ct);
+        return Created($"api/Service/{newServiceId}" ,null);
     }
     [HttpPut("{serviceId:int}/EditServiceName")]
     [Authorize(Roles = "Owner")]

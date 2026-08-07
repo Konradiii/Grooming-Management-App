@@ -33,8 +33,8 @@ public class DogOwnerController(IDogOwnerService service, ICurrentUserService cu
     public async Task<IActionResult> CreateDogOwner(CreateDogOwnerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.CreateDogOwnerAsync(dto, salonId, ct);
-        return NoContent();
+        var ownerId =await service.CreateDogOwnerAsync(dto, salonId, ct);
+        return Created($"api/DogOwner/{ownerId}", null);
     }
 
     [HttpPut("{id:int}")]

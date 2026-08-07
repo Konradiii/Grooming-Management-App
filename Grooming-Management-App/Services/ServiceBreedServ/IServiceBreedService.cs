@@ -11,6 +11,6 @@ public interface IServiceBreedService
     Task<List<GetServiceBreedDto>> GetAllServiceBreedsAsync(int salonId, ActiveStatusEnum? status, CancellationToken ct);
     Task<GetServiceBreedDto> GetServiceBreedAsync(int salonId, int serviceBreedId, CancellationToken ct);
 
-    Task AddServiceBreedAsync(int salonId, CreateServiceBreedDto dto, CancellationToken ct);
+    Task<int> AddServiceBreedAsync(int salonId, CreateServiceBreedDto dto, CancellationToken ct);
     Task UpdateServiceBreedAsync(int salonId, int serviceBreedId, UpdateServiceBreedDto dto, CancellationToken ct);
 }

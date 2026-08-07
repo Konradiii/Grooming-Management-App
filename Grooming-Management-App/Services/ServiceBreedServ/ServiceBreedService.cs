@@ -92,7 +92,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedService
         
     }
 
-    public async Task AddServiceBreedAsync(int salonId, CreateServiceBreedDto dto, CancellationToken ct)
+    public async Task<int> AddServiceBreedAsync(int salonId, CreateServiceBreedDto dto, CancellationToken ct)
     {
         var serviceExists = await ctx.Services
             .Where(e => dto.ServiceId == e.Id && salonId == e.SalonId)
@@ -123,6 +123,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedService
         };
         await ctx.ServiceBreeds.AddAsync(newServiceBreed);
         await ctx.SaveChangesAsync(ct);
+        return newServiceBreed.Id;
 
     }
     

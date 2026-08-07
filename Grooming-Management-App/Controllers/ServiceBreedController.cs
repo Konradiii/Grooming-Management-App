@@ -52,8 +52,8 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<IActionResult> AddService(CreateServiceBreedDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.AddServiceBreedAsync(salonId, dto, ct);
-        return NoContent();
+        var newServiceBreedId = await service.AddServiceBreedAsync(salonId, dto, ct);
+        return Created($"api/ServiceBreed/{newServiceBreedId}", null);
     }
 
     [HttpPut("{serviceBreedId:int}")]

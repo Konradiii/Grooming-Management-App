@@ -12,7 +12,7 @@ public interface IVisitService
     
     Task EditVisitAsync(int salonId, int visitId, EditVisitDto dto, CancellationToken ct);
     
-    Task AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct);
+    Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct);
     
     Task ChangeVisitStatusAsync(int salonId, int visitId, StatusEnum status, CancellationToken ct);
     

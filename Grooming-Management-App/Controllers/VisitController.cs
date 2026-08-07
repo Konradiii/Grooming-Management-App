@@ -34,8 +34,8 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     public async Task<IActionResult> AddVisit(AddVisitDto dto, CancellationToken ct)
     {
         var salonId = userService.SalonId;
-        await service.AddVisitAsync(salonId, dto, ct);
-        return Created($"api/visit/{salonId}", null);
+        var visitId = await service.AddVisitAsync(salonId, dto, ct);
+        return Created($"api/visit/{visitId}", null);
     }
     [HttpPut("{visitId:int}")]
     [Authorize]

@@ -92,7 +92,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceService
         
     }
     
-    public async Task AddServiceAsync(int salonId, string newName, CancellationToken ct)
+    public async Task<int> AddServiceAsync(int salonId, string newName, CancellationToken ct)
     {
 
         var newService = new Service
@@ -103,6 +103,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceService
         };
         ctx.Services.Add(newService);
         await ctx.SaveChangesAsync(ct);
+        return newService.Id;
 
 
     }
