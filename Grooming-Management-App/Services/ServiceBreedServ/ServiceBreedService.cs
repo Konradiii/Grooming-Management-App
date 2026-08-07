@@ -113,6 +113,16 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedService
             throw new NotFoundException("Breed doesnt exists");
         }
         
+        var combinationExists = await ctx.ServiceBreeds
+            .AnyAsync(sb => sb.ServiceId == dto.ServiceId 
+                            && sb.BreedId == dto.BreedId 
+                            && sb.SalonId == salonId, ct);
+
+        if (combinationExists)
+        {
+            throw new ConflictException("This service/breed combination already exists in the pricing");
+        }
+        
         var newServiceBreed = new ServiceBreed
         {
             Price = dto.Price,

@@ -90,6 +90,11 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
             throw new NotFoundException("Groomer not found");
         }
 
+        if (serviceBreed.BreedId != dog.BreedId)
+        {
+            throw new ConflictException("Service Breed doeasnt exists for that breed");
+        }
+
         var newVisit = new Visit
         {
             CreatedAt = DateTime.UtcNow,
