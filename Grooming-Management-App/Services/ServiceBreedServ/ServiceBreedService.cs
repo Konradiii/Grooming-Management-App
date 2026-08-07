@@ -50,12 +50,13 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedService
         
     }
     
-    public async Task<List<GetServiceBreedDto>> GetAllServiceBreedsAsync(int salonId, ActiveStatusEnum? status, CancellationToken ct)
+    public async Task<List<GetServiceBreedDto>> GetAllServiceBreedsAsync(int salonId, ActiveStatusEnum? status, int? breedId, CancellationToken ct)
     {
         
         return await ctx.ServiceBreeds
             .Where(s => s.SalonId == salonId)
             .Where(s => status == null || s.Status == status)
+            .Where(s=> breedId == null || s.BreedId == breedId)
             .Select(e=> new GetServiceBreedDto
             {
                 Id = e.Id,

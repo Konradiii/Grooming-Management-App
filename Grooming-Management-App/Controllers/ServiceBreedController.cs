@@ -31,10 +31,10 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
 
     [HttpGet("GetAllServiceBreeds")]
     [Authorize]
-    public async Task<List<GetServiceBreedDto>> GetAllServiceBreeds(ActiveStatusEnum? status, CancellationToken ct)
+    public async Task<List<GetServiceBreedDto>> GetAllServiceBreeds(ActiveStatusEnum? status, int? breedId, CancellationToken ct)
     {
         var salonId= currentUser.SalonId;
-        var services = await service.GetAllServiceBreedsAsync(salonId, status, ct);
+        var services = await service.GetAllServiceBreedsAsync(salonId, status, breedId, ct);
         return services;
     }
 

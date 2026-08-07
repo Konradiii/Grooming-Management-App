@@ -8,7 +8,7 @@ public interface IServiceBreedService
     Task ActivateServiceBreedAsync(int salonId, int serviceBreedId, CancellationToken ct);
     Task DeactivateServiceBreedAsync(int salonId, int serviceBreedId, CancellationToken ct);
     
-    Task<List<GetServiceBreedDto>> GetAllServiceBreedsAsync(int salonId, ActiveStatusEnum? status, CancellationToken ct);
+    Task<List<GetServiceBreedDto>> GetAllServiceBreedsAsync(int salonId, ActiveStatusEnum? status, int? breedId, CancellationToken ct);
     Task<GetServiceBreedDto> GetServiceBreedAsync(int salonId, int serviceBreedId, CancellationToken ct);
 
     Task<int> AddServiceBreedAsync(int salonId, CreateServiceBreedDto dto, CancellationToken ct);
