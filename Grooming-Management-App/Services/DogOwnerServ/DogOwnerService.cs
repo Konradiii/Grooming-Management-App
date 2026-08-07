@@ -18,7 +18,6 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
                 Id = e.Id,
                 FirstName = e.FirstName,
                 LastName = e.LastName,
-                Email = e.Email,
                 Phone = e.Phone,
             })
             .FirstOrDefaultAsync(ct);
@@ -42,7 +41,6 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
                 Id = e.Id,
                 FirstName = e.FirstName,
                 LastName = e.LastName,
-                Email = e.Email,
                 Phone = e.Phone,
             }).ToListAsync(ct);
 
@@ -50,11 +48,19 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
 
     public async Task CreateDogOwnerAsync(CreateDogOwnerDto dto, int salonId, CancellationToken ct)
     {
+        var ownerExists = await ctx.DogOwners
+            .AnyAsync(e => e.Phone == dto.Phone && e.SalonId == salonId, ct);
+
+        if (ownerExists)
+        {
+            throw new ConflictException("DogOwner with this phone number already exists");
+        }
+        
+        
         var dogOwner = new Models.DogOwner
         {
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            Email = dto.Email,
             Phone = dto.Phone,
             SalonId = salonId
         };
@@ -80,7 +86,6 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
 
        dogOwner.FirstName = dto.FirstName;
        dogOwner.LastName = dto.LastName;
-       dogOwner.Email = dto.Email; 
        dogOwner.Phone = dto.Phone;
        
         ctx.DogOwners.Update(dogOwner);

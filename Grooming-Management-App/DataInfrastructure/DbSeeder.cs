@@ -65,7 +65,6 @@ public static class DbSeeder
         {
             FirstName = "Jan",
             LastName = "Nowak",
-            Email = "jan.nowak@test.com",
             Phone = "+48123456789",
             Salon = salon
         };

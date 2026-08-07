@@ -15,7 +15,7 @@ public class DogOwnerController(IDogOwnerService service, ICurrentUserService cu
     public async Task<GetDogOwnerDto> GetDogOwner(int id, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var owner = await service.GetDogOwnerAsync(salonId, id, ct);
+        var owner = await service.GetDogOwnerAsync(id, salonId, ct);
         return owner;
     }
 

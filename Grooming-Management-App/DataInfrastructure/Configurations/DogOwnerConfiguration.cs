@@ -18,10 +18,6 @@ public class DogOwnerConfiguration : IEntityTypeConfiguration<DogOwner>
             .IsRequired()
             .HasMaxLength(50);
         
-        builder.Property(e=>e.Email)
-            .IsRequired()
-            .HasMaxLength(100);
-        
         builder.Property(e=>e.Phone)
             .IsRequired()
             .HasMaxLength(20);
