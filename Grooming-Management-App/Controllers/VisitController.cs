@@ -15,7 +15,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     [HttpGet]
     [Authorize]
     [EndpointSummary("Zwraca listę wizyt, z filtrami po statusie, groomerze i zakresie dat")]
-    public async Task<List<GetAllVisitsDto>> GetAllVisits(VisitFilterDto filter, CancellationToken ct)
+    public async Task<List<GetAllVisitsDto>> GetAllVisits([FromQuery] VisitFilterDto filter, CancellationToken ct)
     {
         var salonId = userService.SalonId;
         var visits = await service.GetAllVisitsAsync(salonId, filter, ct);
