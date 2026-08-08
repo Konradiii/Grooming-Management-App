@@ -228,11 +228,9 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         {
             throw new UnauthorizedException("Invalid password");
         }
-        
-      
         user.PasswordHash = passwordHasher.HashPassword(dto.NewPassword);
+        user.RequiresPasswordChange = false;
         await ctx.SaveChangesAsync(ct);
-                
         
         var activeTokens = await ctx.RefreshTokens
             .Where(e => e.UserId == user.Id)

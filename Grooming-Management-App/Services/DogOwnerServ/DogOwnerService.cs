@@ -75,6 +75,14 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerService
     public async Task EditDogOwnerAsync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct)
     {
 
+        var ownerExists = await ctx.DogOwners
+            .AnyAsync(e => e.Phone == dto.Phone && e.SalonId == salonId, ct);
+
+        if (ownerExists)
+        {
+            throw new ConflictException("DogOwner with this phone number already exists");
+        }
+        
         var dogOwner = await ctx.DogOwners
             .Where(d => d.Id == id && d.SalonId == salonId)
             .FirstOrDefaultAsync(ct);
