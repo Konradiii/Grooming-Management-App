@@ -13,5 +13,7 @@ public class DogOwner
     public List<Dog> Dogs { get; set; } 
     
     public List<Visit> Visits { get; set; } = new ();
+    public List<Blacklist> Blacklists { get; set; } = new ();
+
 
 }

@@ -17,5 +17,7 @@ public class Dog
     public DogOwner DogOwner { get; set; }
     
     public List<Visit> Visits { get; set; } = new ();
+    public List<Blacklist> Blacklists { get; set; } = new ();
+
 
 }
