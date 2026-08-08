@@ -64,7 +64,8 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
     
     public async Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct)
     {
-    
+        
+
         var serviceBreed = await ctx.ServiceBreeds
             .Where(g => salonId == g.SalonId)
             .Where(d => d.Id == dto.ServiceBreedId)
@@ -93,6 +94,16 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
         if (serviceBreed.BreedId != dog.BreedId)
         {
             throw new ConflictException("Service Breed doeasnt exists for that breed");
+        }
+        
+        var duplicateExists = await ctx.Visits
+            .AnyAsync(v => v.DogId == dto.DogId 
+                           && v.Date == dto.Date 
+                           && v.SalonId == salonId, ct);
+
+        if (duplicateExists)
+        {
+            throw new ConflictException("This dog already has a visit scheduled at this exact time");
         }
 
         var newVisit = new Visit
