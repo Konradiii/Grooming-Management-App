@@ -26,6 +26,7 @@ public class GroomingDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Blacklist> Blacklists { get; set; }
     public DbSet<Waitlist> Waitlists { get; set; } 
+    public DbSet<Notification> Notifications { get; set; }
 
     
 
