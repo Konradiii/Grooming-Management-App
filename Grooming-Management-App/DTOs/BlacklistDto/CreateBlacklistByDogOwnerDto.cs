@@ -2,5 +2,6 @@
 
 public class CreateBlacklistByDogOwnerDto
 {
-    
+    public string Reason { get; set; }
+    public int DogOwnerId { get; set; }
 }

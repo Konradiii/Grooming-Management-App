@@ -6,6 +6,8 @@ public interface IBlacklistService
 {
     Task<List<GetAllBlacklistDto>> GetAllClientsOfBlacklistAsync(int salonId, string? phoneNumber, CancellationToken ct);
     
+    Task<GetDetailsBlackListDto> GetDetailsBlackListAsync(int salonId, int id, CancellationToken ct);
+    
     Task<int> AddToBlacklistByDogOwnerAsync(int salonId, CreateBlacklistByDogOwnerDto dto, CancellationToken ct);
     
     Task<int> AddToBlacklistByDogAsync(int salonId, CreateBlacklistByDogDto dto, CancellationToken ct);
