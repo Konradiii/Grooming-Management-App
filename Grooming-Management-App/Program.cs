@@ -90,6 +90,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IBlacklistService, BlacklistService>();
 builder.Services.AddScoped<ISmsService, MockSmsService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
