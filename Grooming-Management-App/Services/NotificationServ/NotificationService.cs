@@ -10,10 +10,22 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
 {
     public async Task SendReadyForPickupNotificationAsync(int salonId, int visitId, int timeToPickUpDogInMin, CancellationToken ct)
     {
+        
+        var alreadySent = await ctx.Notifications
+            .AnyAsync(n => n.VisitId == visitId 
+                           && n.SalonId == salonId 
+                           && n.Type == NotificationTypeEnum.ManualReady 
+                           && n.Status == NotificationStatusEnum.Sent, ct);
+        
+        if (alreadySent)
+        {
+            throw new ConflictException("Ready-for-pickup notification was already sent for this visit");
+        }
 
         var visit = await ctx.Visits
             .Include(v => v.Dog)
             .Include(v => v.DogOwner)
+            .Include(v => v.Salon)
             .Where(v => v.Id == visitId)
             .Where(v => v.SalonId == salonId)
             .FirstOrDefaultAsync(ct);
@@ -22,10 +34,16 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
         {
             throw new NotFoundException("Visit not found");
         }
+        
+        if (visit.Status == StatusEnum.Cancelled || visit.Status == StatusEnum.NoShow)
+        {
+            throw new ConflictException("Cannot send ready-for-pickup notification for a cancelled or no-show visit");
+        }
 
         var dogName = visit.Dog.Name;
+        var nazwaSalonu = visit.Salon.Name;
 
-        string msg = $"Państwa pies {dogName} jest gotowy do odbioru. Zapraszamy za {timeToPickUpDogInMin} min";
+        string msg = $"Państwa pies {dogName} jest gotowy do odbioru. Zapraszamy za {timeToPickUpDogInMin} min. Salon Groomerski - {nazwaSalonu} ";
 
         var phoneNumber = visit.DogOwner.Phone;
         

@@ -4,5 +4,6 @@ public enum StatusEnum
 {
     Scheduled,
     Completed,
-    Canceled,
+    Cancelled,
+    NoShow
 }
