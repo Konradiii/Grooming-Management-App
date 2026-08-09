@@ -9,6 +9,7 @@ using Grooming_Management_App.Services.DogOwner;
 using Grooming_Management_App.Services.DogServ;
 using Grooming_Management_App.Services.EarningServ;
 using Grooming_Management_App.Services.GroomerServ;
+using Grooming_Management_App.Services.NotificationServ;
 using Grooming_Management_App.Services.PasswordHasherServ;
 using Grooming_Management_App.Services.SalonServ;
 using Grooming_Management_App.Services.ServiceBreedServ;
@@ -88,6 +89,7 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IBlacklistService, BlacklistService>();
+builder.Services.AddScoped<ISmsService, MockSmsService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
