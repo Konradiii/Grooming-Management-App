@@ -2,6 +2,7 @@ using System.Text;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.AuthServ;
+using Grooming_Management_App.Services.BlacklistServ;
 using Grooming_Management_App.Services.Breed;
 using Grooming_Management_App.Services.CurrentUserServ;
 using Grooming_Management_App.Services.DogOwner;
@@ -86,6 +87,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IBlacklistService, BlacklistService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

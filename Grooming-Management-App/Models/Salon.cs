@@ -13,4 +13,6 @@ public class Salon
     public List<ServiceBreed> ServiceBreeds { get; set; } = new();
     public List<Visit> Visits { get; set; } = new ();
     public List<Blacklist> Blacklists { get; set; } = new ();
+    public List<Waitlist> Waitlists { get; set; } = new();
+
 }

@@ -25,6 +25,8 @@ public class GroomingDbContext : DbContext
     public DbSet<Visit> Visits { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Blacklist> Blacklists { get; set; }
+    public DbSet<Waitlist> Waitlists { get; set; } 
+
     
 
     
@@ -42,6 +44,8 @@ public class GroomingDbContext : DbContext
         modelBuilder.Entity<ServiceBreed>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<Visit>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<Blacklist>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<Waitlist>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+
         
     }
     
