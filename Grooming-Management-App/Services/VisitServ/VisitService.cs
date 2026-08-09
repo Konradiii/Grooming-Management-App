@@ -4,12 +4,13 @@ using Grooming_Management_App.DTOs.VisitDTO;
 using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Models;
+using Grooming_Management_App.Services.BlacklistServ;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public class VisitService(GroomingDbContext ctx) : IVisitService
+public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistService) : IVisitService
 {
     public async Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct)
     {
@@ -65,28 +66,32 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
     
     public async Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct)
     {
-        
 
         var serviceBreed = await ctx.ServiceBreeds
             .Where(g => salonId == g.SalonId)
             .Where(d => d.Id == dto.ServiceBreedId)
             .FirstOrDefaultAsync(ct);
+        
         if (serviceBreed == null)
         {
             throw new NotFoundException("Service breed not found");
         }
+        
         var dog = await ctx.Dogs
             .Where(g => salonId == g.SalonId)
             .Where(d => d.Id == dto.DogId)
             .FirstOrDefaultAsync(ct);
+        
         if (dog == null)
         {
             throw new NotFoundException("Dog not found");
         }
+        
         var groomerExists = await ctx.Groomers
             .Where(g => salonId == g.SalonId)
             .Where(d => d.Id == dto.GroomerId)
             .AnyAsync(ct);
+        
         if (!groomerExists)
         {
             throw new NotFoundException("Groomer not found");
@@ -105,6 +110,13 @@ public class VisitService(GroomingDbContext ctx) : IVisitService
         if (duplicateExists)
         {
             throw new ConflictException("This dog already has a visit scheduled at this exact time");
+        }
+
+        var isBlocked = await blacklistService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
+        
+        if (isBlocked)
+        {
+            throw new ConflictException("This client is on Blacklist!");
         }
 
         var newVisit = new Visit
