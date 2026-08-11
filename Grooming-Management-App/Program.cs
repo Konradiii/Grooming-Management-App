@@ -1,4 +1,5 @@
 using System.Text;
+using Grooming_Management_App.BackgroundServices;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.AuthServ;
@@ -91,6 +92,7 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IBlacklistService, BlacklistService>();
 builder.Services.AddScoped<ISmsService, MockSmsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddHostedService<ReminderScheduler>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -114,5 +116,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseExceptionHandler();
 app.MapControllers();
+
+
+Console.WriteLine($"Aktualny czas UTC: {DateTime.UtcNow}");
 
 app.Run();

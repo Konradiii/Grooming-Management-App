@@ -2,6 +2,6 @@
 
 public enum NotificationTypeEnum
 {
-    Automatic24h,
+    Automatic,
     ManualReady
 }
