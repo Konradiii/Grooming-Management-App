@@ -16,7 +16,8 @@ public class Salon
     public List<Waitlist> Waitlists { get; set; } = new();
     public List<Notification> Notifications { get; set; } = new();
     public List<GroomerSchedule> GroomerSchedules { get; set; } = new();
-    public List<TimeSlot> TimeSlots { get; set; } = new();
+    public List<GroomerTimeOff> GroomerTimeOffs { get; set; } = new();
+
 
 
 }

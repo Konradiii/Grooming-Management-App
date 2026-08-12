@@ -19,7 +19,7 @@ public class Groomer
     
     public List<Visit> Visits { get; set; } = new ();
     public List<GroomerSchedule> GroomerSchedules { get; set; } = new();
-    public List<TimeSlot> TimeSlots { get; set; } = new();
+    public List<GroomerTimeOff> GroomerTimeOffs { get; set; } = new();
 
 
 }

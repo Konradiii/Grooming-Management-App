@@ -4,6 +4,7 @@ using Grooming_Management_App.DataInfrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Grooming_Management_App.Migrations
 {
     [DbContext(typeof(GroomingDbContext))]
-    partial class GroomingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260812121104_RemoveTimeSlot")]
+    partial class RemoveTimeSlot
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,48 +220,6 @@ namespace Grooming_Management_App.Migrations
                     b.HasIndex("SalonId");
 
                     b.ToTable("GroomerSchedules");
-                });
-
-            modelBuilder.Entity("Grooming_Management_App.Models.GroomerTimeOff", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<int>("GroomerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<int>("SalonId")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroomerId");
-
-                    b.HasIndex("SalonId");
-
-                    b.ToTable("GroomerTimeOffs");
                 });
 
             modelBuilder.Entity("Grooming_Management_App.Models.Notification", b =>
@@ -672,25 +633,6 @@ namespace Grooming_Management_App.Migrations
                     b.Navigation("Salon");
                 });
 
-            modelBuilder.Entity("Grooming_Management_App.Models.GroomerTimeOff", b =>
-                {
-                    b.HasOne("Grooming_Management_App.Models.Groomer", "Groomer")
-                        .WithMany("GroomerTimeOffs")
-                        .HasForeignKey("GroomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Grooming_Management_App.Models.Salon", "Salon")
-                        .WithMany("GroomerTimeOffs")
-                        .HasForeignKey("SalonId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Groomer");
-
-                    b.Navigation("Salon");
-                });
-
             modelBuilder.Entity("Grooming_Management_App.Models.Notification", b =>
                 {
                     b.HasOne("Grooming_Management_App.Models.DogOwner", "DogOwner")
@@ -880,8 +822,6 @@ namespace Grooming_Management_App.Migrations
                 {
                     b.Navigation("GroomerSchedules");
 
-                    b.Navigation("GroomerTimeOffs");
-
                     b.Navigation("Visits");
                 });
 
@@ -894,8 +834,6 @@ namespace Grooming_Management_App.Migrations
                     b.Navigation("Dogs");
 
                     b.Navigation("GroomerSchedules");
-
-                    b.Navigation("GroomerTimeOffs");
 
                     b.Navigation("Groomers");
 

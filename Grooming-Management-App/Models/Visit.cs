@@ -29,7 +29,6 @@ public class Visit
     public int ServiceBreedId { get; set; }
     public ServiceBreed ServiceBreed { get; set; }
     public List<Notification> Notifications { get; set; } = new();
-    public List<TimeSlot> TimeSlots { get; set; } = new();
 
     
     
