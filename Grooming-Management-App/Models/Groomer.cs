@@ -18,5 +18,8 @@ public class Groomer
     public User? User { get; set; }
     
     public List<Visit> Visits { get; set; } = new ();
+    public List<GroomerSchedule> GroomerSchedules { get; set; } = new();
+    public List<TimeSlot> TimeSlots { get; set; } = new();
+
 
 }

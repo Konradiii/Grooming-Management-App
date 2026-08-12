@@ -102,7 +102,7 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
 
 
         
-        var msg = $"Przypominamy o jutrzejszej wizycie Państwa pupila {visit.Dog.Name} o godzinie {visit.Date:HH:mm} w salonie {visit.Salon.Name}. Do zobaczenia!";
+        var msg = $"Przypominamy o wizycie Państwa pupila {visit.Dog.Name}, dnia jutrzejszego: {visit.Date.Day} o godzinie {visit.Date:HH:mm} w salonie {visit.Salon.Name}. Do zobaczenia!";
 
 
         var phoneNumber = visit.DogOwner.Phone;

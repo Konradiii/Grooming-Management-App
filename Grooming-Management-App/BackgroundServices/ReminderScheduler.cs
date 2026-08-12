@@ -7,7 +7,7 @@ namespace Grooming_Management_App.BackgroundServices;
 
 public class ReminderScheduler(IServiceScopeFactory scopeFactory) : BackgroundService
 {
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(30);
+    private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

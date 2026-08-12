@@ -27,6 +27,9 @@ public class GroomingDbContext : DbContext
     public DbSet<Blacklist> Blacklists { get; set; }
     public DbSet<Waitlist> Waitlists { get; set; } 
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<GroomerSchedule> GroomerSchedules { get; set; }
+    public DbSet<TimeSlot> TimeSlots { get; set; }
+
 
     
 
@@ -46,6 +49,8 @@ public class GroomingDbContext : DbContext
         modelBuilder.Entity<Visit>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<Blacklist>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<Waitlist>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+        modelBuilder.Entity<GroomerSchedule>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+
 
         
     }
