@@ -11,6 +11,7 @@ using Grooming_Management_App.Services.DogServ;
 using Grooming_Management_App.Services.EarningServ;
 using Grooming_Management_App.Services.GroomerScheduleServ;
 using Grooming_Management_App.Services.GroomerServ;
+using Grooming_Management_App.Services.GroomerTimeOffServ;
 using Grooming_Management_App.Services.NotificationServ;
 using Grooming_Management_App.Services.PasswordHasherServ;
 using Grooming_Management_App.Services.SalonServ;
@@ -95,6 +96,7 @@ builder.Services.AddScoped<ISmsService, MockSmsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<ReminderScheduler>();
 builder.Services.AddScoped<IGroomerScheduleService, GroomerScheduleService>();
+builder.Services.AddScoped<IGroomerTimeOffService, GroomerTimeOffService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
