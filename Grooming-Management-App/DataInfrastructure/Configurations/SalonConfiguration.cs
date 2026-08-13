@@ -14,6 +14,34 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
             .IsRequired()
             .HasMaxLength(100);
         
+        builder.Property(s => s.Street)
+            .IsRequired(false)
+            .HasMaxLength(200);
+        
+        builder.Property(s => s.BuildingNumber)
+            .IsRequired(false)
+            .HasMaxLength(20);
+
+        builder.Property(s => s.ApartmentNumber)
+            .IsRequired(false)
+            .HasMaxLength(20);
+
+        builder.Property(s => s.PostalCode)
+            .IsRequired(false)
+            .HasMaxLength(10);
+
+        builder.Property(s => s.City)
+            .IsRequired(false)
+            .HasMaxLength(100);
+        
+        builder.Property(s => s.MinBookingHoursAhead)
+            .IsRequired()
+            .HasDefaultValue(24);
+
+        builder.Property(s => s.MaxBookingDaysAhead)
+            .IsRequired()
+            .HasDefaultValue(90);
+        
     }
     
 }

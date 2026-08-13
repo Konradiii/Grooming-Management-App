@@ -81,6 +81,14 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         var newSalon = new Salon
         {
             Name = dto.SalonName,
+            Street = dto.Street,
+            BuildingNumber = dto.BuildingNumber,
+            ApartmentNumber = dto.ApartmentNumber,
+            PostalCode = dto.PostalCode,
+            City = dto.City,
+            MinBookingHoursAhead = 24,
+            MaxBookingDaysAhead = 90
+            
         };
 
         
