@@ -13,7 +13,6 @@ public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityService
     public async Task<List<GetAvailabilityDto>> GetAvailabilitySlotsAsync(
         int salonId, DateOnly date, int serviceBreedId, int? groomerId, CancellationToken ct)
     {
-        // 1. cennik - stąd bierzemy czas trwania usługi
         var serviceBreed = await ctx.ServiceBreeds
             .Where(e => e.Id == serviceBreedId && e.SalonId == salonId)
             .FirstOrDefaultAsync(ct);
@@ -23,7 +22,6 @@ public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityService
 
         var duration = serviceBreed.Duration;
 
-        // 2. groomer — walidujemy TYLKO jeśli podany
         if (groomerId != null)
         {
             var groomerExists = await ctx.Groomers

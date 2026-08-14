@@ -3,6 +3,7 @@ using Grooming_Management_App.BackgroundServices;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.AuthServ;
+using Grooming_Management_App.Services.AvailabilityServ;
 using Grooming_Management_App.Services.BlacklistServ;
 using Grooming_Management_App.Services.Breed;
 using Grooming_Management_App.Services.CurrentUserServ;
@@ -97,6 +98,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<ReminderScheduler>();
 builder.Services.AddScoped<IGroomerScheduleService, GroomerScheduleService>();
 builder.Services.AddScoped<IGroomerTimeOffService, GroomerTimeOffService>();
+builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
