@@ -26,6 +26,11 @@ public class DogOwnerConfiguration : IEntityTypeConfiguration<DogOwner>
             .WithMany(p => p.DogOwners)
             .HasForeignKey(d => d.SalonId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(d => d.User)
+            .WithOne(p => p.DogOwner)
+            .HasForeignKey<DogOwner>(d => d.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
     
 }

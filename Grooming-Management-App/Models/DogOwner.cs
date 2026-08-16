@@ -10,7 +10,10 @@ public class DogOwner
     public int SalonId { get; set; }
     public Salon Salon { get; set; }
     
-    public List<Dog> Dogs { get; set; } 
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+
+    public List<Dog> Dogs { get; set; } = new();
     
     public List<Visit> Visits { get; set; } = new ();
     public List<Blacklist> Blacklists { get; set; } = new ();

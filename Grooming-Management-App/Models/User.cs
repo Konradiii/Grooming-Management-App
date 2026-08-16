@@ -16,6 +16,7 @@ public class User
     public Salon Salon { get; set; }
 
     public Groomer? Groomer { get; set; }
+    public DogOwner? DogOwner { get; set; }
     public List<RefreshToken> RefreshTokens { get; set; } = new();
 
 }
