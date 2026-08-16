@@ -4,13 +4,14 @@ using Grooming_Management_App.DTOs.VisitDTO;
 using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Models;
+using Grooming_Management_App.Services.AvailabilityServ;
 using Grooming_Management_App.Services.BlacklistServ;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistService) : IVisitService
+public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistService, IAvailabilityService availabilityService) : IVisitService
 {
     public async Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct)
     {
@@ -216,6 +217,134 @@ public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistServ
         await ctx.SaveChangesAsync(ct);
         
         
+    }
+
+    public async Task<int> BookVisitByClientAsync(int salonId, int userId, AddVisitDto dto, CancellationToken ct)
+    {
+        
+        
+        var dogOwnerExist = await ctx.DogOwners
+            .Where(u => u.UserId == userId && u.SalonId == salonId)
+            .FirstOrDefaultAsync(ct);
+        if (dogOwnerExist == null)
+        {
+            throw new NotFoundException("Dog owner not found");
+        }
+        
+                var serviceBreed = await ctx.ServiceBreeds
+            .Where(g => salonId == g.SalonId)
+            .Where(d => d.Id == dto.ServiceBreedId)
+            .FirstOrDefaultAsync(ct);
+        
+        if (serviceBreed == null)
+        {
+            throw new NotFoundException("Service breed not found");
+        }
+        
+        var dog = await ctx.Dogs
+            .Where(g => salonId == g.SalonId)
+            .Where(d => d.Id == dto.DogId)
+            .FirstOrDefaultAsync(ct);
+        
+        if (dog == null)
+        {
+            throw new NotFoundException("Dog not found");
+        }
+        
+        if (dog.DogOwnerId != dogOwnerExist.Id)
+            throw new NotFoundException("Dog not found");
+        
+        var groomerExists = await ctx.Groomers
+            .Where(g => salonId == g.SalonId)
+            .Where(d => d.Id == dto.GroomerId)
+            .AnyAsync(ct);
+        
+        if (!groomerExists)
+        {
+            throw new NotFoundException("Groomer not found");
+        }
+
+        if (serviceBreed.BreedId != dog.BreedId)
+        {
+            throw new ConflictException("Service Breed doeasnt exists for that breed");
+        }
+        
+        var duplicateExists = await ctx.Visits
+            .AnyAsync(v => v.DogId == dto.DogId 
+                           && v.Date == dto.Date 
+                           && v.SalonId == salonId, ct);
+
+        if (duplicateExists)
+        {
+            throw new ConflictException("This dog already has a visit scheduled at this exact time");
+        }
+
+        var isBlocked = await blacklistService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
+        
+        if (isBlocked)
+        {
+            throw new ConflictException("This client is on Blacklist!");
+        }
+
+
+        var startTime = dto.Date;
+        var endTime = dto.Date.AddMinutes(serviceBreed.Duration);
+        
+        var visitOverlaps = await ctx.Visits
+            .Where(e => e.GroomerId == dto.GroomerId)
+            .Where(d => d.SalonId == salonId)
+            .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
+            .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
+                           && endTime > d.Date, ct);
+
+        if (visitOverlaps)
+            throw new ConflictException("Groomer already has a visit at this time");
+        
+        
+        var timeOffOverlaps = await ctx.GroomerTimeOffs
+            .Where(t => t.SalonId == salonId)
+            .Where(t => t.GroomerId == dto.GroomerId)
+            .AnyAsync(t => startTime < t.EndDate.ToDateTime(t.EndTime)
+                           && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
+
+        if (timeOffOverlaps)
+            throw new ConflictException("Groomer is unavailable at this time");
+
+        
+        var date = DateOnly.FromDateTime(dto.Date);
+        var requestedTime = TimeOnly.FromDateTime(dto.Date).ToString("HH:mm");
+
+        var availability = await availabilityService
+            .GetAvailabilitySlotsAsync(salonId, date, dto.ServiceBreedId, dto.GroomerId, ct);
+
+        var slotAvailable = availability
+            .Any(a => a.GroomerId == dto.GroomerId && a.AvailableSlots.Contains(requestedTime));
+
+        if (!slotAvailable)
+            throw new ConflictException("Selected time slot is no longer available");
+        
+        
+        var newVisit = new Visit
+        {
+            CreatedAt = DateTime.UtcNow,
+            Date = dto.Date,
+            EstimatedDuration = serviceBreed.Duration,
+            ProposedPrice = serviceBreed.Price,
+            Status = StatusEnum.Scheduled,
+            Notes = dto.Notes,
+            SalonId = salonId,
+            DogId = dto.DogId,
+            DogOwnerId = dogOwnerExist.Id,
+            GroomerId = dto.GroomerId,
+            ServiceBreedId = dto.ServiceBreedId
+        };
+        
+        ctx.Visits.Add(newVisit);
+        await ctx.SaveChangesAsync(ct);
+        return newVisit.Id;
+
+
+
     }
 
 }

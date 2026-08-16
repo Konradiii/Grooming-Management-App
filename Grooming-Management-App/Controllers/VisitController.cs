@@ -13,7 +13,7 @@ namespace Grooming_Management_App.Controllers;
 public class VisitController(IVisitService service, ICurrentUserService userService) : ControllerBase
 {
     [HttpGet]
-    [Authorize]
+    [Authorize(Roles = "Owner,Groomer")]
     [EndpointSummary("Zwraca listę wizyt, z filtrami po statusie, groomerze i zakresie dat")]
     public async Task<List<GetAllVisitsDto>> GetAllVisits([FromQuery] VisitFilterDto filter, CancellationToken ct)
     {
@@ -23,7 +23,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     }
 
     [HttpGet("{visitId:int}")]
-    [Authorize]
+    [Authorize(Roles = "Owner,Groomer")]
     [EndpointSummary("Zwraca szczegóły pojedynczej wizyty")]
     public async Task<GetVisitDetailsDto> GetVisit(int visitId, CancellationToken ct)
     {
@@ -32,7 +32,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
         return visit;
     }
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Owner,Groomer")]
     [EndpointSummary("Edytuje termin, groomera lub notatki wizyty")]
     public async Task<IActionResult> AddVisit(AddVisitDto dto, CancellationToken ct)
     {
@@ -50,7 +50,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
         return NoContent();
     }
     [HttpPut("{visitId:int}/status")]
-    [Authorize]
+    [Authorize(Roles = "Owner,Groomer")]
     [EndpointSummary("Zmienia status wizyty, np. na Ukończona lub Anulowana")]
     public async Task<IActionResult> ChangeVisitStatus(int visitId, StatusEnum status, CancellationToken ct)
     {
@@ -60,7 +60,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
     }
 
     [HttpPut("{visitId:int}/final-price")]
-    [Authorize]
+    [Authorize(Roles = "Owner,Groomer")]
     [EndpointSummary("Nadpisuje cenę finalną wizyty")]
     public async Task<IActionResult> UpdateFinalPrice(int visitId, decimal finalPrice, CancellationToken ct)
     {
@@ -69,4 +69,15 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
         return NoContent();
     }
     
+    
+    [HttpPost("book")]
+    [Authorize(Roles = "Client")]
+    [EndpointSummary("Rezerwacja wizyty przez zalogowanego klienta")]
+    public async Task<IActionResult> BookVisitByClient(AddVisitDto dto, CancellationToken ct)
+    {
+        var salonId = userService.SalonId;
+        var userId = userService.UserId;
+        var newVisitId = await service.BookVisitByClientAsync(salonId, userId, dto, ct);
+        return Created($"api/Visit/{newVisitId}", null);
+    }
 }

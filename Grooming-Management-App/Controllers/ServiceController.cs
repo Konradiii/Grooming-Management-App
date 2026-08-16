@@ -13,7 +13,7 @@ namespace Grooming_Management_App.Controllers;
 public class ServiceController(IServiceService service, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
-    [Authorize]
+    [Authorize(Roles = "Owner,Groomer")]
     [EndpointSummary("Zwraca listę usług, opcjonalnie filtrowaną po statusie")]
     public async Task<List<GetServiceDto>> GetAllServices(ActiveStatusEnum? status, CancellationToken ct)
     {
