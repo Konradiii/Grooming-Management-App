@@ -119,6 +119,30 @@ public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistServ
             throw new ConflictException("This client is on Blacklist!");
         }
 
+
+        var startTime = dto.Date;
+        var endTime = dto.Date.AddMinutes(serviceBreed.Duration);
+        
+        var visitOverlaps = await ctx.Visits
+            .Where(e => e.GroomerId == dto.GroomerId)
+            .Where(d => d.SalonId == salonId)
+            .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
+            .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
+                           && endTime > d.Date, ct);
+
+        if (visitOverlaps)
+            throw new ConflictException("Groomer already has a visit at this time");
+        
+        
+        var timeOffOverlaps = await ctx.GroomerTimeOffs
+            .Where(t => t.SalonId == salonId)
+            .Where(t => t.GroomerId == dto.GroomerId)
+            .AnyAsync(t => startTime < t.EndDate.ToDateTime(t.EndTime)
+                           && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
+
+        if (timeOffOverlaps)
+            throw new ConflictException("Groomer is unavailable at this time");
+
         var newVisit = new Visit
         {
             CreatedAt = DateTime.UtcNow,
