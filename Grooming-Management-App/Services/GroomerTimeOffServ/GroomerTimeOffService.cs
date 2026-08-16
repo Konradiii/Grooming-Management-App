@@ -1,5 +1,6 @@
 ﻿using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.DTOs.GroomerTimeOffDTO;
+using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Models;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,22 @@ public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffServi
         if (!groomerExists)
         {
             throw new NotFoundException("Groomer not found");
+        }
+        
+        
+        var startDateTime = dto.StartDate.ToDateTime(dto.StartTime);
+        var endDateTime = dto.EndDate.ToDateTime(dto.EndTime);
+
+        var hasConflictingVisits = await ctx.Visits
+            .Where(v => v.SalonId == salonId)
+            .Where(v => v.GroomerId == dto.GroomerId)
+            .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
+            .AnyAsync(v => v.Date < endDateTime
+                           && v.Date.AddMinutes(v.EstimatedDuration) > startDateTime, ct);
+
+        if (hasConflictingVisits)
+        {
+            throw new ConflictException("Cannot create time off: groomer has scheduled visits in this period");
         }
 
         var newTimeOff = new GroomerTimeOff
