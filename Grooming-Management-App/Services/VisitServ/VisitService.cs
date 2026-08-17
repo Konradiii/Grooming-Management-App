@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public class VisitService(GroomingDbContext ctx, IBlacklistCheckService BlacklistCheckService, IAvailabilityReaderService availabilityReaderService) : IVisitService
+public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklistCheckService, IAvailabilityReaderService availabilityReaderService) : IVisitService
 {
     public async Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct)
     {
@@ -113,7 +113,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService Blacklis
             throw new ConflictException("This dog already has a visit scheduled at this exact time");
         }
 
-        var isBlocked = await BlacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
+        var isBlocked = await blacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
         
         if (isBlocked)
         {
@@ -218,7 +218,11 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService Blacklis
         
         
     }
-
+/*
+ 
+// Zaczątek portalu klienta — nieaktywne.
+// Wymaga rejestracji kont klienckich (RegisterClientAccountAsync), której nie ma.
+// Logika napisana, nieprzetestowana. Sierpień 2026.
     public async Task<int> BookVisitByClientAsync(int salonId, int userId, AddVisitDto dto, CancellationToken ct)
     {
         
@@ -346,5 +350,6 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService Blacklis
 
 
     }
+    */
 
 }

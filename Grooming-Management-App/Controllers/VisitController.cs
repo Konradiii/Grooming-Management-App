@@ -69,7 +69,7 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
         return NoContent();
     }
     
-    
+    /*
     [HttpPost("book")]
     [Authorize(Roles = "Client")]
     [EndpointSummary("Rezerwacja wizyty przez zalogowanego klienta")]
@@ -80,4 +80,5 @@ public class VisitController(IVisitService service, ICurrentUserService userServ
         var newVisitId = await service.BookVisitByClientAsync(salonId, userId, dto, ct);
         return Created($"api/Visit/{newVisitId}", null);
     }
+    */
 }

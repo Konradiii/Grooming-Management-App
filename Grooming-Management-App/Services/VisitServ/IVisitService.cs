@@ -18,6 +18,6 @@ public interface IVisitService
     
     Task UpdateFinalPriceAsync(int salonId, int visitId, decimal finalPrice, CancellationToken ct);
     
-    Task<int> BookVisitByClientAsync(int salonId, int userId, AddVisitDto dto, CancellationToken ct);
+    //Task<int> BookVisitByClientAsync(int salonId, int userId, AddVisitDto dto, CancellationToken ct);
     
 }
