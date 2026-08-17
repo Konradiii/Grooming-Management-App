@@ -14,5 +14,4 @@ public interface IBlacklistService
     
     Task DeleteRecordFromBlacklistAsync(int salonId, int id, CancellationToken ct);
     
-    Task<bool> IsBlockedAsync(int salonId, int dogOwnerId, int? dogId, CancellationToken ct);
 }

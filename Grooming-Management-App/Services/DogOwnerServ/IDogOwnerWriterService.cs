@@ -2,12 +2,8 @@
 
 namespace Grooming_Management_App.Services.DogOwner;
 
-public interface IDogOwnerService
+public interface IDogOwnerWriterService
 {
-    Task<GetDogOwnerDto> GetDogOwnerAsync(int id, int salonId, CancellationToken ct);
-    
-    Task<List<GetDogOwnerDto>> GetAllDogOwnersAsync(int salonId, CancellationToken ct);
-    
     Task<int> CreateDogOwnerAsync(CreateDogOwnerDto dto, int salonId, CancellationToken ct);
     
     Task EditDogOwnerAsync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct);

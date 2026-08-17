@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.AvailabilityServ;
 
-public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityService
+public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityReaderService
 {
     private const int SlotLengthMinutes = 15;
 

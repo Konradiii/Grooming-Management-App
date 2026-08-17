@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.BlacklistServ;
 
-public class BlacklistService(GroomingDbContext ctx) : IBlacklistService
+public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlacklistCheckService
 {
     public async Task<List<GetAllBlacklistDto>> GetAllClientsOfBlacklistAsync(int salonId, string? phoneNumber, CancellationToken ct)
     {

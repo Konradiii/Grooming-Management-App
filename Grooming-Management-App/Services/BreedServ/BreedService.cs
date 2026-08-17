@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.Breed;
 
-public class BreedService(GroomingDbContext ctx) : IBreedService
+public class BreedService(GroomingDbContext ctx) : IBreedReaderService
 {
 
     public async Task<GetBreedDto> GetBreedAsync(int breedId, CancellationToken ct)

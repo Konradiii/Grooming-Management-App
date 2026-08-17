@@ -78,27 +78,55 @@ builder.Services.AddSwaggerGen(opt =>
     });
 });
 
-builder.Services.AddScoped<IBreedService, BreedService>();
+builder.Services.AddScoped<IBreedReaderService, BreedService>();
+
 builder.Services.AddScoped<ISalonService, SalonService>();
+
 builder.Services.AddScoped<IGroomerService, GroomerService>();
-builder.Services.AddScoped<IDogOwnerService, DogOwnerService>();
-builder.Services.AddScoped<IDogService, DogService>();
+
+builder.Services.AddScoped<IDogOwnerWriterService, DogOwnerService>();
+builder.Services.AddScoped<IDogOwnerReaderService, DogOwnerService>();
+
+
+builder.Services.AddScoped<IDogWriterService, DogService>();
+builder.Services.AddScoped<IDogReaderService, DogService>();
+
 builder.Services.AddScoped<IServiceService, ServiceService>();
+
 builder.Services.AddScoped<IServiceBreedService, ServiceBreedService>();
+
 builder.Services.AddScoped<IVisitService, VisitService>();
+
 builder.Services.AddScoped<IEarningsService, EarningsService>();
+
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+builder.Services.AddScoped<ILoginService, AuthenticationService>();
+builder.Services.AddScoped<IPasswordService, AuthenticationService>();
+builder.Services.AddScoped<IRegistrationService, AuthenticationService>();
+builder.Services.AddScoped<ITokenSessionService, AuthenticationService>();
+
 builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IBlacklistService, BlacklistService>();
+
+builder.Services.AddScoped<BlacklistService>();
+builder.Services.AddScoped<IBlacklistService>(sp => sp.GetRequiredService<BlacklistService>());
+builder.Services.AddScoped<IBlacklistCheckService>(sp => sp.GetRequiredService<BlacklistService>());
+
 builder.Services.AddScoped<ISmsService, MockSmsService>();
+
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
 builder.Services.AddHostedService<ReminderScheduler>();
+
 builder.Services.AddScoped<IGroomerScheduleService, GroomerScheduleService>();
+
 builder.Services.AddScoped<IGroomerTimeOffService, GroomerTimeOffService>();
-builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
+
+builder.Services.AddScoped<IAvailabilityReaderService, AvailabilityService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

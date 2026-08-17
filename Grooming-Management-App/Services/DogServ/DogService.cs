@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.DogServ;
 
-public class DogService(GroomingDbContext ctx) : IDogService
+public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderService
 {
     public async Task<List<GetDogDto>> GetAllDogsAsync(int salonId, int? dogOwnerId, int? breedId, CancellationToken ct)
     {

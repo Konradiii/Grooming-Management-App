@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.AuthServ;
 
-public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwordHasher, ITokenService tokenService) : IAuthenticationService
+public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwordHasher, ITokenService tokenService) : ILoginService, IPasswordService, IRegistrationService, ITokenSessionService
 {
     public async Task<CreateGroomerAccountResultDto> RegisterGroomerAccountAsync(int salonId, int groomerId, CreateAccountDto dto, CancellationToken ct)
     {

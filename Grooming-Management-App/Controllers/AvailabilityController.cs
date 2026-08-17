@@ -9,13 +9,13 @@ namespace Grooming_Management_App.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Owner,Groomer")]
-public class AvailabilityController(IAvailabilityService service, ICurrentUserService currentUser) : ControllerBase
+public class AvailabilityController(IAvailabilityReaderService readerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     [EndpointSummary("Zwraca wolne terminy na dany dzień dla wybranej usługi, opcjonalnie dla konkretnego pracownika")]
     public async Task<List<GetAvailabilityDto>> GetAvailabilitySlots(DateOnly date, int serviceBreedId, int? groomerId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        return await service.GetAvailabilitySlotsAsync(salonId, date, serviceBreedId, groomerId, ct);
+        return await readerService.GetAvailabilitySlotsAsync(salonId, date, serviceBreedId, groomerId, ct);
     }
 }

@@ -8,14 +8,14 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BreedController(IBreedService service, ICurrentUserService currentUser) : ControllerBase
+public class BreedController(IBreedReaderService readerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     [Authorize]
     [EndpointSummary("Zwraca listę wszystkich dostępnych ras")]
     public async Task<List<GetBreedDto>> GetAllBreeds(CancellationToken ct)
     {
-        return await service.GetAllBreedsAsync(ct);
+        return await readerService.GetAllBreedsAsync(ct);
     }
 
     [HttpGet("{Id:int}")]
@@ -23,7 +23,7 @@ public class BreedController(IBreedService service, ICurrentUserService currentU
     [EndpointSummary("Zwraca szczegóły pojedynczej rasy")]
     public async Task<GetBreedDto> GetBreedAsync(int Id, CancellationToken ct)
     {
-        return await service.GetBreedAsync(Id, ct);
+        return await readerService.GetBreedAsync(Id, ct);
     }
     
 }

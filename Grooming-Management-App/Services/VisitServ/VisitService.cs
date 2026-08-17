@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistService, IAvailabilityService availabilityService) : IVisitService
+public class VisitService(GroomingDbContext ctx, IBlacklistCheckService BlacklistCheckService, IAvailabilityReaderService availabilityReaderService) : IVisitService
 {
     public async Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct)
     {
@@ -113,7 +113,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistServ
             throw new ConflictException("This dog already has a visit scheduled at this exact time");
         }
 
-        var isBlocked = await blacklistService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
+        var isBlocked = await BlacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
         
         if (isBlocked)
         {
@@ -279,7 +279,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistServ
             throw new ConflictException("This dog already has a visit scheduled at this exact time");
         }
 
-        var isBlocked = await blacklistService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
+        var isBlocked = await BlacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
         
         if (isBlocked)
         {
@@ -314,7 +314,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistService blacklistServ
         var date = DateOnly.FromDateTime(dto.Date);
         var requestedTime = TimeOnly.FromDateTime(dto.Date).ToString("HH:mm");
 
-        var availability = await availabilityService
+        var availability = await availabilityReaderService
             .GetAvailabilitySlotsAsync(salonId, date, dto.ServiceBreedId, dto.GroomerId, ct);
 
         var slotAvailable = availability
