@@ -2,6 +2,7 @@ using System.Text;
 using Grooming_Management_App.BackgroundServices;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Exceptions;
+using Grooming_Management_App.Middleware;
 using Grooming_Management_App.Services.AuthServ;
 using Grooming_Management_App.Services.AvailabilityServ;
 using Grooming_Management_App.Services.BlacklistServ;
@@ -157,10 +158,11 @@ if (app.Environment.IsDevelopment())
     await DbSeeder.SeedAsync(context);
 }
 
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseMiddleware<SubscriptionMiddleware>();
 app.UseAuthorization();
-app.UseExceptionHandler();
 app.MapControllers();
 
 
