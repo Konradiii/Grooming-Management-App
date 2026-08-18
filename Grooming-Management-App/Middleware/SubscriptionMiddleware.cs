@@ -23,6 +23,12 @@ public class SubscriptionMiddleware(RequestDelegate next)
             return;        
         }
 
+        if (context.Request.Path.StartsWithSegments("/api/Subscription"))
+        {
+            await next(context);
+            return;
+        }
+
 
         if (context.User.Identity?.IsAuthenticated != true)
         {
@@ -50,6 +56,11 @@ public class SubscriptionMiddleware(RequestDelegate next)
                 title = "Subscription expired. Please renew to continue.",
                 status = 402
             });
+            return;
+        }
+        if (context.Request.Path.StartsWithSegments("/api/Subscription"))
+        {
+            await next(context);
             return;
         }
 
