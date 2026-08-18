@@ -9,14 +9,14 @@ namespace Grooming_Management_App.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Owner")]
-public class GroomerTimeOffController(IGroomerTimeOffService service, ICurrentUserService currentUser) : ControllerBase
+public class GroomerTimeOffController(IGroomerTimeOffReaderService readerService,IGroomerTimeOffWriterService writerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpPost]
     [EndpointSummary("Dodaje blokadę czasu dla pracownika - urlop lub wolne godziny")]
     public async Task<IActionResult> CreateGroomerTimeOff(CreateGroomerTimeOffDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var newTimeOffId = await service.CreateGroomerTimeOffAsync(salonId, dto, ct);
+        var newTimeOffId = await writerService.CreateGroomerTimeOffAsync(salonId, dto, ct);
         return Created($"api/GroomerTimeOff/{newTimeOffId}", null);
     }
 
@@ -25,7 +25,7 @@ public class GroomerTimeOffController(IGroomerTimeOffService service, ICurrentUs
     public async Task<GetGroomerTimeOffDto> GetGroomerTimeOff(int timeOffId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        return await service.GetGroomerTimeOffAsync(salonId, timeOffId, ct);
+        return await readerService.GetGroomerTimeOffAsync(salonId, timeOffId, ct);
     }
 
     [HttpGet]
@@ -33,7 +33,7 @@ public class GroomerTimeOffController(IGroomerTimeOffService service, ICurrentUs
     public async Task<List<GetGroomerTimeOffDto>> GetAllGroomerTimeOffs(int? groomerId, DateOnly? dateFrom, DateOnly? dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        return await service.GetAllGroomerTimeOffsAsync(salonId, groomerId, dateFrom, dateTo, ct);
+        return await readerService.GetAllGroomerTimeOffsAsync(salonId, groomerId, dateFrom, dateTo, ct);
     }
 
     [HttpDelete("{timeOffId:int}")]
@@ -41,7 +41,7 @@ public class GroomerTimeOffController(IGroomerTimeOffService service, ICurrentUs
     public async Task<IActionResult> DeleteGroomerTimeOff(int timeOffId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.DeleteGroomerTimeOffAsync(salonId, timeOffId, ct);
+        await writerService.DeleteGroomerTimeOffAsync(salonId, timeOffId, ct);
         return NoContent();
     }
 }

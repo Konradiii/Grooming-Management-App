@@ -8,7 +8,7 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GroomerController(IGroomerService service, ICurrentUserService currentUser) : ControllerBase
+public class GroomerController(IGroomerReaderService readerService, IGroomerWriterService writerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpPut("{id:int}/DeactivateGroomer")]
     [Authorize(Roles = "Owner")]
@@ -16,7 +16,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<IActionResult> DeactivateGroomer(int id, CancellationToken ct)
     {
         var salonId =  currentUser.SalonId;
-        await service.DeactivateGroomerAsync(id, salonId, ct);
+        await writerService.DeactivateGroomerAsync(id, salonId, ct);
         return NoContent();
     }
     [HttpPut("{id:int}/ActivateGroomer")]
@@ -25,7 +25,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<IActionResult> ActivateGroomer(int id, CancellationToken ct)
     {
         var salonId =  currentUser.SalonId;
-        await service.ActivateGroomerAsync(id, salonId, ct);
+        await writerService.ActivateGroomerAsync(id, salonId, ct);
         return NoContent();
     }
 
@@ -35,7 +35,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<GetGroomerDto> GetGroomer(int id, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var groomer = await service.GetGroomerAsync(id, salonId, ct);
+        var groomer = await readerService.GetGroomerAsync(id, salonId, ct);
         return groomer;
     }
 
@@ -45,7 +45,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<List<GetGroomerDto>> GetAllGroomers(CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var groomers = await service.GetAllGroomersAsync(salonId, ct);
+        var groomers = await readerService.GetAllGroomersAsync(salonId, ct);
         return groomers;
     }
 
@@ -55,7 +55,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<IActionResult> EditGroomer(int id, [FromBody] EditGroomerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.EditGroomerAsync(dto, id, salonId, ct);
+        await writerService.EditGroomerAsync(dto, id, salonId, ct);
         return NoContent();
     }
 
@@ -65,7 +65,7 @@ public class GroomerController(IGroomerService service, ICurrentUserService curr
     public async Task<IActionResult> CreateGroomer([FromBody] CreateGroomerDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var newGroomerId = await service.CreateGroomerAsync(dto, salonId, ct);
+        var newGroomerId = await writerService.CreateGroomerAsync(dto, salonId, ct);
         return Created($"api/Groomer/{newGroomerId}", null);
     }
     

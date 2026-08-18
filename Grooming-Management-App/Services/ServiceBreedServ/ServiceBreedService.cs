@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.ServiceBreedServ;
 
-public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedService
+public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterService, IServiceBreedReaderService
 {
     public async Task ActivateServiceBreedAsync(int salonId, int serviceBreedId, CancellationToken ct)
     {

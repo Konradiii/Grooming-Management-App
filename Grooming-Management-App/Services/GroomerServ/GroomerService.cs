@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.GroomerServ;
 
-public class GroomerService(GroomingDbContext ctx) : IGroomerService
+public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGroomerWriterService
 {
     public async Task DeactivateGroomerAsync(int id, int salonId, CancellationToken ct)
     {

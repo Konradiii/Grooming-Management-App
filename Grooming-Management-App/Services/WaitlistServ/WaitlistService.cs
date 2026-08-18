@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.WaitlistServ;
 
-public class WaitlistService(GroomingDbContext ctx) : IWaitlistService 
+public class WaitlistService(GroomingDbContext ctx) : IWaitlistReaderService, IWaitlistWriterService 
 {
     public async Task<int> AddToWaitlistAsync(int salonId, CreateWaitlistDto dto, CancellationToken ct)
     {

@@ -9,7 +9,7 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class GroomerScheduleController(IGroomerScheduleService service, ICurrentUserService currentUser) : ControllerBase
+public class GroomerScheduleController(IGroomerScheduleReaderService readerService, IGroomerScheduleWriterService writerService , ICurrentUserService currentUser) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles= "Owner")]    
@@ -17,7 +17,7 @@ public class GroomerScheduleController(IGroomerScheduleService service, ICurrent
     {
         var salonId = currentUser.SalonId;
         
-        var newScheduleId = await service.CreateGroomerScheduleAsync(salonId, dto, ct);
+        var newScheduleId = await writerService.CreateGroomerScheduleAsync(salonId, dto, ct);
         
         return Created($"api/GroomerSchedule/{newScheduleId}", null);
         
@@ -30,7 +30,7 @@ public class GroomerScheduleController(IGroomerScheduleService service, ICurrent
     {
         var salonId = currentUser.SalonId;
         
-        var groomerSchedule = await service.GetGroomerScheduleAsync(salonId, groomerScheduleId, ct);
+        var groomerSchedule = await readerService.GetGroomerScheduleAsync(salonId, groomerScheduleId, ct);
         
         return groomerSchedule;
         
@@ -42,7 +42,7 @@ public class GroomerScheduleController(IGroomerScheduleService service, ICurrent
     {
         var salonId = currentUser.SalonId;
         
-        return await  service.GetAllGroomerScheduleAsync(salonId, groomerId, day, ct);
+        return await  readerService.GetAllGroomerScheduleAsync(salonId, groomerId, day, ct);
         
     }
     [HttpDelete("{groomerScheduleId:int}")]
@@ -51,7 +51,7 @@ public class GroomerScheduleController(IGroomerScheduleService service, ICurrent
     {
         var salonId = currentUser.SalonId;
         
-        await service.DeleteGroomerScheduleAsync(salonId, groomerScheduleId, ct);
+        await writerService.DeleteGroomerScheduleAsync(salonId, groomerScheduleId, ct);
 
         return NoContent();
 

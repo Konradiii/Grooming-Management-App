@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklistCheckService, IAvailabilityReaderService availabilityReaderService) : IVisitService
+public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklistCheckService, IAvailabilityReaderService availabilityReaderService) : IVisitReaderService, IVisitWriterService
 {
     public async Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct)
     {

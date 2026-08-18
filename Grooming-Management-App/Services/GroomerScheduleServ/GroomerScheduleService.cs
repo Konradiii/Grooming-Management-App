@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.GroomerScheduleServ;
 
-public class GroomerScheduleService(GroomingDbContext ctx) : IGroomerScheduleService
+public class GroomerScheduleService(GroomingDbContext ctx) : IGroomerScheduleReaderService, IGroomerScheduleWriterService
 {
     public async Task<int> CreateGroomerScheduleAsync(int salonId, CreateGroomerScheduleDto dto, CancellationToken ct)
     {

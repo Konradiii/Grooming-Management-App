@@ -3,13 +3,8 @@ using Grooming_Management_App.Enums;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public interface IVisitService
+public interface IVisitWriterService
 {
-    
-    Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct);
-    
-    Task<GetVisitDetailsDto> GetVisitAsync(int salonId, int visitId, CancellationToken ct);
-    
     Task EditVisitAsync(int salonId, int visitId, EditVisitDto dto, CancellationToken ct);
     
     Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct);
@@ -19,5 +14,4 @@ public interface IVisitService
     Task UpdateFinalPriceAsync(int salonId, int visitId, decimal finalPrice, CancellationToken ct);
     
     //Task<int> BookVisitByClientAsync(int salonId, int userId, AddVisitDto dto, CancellationToken ct);
-    
 }

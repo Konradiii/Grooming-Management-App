@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.GroomerTimeOffServ;
 
-public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffService
+public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReaderService, IGroomerTimeOffWriterService
 {
     public async Task<int> CreateGroomerTimeOffAsync(int salonId, CreateGroomerTimeOffDto dto, CancellationToken ct)
     {

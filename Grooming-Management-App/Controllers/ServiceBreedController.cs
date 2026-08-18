@@ -10,7 +10,7 @@ namespace Grooming_Management_App.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Tags("ServiceBreeds")]
-public class ServiceBreedController(IServiceBreedService service, ICurrentUserService currentUser) : ControllerBase
+public class ServiceBreedController(IServiceBreedReaderService readerService, IServiceBreedWriterService writerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpPut("{serviceBreedId:int}/ActivateServiceBreed")]
     [Authorize(Roles = "Owner")]
@@ -18,7 +18,7 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<IActionResult> ActivateServiceBreed(int serviceBreedId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.ActivateServiceBreedAsync(salonId, serviceBreedId, ct);
+        await writerService.ActivateServiceBreedAsync(salonId, serviceBreedId, ct);
         return Ok();
     }
     [HttpPut("{serviceBreedId:int}/DeactivateServiceBreed")]
@@ -27,7 +27,7 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<IActionResult> DeactivateServiceBreed(int serviceBreedId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.DeactivateServiceBreedAsync(salonId, serviceBreedId, ct);
+        await writerService.DeactivateServiceBreedAsync(salonId, serviceBreedId, ct);
         return Ok();
     }
 
@@ -37,7 +37,7 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<List<GetServiceBreedDto>> GetAllServiceBreeds(ActiveStatusEnum? status, int? breedId, CancellationToken ct)
     {
         var salonId= currentUser.SalonId;
-        var services = await service.GetAllServiceBreedsAsync(salonId, status, breedId, ct);
+        var services = await readerService.GetAllServiceBreedsAsync(salonId, status, breedId, ct);
         return services;
     }
 
@@ -47,7 +47,7 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<GetServiceBreedDto> GetServiceBreed(int serviceBreedId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var breedservice = await service.GetServiceBreedAsync(salonId, serviceBreedId, ct);
+        var breedservice = await readerService.GetServiceBreedAsync(salonId, serviceBreedId, ct);
         return breedservice;
     }
 
@@ -57,7 +57,7 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<IActionResult> AddService(CreateServiceBreedDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var newServiceBreedId = await service.AddServiceBreedAsync(salonId, dto, ct);
+        var newServiceBreedId = await writerService.AddServiceBreedAsync(salonId, dto, ct);
         return Created($"api/ServiceBreed/{newServiceBreedId}", null);
     }
 
@@ -67,7 +67,7 @@ public class ServiceBreedController(IServiceBreedService service, ICurrentUserSe
     public async Task<IActionResult> UpdateService(int serviceBreedId, UpdateServiceBreedDto dto, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.UpdateServiceBreedAsync(salonId,serviceBreedId, dto, ct);
+        await writerService.UpdateServiceBreedAsync(salonId,serviceBreedId, dto, ct);
         return NoContent();
     }
 }

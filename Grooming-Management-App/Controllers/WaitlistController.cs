@@ -8,7 +8,7 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class WaitlistController(IWaitlistService service, ICurrentUserService currentUser) : ControllerBase
+public class WaitlistController(IWaitlistReaderService readerService,IWaitlistWriterService writerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = "Owner,Groomer")]    
@@ -16,7 +16,7 @@ public class WaitlistController(IWaitlistService service, ICurrentUserService cu
         
         var salonId = currentUser.SalonId;
         
-        var resultId = await service.AddToWaitlistAsync(salonId, dto, ct);
+        var resultId = await writerService.AddToWaitlistAsync(salonId, dto, ct);
         
         return Created($"api/Waitlist/{resultId}", null);
     }
@@ -26,7 +26,7 @@ public class WaitlistController(IWaitlistService service, ICurrentUserService cu
         
         var salonId = currentUser.SalonId;
         
-        await service.RemoveFromWaitlistAsync(salonId, id, ct);
+        await writerService.RemoveFromWaitlistAsync(salonId, id, ct);
         return NoContent();
 
         
@@ -36,7 +36,7 @@ public class WaitlistController(IWaitlistService service, ICurrentUserService cu
     public async Task<List<GetWaitlistDto>> GetAllWaitlistAsync(CancellationToken ct){
         
         var salonId = currentUser.SalonId;
-        return await service.GetAllWaitlistAsync(salonId, ct);
+        return await readerService.GetAllWaitlistAsync(salonId, ct);
 
         
     }

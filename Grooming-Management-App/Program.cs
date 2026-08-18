@@ -82,7 +82,9 @@ builder.Services.AddScoped<IBreedReaderService, BreedService>();
 
 builder.Services.AddScoped<ISalonService, SalonService>();
 
-builder.Services.AddScoped<IGroomerService, GroomerService>();
+builder.Services.AddScoped<IGroomerReaderService, GroomerService>();
+builder.Services.AddScoped<IGroomerWriterService, GroomerService>();
+
 
 builder.Services.AddScoped<IDogOwnerWriterService, DogOwnerService>();
 builder.Services.AddScoped<IDogOwnerReaderService, DogOwnerService>();
@@ -91,13 +93,19 @@ builder.Services.AddScoped<IDogOwnerReaderService, DogOwnerService>();
 builder.Services.AddScoped<IDogWriterService, DogService>();
 builder.Services.AddScoped<IDogReaderService, DogService>();
 
-builder.Services.AddScoped<IServiceService, ServiceService>();
+builder.Services.AddScoped<IServiceReaderService, ServiceService>();
+builder.Services.AddScoped<IServiceWriterService, ServiceService>();
 
-builder.Services.AddScoped<IServiceBreedService, ServiceBreedService>();
 
-builder.Services.AddScoped<IVisitService, VisitService>();
+builder.Services.AddScoped<IServiceBreedWriterService, ServiceBreedService>();
+builder.Services.AddScoped<IServiceBreedReaderService, ServiceBreedService>();
 
-builder.Services.AddScoped<IEarningsService, EarningsService>();
+
+builder.Services.AddScoped<IVisitReaderService, VisitService>();
+builder.Services.AddScoped<IVisitWriterService, VisitService>();
+
+
+builder.Services.AddScoped<IEarningsReaderService, EarningsService>();
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 
@@ -122,9 +130,13 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddHostedService<ReminderScheduler>();
 
-builder.Services.AddScoped<IGroomerScheduleService, GroomerScheduleService>();
+builder.Services.AddScoped<IGroomerScheduleReaderService, GroomerScheduleService>();
+builder.Services.AddScoped<IGroomerScheduleWriterService, GroomerScheduleService>();
 
-builder.Services.AddScoped<IGroomerTimeOffService, GroomerTimeOffService>();
+
+builder.Services.AddScoped<IGroomerTimeOffWriterService, GroomerTimeOffService>();
+builder.Services.AddScoped<IGroomerTimeOffReaderService, GroomerTimeOffService>();
+
 
 builder.Services.AddScoped<IAvailabilityReaderService, AvailabilityService>();
 

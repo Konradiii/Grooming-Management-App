@@ -8,7 +8,7 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EarningsController(IEarningsService service, ICurrentUserService currentUser) : ControllerBase
+public class EarningsController(IEarningsReaderService readerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet("GetByPeriod")]
     [Authorize(Roles = "Owner")]
@@ -16,7 +16,7 @@ public class EarningsController(IEarningsService service, ICurrentUserService cu
     public async Task<GetEarningForPeriodDto> GetEarningForPeriod(int? groomerId, DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var res = await service.GetEarningsForPeriodAsync(salonId, groomerId, dateFrom, dateTo, ct);
+        var res = await readerService.GetEarningsForPeriodAsync(salonId, groomerId, dateFrom, dateTo, ct);
         return res;
     }
     [HttpGet("GetByGroomer")]
@@ -25,7 +25,7 @@ public class EarningsController(IEarningsService service, ICurrentUserService cu
     public async Task<List<GetEarningsByGroomerDto>> GetEarningByGroomer(DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var res2 = await service.GetEarningsByGroomerAsync(salonId, dateFrom, dateTo, ct);
+        var res2 = await readerService.GetEarningsByGroomerAsync(salonId, dateFrom, dateTo, ct);
         return res2;
     }
     [HttpGet("GetByDay")]
@@ -34,7 +34,7 @@ public class EarningsController(IEarningsService service, ICurrentUserService cu
     public async Task<List<GetEarningsByDayDto>> GetEarningsByDay(DateTime dateFrom, DateTime dateTo, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var res2 = await service.GetEarningsByDayAsync(salonId, dateFrom, dateTo, ct);
+        var res2 = await readerService.GetEarningsByDayAsync(salonId, dateFrom, dateTo, ct);
         return res2;
     }
 

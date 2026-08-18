@@ -10,7 +10,7 @@ namespace Grooming_Management_App.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Tags("Services")]
-public class ServiceController(IServiceService service, ICurrentUserService currentUser) : ControllerBase
+public class ServiceController(IServiceWriterService writerService,IServiceReaderService readerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Owner,Groomer")]
@@ -18,7 +18,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<List<GetServiceDto>> GetAllServices(ActiveStatusEnum? status, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var services = await service.GetAllServicesAsync(salonId, status, ct);
+        var services = await readerService.GetAllServicesAsync(salonId, status, ct);
         return services;
     }
 
@@ -28,7 +28,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<GetServiceDto> GetService(int serviceId , CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var thatOneService = await service.GetServiceAsync(salonId, serviceId, ct);
+        var thatOneService = await readerService.GetServiceAsync(salonId, serviceId, ct);
         return thatOneService;
     }
 
@@ -38,7 +38,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<IActionResult> ActivateService(int serviceId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.ActivateServiceAsync(salonId, serviceId, ct);
+        await writerService.ActivateServiceAsync(salonId, serviceId, ct);
         return NoContent();
     }
     [HttpPut("{serviceId:int}/DeactivateService")]
@@ -47,7 +47,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<IActionResult> DeactivateService(int serviceId, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.DeactivateServiceAsync(salonId, serviceId, ct);
+        await writerService.DeactivateServiceAsync(salonId, serviceId, ct);
         return NoContent();
     }
 
@@ -57,7 +57,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<IActionResult> AddService(string newName, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        var newServiceId = await service.AddServiceAsync(salonId, newName, ct);
+        var newServiceId = await writerService.AddServiceAsync(salonId, newName, ct);
         return Created($"api/Service/{newServiceId}" ,null);
     }
     [HttpPut("{serviceId:int}/EditServiceName")]
@@ -66,7 +66,7 @@ public class ServiceController(IServiceService service, ICurrentUserService curr
     public async Task<IActionResult> EditNameService(int serviceId, string newName, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
-        await service.EditNameServiceAsync(salonId, serviceId, newName, ct);
+        await writerService.EditNameServiceAsync(salonId, serviceId, newName, ct);
         return NoContent();
     }
     

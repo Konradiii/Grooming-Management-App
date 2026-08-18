@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.ServiceServ;
 
-public class ServiceService(GroomingDbContext ctx) : IServiceService
+public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, IServiceWriterService
 {
     public async Task<List<GetServiceDto>> GetAllServicesAsync(int salonId, ActiveStatusEnum? status, CancellationToken ct)
     {

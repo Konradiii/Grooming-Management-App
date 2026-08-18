@@ -2,7 +2,7 @@
 
 namespace Grooming_Management_App.Services.EarningServ;
 
-public interface IEarningsService
+public interface IEarningsReaderService
 {
 
     Task<GetEarningForPeriodDto> GetEarningsForPeriodAsync(int salonId, int? groomerId, DateTime dateFrom, DateTime dateTo, CancellationToken ct);
