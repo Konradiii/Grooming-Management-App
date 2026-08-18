@@ -47,6 +47,16 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
         
         builder.Property(s => s.SubscriptionValidUntil)
             .IsRequired(false);
+        
+        builder.Property(s => s.ProviderCustomerId)
+            .IsRequired(false)
+            .HasMaxLength(100);
+
+        builder.Property(s => s.ProviderSubscriptionId)
+            .IsRequired(false)
+            .HasMaxLength(100);
+
+        builder.HasIndex(s => s.ProviderCustomerId);
 
     }
     

@@ -17,6 +17,9 @@ public class Salon
     public DateTime? SubscriptionValidUntil { get; set; }
     public SubscriptionStatusEnum SubscriptionStatus { get; set; }
     
+    public string? ProviderCustomerId { get; set; }
+    public string? ProviderSubscriptionId { get; set; }
+    
     public List<User> Users { get; set; } = new();
     public List<Groomer> Groomers { get; set; } = new();
     public List<DogOwner> DogOwners { get; set; } = new();
@@ -29,6 +32,7 @@ public class Salon
     public List<Notification> Notifications { get; set; } = new();
     public List<GroomerSchedule> GroomerSchedules { get; set; } = new();
     public List<GroomerTimeOff> GroomerTimeOffs { get; set; } = new();
+    public List<Payment> Payments { get; set; } = new();
 
 
 

@@ -29,6 +29,7 @@ public class GroomingDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<GroomerSchedule> GroomerSchedules { get; set; }
     public DbSet<GroomerTimeOff> GroomerTimeOffs { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 
 
     
