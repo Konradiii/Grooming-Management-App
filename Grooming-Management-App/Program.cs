@@ -19,6 +19,7 @@ using Grooming_Management_App.Services.PasswordHasherServ;
 using Grooming_Management_App.Services.SalonServ;
 using Grooming_Management_App.Services.ServiceBreedServ;
 using Grooming_Management_App.Services.ServiceServ;
+using Grooming_Management_App.Services.SubscriptionServ;
 using Grooming_Management_App.Services.TokenServ;
 using Grooming_Management_App.Services.VisitServ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -138,8 +139,9 @@ builder.Services.AddScoped<IGroomerScheduleWriterService, GroomerScheduleService
 builder.Services.AddScoped<IGroomerTimeOffWriterService, GroomerTimeOffService>();
 builder.Services.AddScoped<IGroomerTimeOffReaderService, GroomerTimeOffService>();
 
-
 builder.Services.AddScoped<IAvailabilityReaderService, AvailabilityService>();
+
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

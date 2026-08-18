@@ -14,7 +14,7 @@ public class Salon
     public int MinBookingHoursAhead { get; set; }
     public int MaxBookingDaysAhead { get; set; }
     
-    public DateTime? SubscriptionValidUntil { get; set; }
+    public DateOnly? SubscriptionValidUntil { get; set; }
     public SubscriptionStatusEnum SubscriptionStatus { get; set; }
     
     public string? ProviderCustomerId { get; set; }
