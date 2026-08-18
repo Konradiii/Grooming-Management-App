@@ -131,6 +131,7 @@ builder.Services.AddScoped<ISmsService, MockSmsService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddHostedService<ReminderScheduler>();
+builder.Services.AddHostedService<SubscriptionScheduler>();
 
 builder.Services.AddScoped<IGroomerScheduleReaderService, GroomerScheduleService>();
 builder.Services.AddScoped<IGroomerScheduleWriterService, GroomerScheduleService>();
