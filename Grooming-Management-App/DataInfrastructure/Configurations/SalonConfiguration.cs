@@ -41,7 +41,13 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
         builder.Property(s => s.MaxBookingDaysAhead)
             .IsRequired()
             .HasDefaultValue(90);
+
+        builder.Property(s => s.SubscriptionStatus)
+            .IsRequired();
         
+        builder.Property(s => s.SubscriptionValidUntil)
+            .IsRequired(false);
+
     }
     
 }

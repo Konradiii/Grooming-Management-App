@@ -1,4 +1,6 @@
-﻿namespace Grooming_Management_App.Models;
+﻿using Grooming_Management_App.Enums;
+
+namespace Grooming_Management_App.Models;
 
 public class Salon
 {
@@ -11,6 +13,9 @@ public class Salon
     public string? City { get; set; }
     public int MinBookingHoursAhead { get; set; }
     public int MaxBookingDaysAhead { get; set; }
+    
+    public DateTime? SubscriptionValidUntil { get; set; }
+    public SubscriptionStatusEnum SubscriptionStatus { get; set; }
     
     public List<User> Users { get; set; } = new();
     public List<Groomer> Groomers { get; set; } = new();
