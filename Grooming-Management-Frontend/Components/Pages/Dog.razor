@@ -1,11 +1,11 @@
-﻿@page "/wlasciciele"
+﻿@page "/psy"
 @rendermode InteractiveServer
 @inherits AuthenticatedPage
-@using Grooming_Management_App.DTOs.DogOwnerDTO
+@using Grooming_Management_App.DTOs.DogDTO
 @inject IHttpClientFactory HttpClientFactory
 
 
-<MudText Typo="Typo.h5" Class="mb-4">Właściciele</MudText>
+<MudText Typo="Typo.h5" Class="mb-4">Psy</MudText>
 
 @if (isLoading)
 {
@@ -17,51 +17,47 @@ else if (errorMessage != null)
 }
 else
 {
-    <MudTable Items="owners" Hover="true" Striped="true">
+    <MudTable Items="dogs" Hover="true" Striped="true">
         <HeaderContent>
             <MudTh>Imię</MudTh>
-            <MudTh>Nazwisko</MudTh>
-            <MudTh>Telefon</MudTh>
-            <MudTh>Psy</MudTh>
+            <MudTh>Rasa</MudTh>
+            <MudTh>Właściciel</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd>@context.FirstName</MudTd>
-            <MudTd>@context.LastName</MudTd>
-            <MudTd>@context.Phone</MudTd>
-            <MudTd>@context.DogsCount</MudTd>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.BreedName</MudTd>
+            <MudTd>@context.DogOwnerFullName</MudTd>
         </RowTemplate>
+        
     </MudTable>
 }
 
-@code {
-    private List<GetDogOwnerDto> owners = new();
+@code
+{
+
+    private List<GetDogDto> dogs = new();
     private bool isLoading = true;
     private string? errorMessage;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        
-        
 
         if (firstRender)
         {
-            Console.WriteLine($"Token: {TokenStore.AccessToken ?? "BRAK"}");
-            
-            await LoadOwnersAsync();
+            await LoadDogsAsync();
             StateHasChanged();
         }
     }
-
-    private async Task LoadOwnersAsync()
+    private async Task LoadDogsAsync()
     {
         try
         {
             var client = HttpClientFactory.CreateClient("Api");
             TokenStore.ApplyTo(client);
 
-            var result = await client.GetFromJsonAsync<List<GetDogOwnerDto>>("api/DogOwner");
-            owners = result ?? new();
+            var result = await client.GetFromJsonAsync<List<GetDogDto>>("api/Dog");
+            dogs = result ?? new();
         }
         catch (Exception ex)
         {
@@ -71,5 +67,9 @@ else
         {
             isLoading = false;
         }
+        
+        
     }
+
+
 }
