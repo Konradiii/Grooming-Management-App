@@ -1,0 +1,73 @@
+﻿@page "/wlasciciele"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.DogOwner
+@inject IHttpClientFactory HttpClientFactory
+
+
+<MudText Typo="Typo.h5" Class="mb-4">Właściciele</MudText>
+
+@if (isLoading)
+{
+    <MudProgressCircilar Indeterminate="true" />
+}
+else if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+}
+else
+{
+    <MudTable Items="owners" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Imię</MudTh>
+            <MudTh>Nazwisko</MudTh>
+            <MudTh>Telefon</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.FirstName</MudTd>
+            <MudTd>@context.LastName</MudTd>
+            <MudTd>@context.Phone</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<GetDogOwnerDto> owners = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        
+        
+
+        if (firstRender)
+        {
+            Console.WriteLine($"Token: {TokenStore.AccessToken ?? "BRAK"}");
+            
+            await LoadOwnersAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadOwnersAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Api");
+            TokenStore.ApplyTo(client);
+
+            var result = await client.GetFromJsonAsync<List<GetDogOwnerDto>>("api/DogOwner");
+            owners = result ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

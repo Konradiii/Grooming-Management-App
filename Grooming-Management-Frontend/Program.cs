@@ -11,13 +11,12 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 builder.Services.AddScoped<TokenStore>();
-builder.Services.AddScoped<AuthTokenHandler>();
 builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddHttpClient("Api", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"]!);
-}).AddHttpMessageHandler<AuthTokenHandler>();
+});
 
 var app = builder.Build();
 

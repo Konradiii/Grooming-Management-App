@@ -35,4 +35,13 @@ public class TokenStore(ILocalStorageService localStorage)
         await localStorage.RemoveItemAsync(AccessTokenKey);
         await localStorage.RemoveItemAsync(RefreshTokenKey);
     }
+    
+    public void ApplyTo(HttpClient client)
+    {
+        if (AccessToken != null)
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
+        }
+    }
 }
