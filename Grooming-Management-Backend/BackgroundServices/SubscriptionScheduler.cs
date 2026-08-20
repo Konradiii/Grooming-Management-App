@@ -4,7 +4,7 @@ namespace Grooming_Management_App.BackgroundServices;
 
 public class SubscriptionScheduler(IServiceScopeFactory scopeFactory) : BackgroundService
 {
-    private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
+    private readonly TimeSpan _interval = TimeSpan.FromHours(24);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

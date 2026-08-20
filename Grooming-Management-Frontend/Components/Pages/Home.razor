@@ -1,0 +1,15 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using Grooming_Management_Frontend.Services
+@inject TokenStore TokenStore
+
+<MudText Typo="Typo.h4" Class="mb-4">Grooming Management</MudText>
+
+@if (TokenStore.IsLoggedIn)
+{
+    <MudAlert Severity="Severity.Success">Zalogowano</MudAlert>
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Niezalogowany</MudAlert>
+}

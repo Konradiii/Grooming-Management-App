@@ -1,0 +1,83 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@using Grooming_Management_App.DTOs.AuthDTO
+@using Grooming_Management_Frontend.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject TokenStore TokenStore
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Class="pa-8">
+        <MudText Typo="Typo.h5" Class="mb-6">Logowanie</MudText>
+
+        <MudTextField @bind-Value="email"
+                      Label="E-mail"
+                      Variant="Variant.Outlined"
+                      Class="mb-4" />
+
+        <MudTextField @bind-Value="password"
+                      Label="Hasło"
+                      InputType="InputType.Password"
+                      Variant="Variant.Outlined"
+                      Class="mb-4" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   FullWidth="true"
+                   Disabled="isLoading"
+                   OnClick="LoginAsync">
+            @(isLoading ? "Logowanie..." : "Zaloguj")
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task LoginAsync()
+    {
+        errorMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Api");
+            var dto = new LoginDto { Email = email, Password = password };
+
+            var response = await client.PostAsJsonAsync("api/Auth/Login", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = "Nieprawidłowy e-mail lub hasło";
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+
+            if (result == null)
+            {
+                errorMessage = "Nieprawidłowa odpowiedź serwera";
+                return;
+            }
+
+            TokenStore.SetTokens(result.AccessToken, result.RefreshToken);
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd połączenia: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
