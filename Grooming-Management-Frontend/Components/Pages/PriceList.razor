@@ -1,0 +1,194 @@
+﻿@page "/cennik"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.ServiceBreedDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h5" Class="mb-4">Cennik</MudText>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary"
+           StartIcon="@Icons.Material.Filled.Add"
+           OnClick="OpenAddDialog" Class="mb-4">
+    Dodaj pozycję cennika
+</MudButton>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" md="4">
+        <MudTextField @bind-Value="breedFilter"
+                      Label="Rasa"
+                      Placeholder="Wpisz nazwę rasy"
+                      Variant="Variant.Outlined"
+                      Immediate="true"
+                      Clearable="true" />
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudTextField @bind-Value="serviceFilter"
+                      Label="Usługa"
+                      Placeholder="Wpisz nazwę usługi"
+                      Variant="Variant.Outlined"
+                      Immediate="true"
+                      Clearable="true" />
+    </MudItem>
+    <MudItem xs="12" md="4">
+        <MudSelect T="ActiveStatusEnum?" @bind-Value="statusFilter"
+                   Label="Status" Placeholder="Wszystkie"
+                   Variant="Variant.Outlined" Clearable="true">
+            <MudSelectItem T="ActiveStatusEnum?" Value="ActiveStatusEnum.Active">Aktywne</MudSelectItem>
+            <MudSelectItem T="ActiveStatusEnum?" Value="ActiveStatusEnum.Inactive">Nieaktywne</MudSelectItem>
+        </MudSelect>
+    </MudItem>
+</MudGrid>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+}
+else
+{
+    <MudTable Items="FilteredItems" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Usługa</MudTh>
+            <MudTh>Rasa</MudTh>
+            <MudTh>Cena</MudTh>
+            <MudTh>Czas</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh Style="width: 60px;"  />
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.ServiceName</MudTd>
+            <MudTd>@context.BreedName</MudTd>
+            <MudTd>@context.Price.ToString("0.00") zł</MudTd>
+            <MudTd>@context.Duration min</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(context.Status == ActiveStatusEnum.Active ? Color.Success : Color.Default)">
+                    @(context.Status == ActiveStatusEnum.Active ? "Aktywna" : "Nieaktywna")
+                </MudChip>
+            </MudTd>
+            <MudTd Style="width: 60px;">
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomLeft">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))">
+                        Edytuj
+                    </MudMenuItem>
+                    @if (context.Status == ActiveStatusEnum.Active)
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="@(() => ToggleStatusAsync(context, false))">
+                            Dezaktywuj
+                        </MudMenuItem>
+                    }
+                    else
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => ToggleStatusAsync(context, true))">
+                            Aktywuj
+                        </MudMenuItem>
+                    }
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <MudText Typo="Typo.caption" Class="mt-2">
+        Pozycji: @FilteredItems.Count() z @items.Count
+    </MudText>
+}
+
+@code {
+    private List<GetServiceBreedDto> items = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private string? breedFilter;
+    private string? serviceFilter;
+    private ActiveStatusEnum? statusFilter;
+
+    private IEnumerable<GetServiceBreedDto> FilteredItems =>
+        items.Where(i =>
+            (string.IsNullOrWhiteSpace(breedFilter) ||
+             i.BreedName.Contains(breedFilter, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(serviceFilter) ||
+             i.ServiceName.Contains(serviceFilter, StringComparison.OrdinalIgnoreCase)) &&
+            (statusFilter == null || i.Status == statusFilter));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadItemsAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadItemsAsync()
+    {
+        try
+        {
+            var result = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds");
+            items = result ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddServiceBreedDialog>("Nowa pozycja cennika", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadItemsAsync();
+            StateHasChanged();
+        }
+    }
+    
+    private async Task OpenEditDialog(GetServiceBreedDto item)
+    {
+        var parameters = new DialogParameters<EditServiceBreedDialog>
+        {
+            { x => x.Item, item }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditServiceBreedDialog>("Edycja pozycji", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadItemsAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleStatusAsync(GetServiceBreedDto item, bool activate)
+    {
+        var action = activate ? "ActivateServiceBreed" : "DeactivateServiceBreed";
+        var response = await Api.PutAsync<object?>($"api/ServiceBreed/{item.Id}/{action}", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadItemsAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+}

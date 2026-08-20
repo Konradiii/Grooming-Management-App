@@ -70,4 +70,14 @@ public class ServiceBreedController(IServiceBreedReaderService readerService, IS
         await writerService.UpdateServiceBreedAsync(salonId,serviceBreedId, dto, ct);
         return NoContent();
     }
+    
+    [HttpPost("with-service")]
+    [Authorize(Roles = "Owner")]
+    [EndpointSummary("Tworzy jednocześnie nową usługę i pozycję cennika dla rasy")]
+    public async Task<IActionResult> CreateServiceBreedWithService(CreateServiceBreedWithServiceDto dto, CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var newId = await writerService.CreateServiceBreedWithServiceAsync(salonId, dto, ct);
+        return Created($"api/ServiceBreed/{newId}", new { id = newId });
+    }
 }

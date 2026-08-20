@@ -1,5 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Grooming_Management_App.DTOs.AuthDTO;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +9,12 @@ namespace Grooming_Management_Frontend.Services;
 
 public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
     public async Task<T?> GetAsync<T>(string url)
     {
         var response = await SendAsync(() =>
@@ -16,7 +24,10 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
             return client.GetAsync(url);
         });
 
-        return await response.Content.ReadFromJsonAsync<T>();
+        if (!response.IsSuccessStatusCode)
+            return default;
+
+        return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
     }
 
     public async Task<HttpResponseMessage> PostAsync<T>(string url, T body)
@@ -25,8 +36,44 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
         {
             var client = factory.CreateClient("Api");
             tokenStore.ApplyTo(client);
-            return client.PostAsJsonAsync(url, body);
+            return client.PostAsJsonAsync(url, body, JsonOptions);
         });
+    }
+
+    public async Task<HttpResponseMessage> PutAsync<T>(string url, T body)
+    {
+        return await SendAsync(() =>
+        {
+            var client = factory.CreateClient("Api");
+            tokenStore.ApplyTo(client);
+            return client.PutAsJsonAsync(url, body, JsonOptions);
+        });
+    }
+
+    public async Task<HttpResponseMessage> DeleteAsync(string url)
+    {
+        return await SendAsync(() =>
+        {
+            var client = factory.CreateClient("Api");
+            tokenStore.ApplyTo(client);
+            return client.DeleteAsync(url);
+        });
+    }
+
+    public static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            if (!string.IsNullOrWhiteSpace(problem?.Title))
+                return problem.Title;
+        }
+        catch
+        {
+            // odpowiedź nie jest ProblemDetails
+        }
+
+        return "Wystąpił błąd. Spróbuj ponownie.";
     }
 
     private async Task<HttpResponseMessage> SendAsync(Func<Task<HttpResponseMessage>> send)
@@ -60,26 +107,11 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
             return false;
         }
 
-        var tokens = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+        var tokens = await response.Content.ReadFromJsonAsync<LoginResponseDto>(JsonOptions);
         if (tokens == null)
             return false;
 
         await tokenStore.SetTokensAsync(tokens.AccessToken, tokens.RefreshToken);
         return true;
-    }
-    public static async Task<string> ReadErrorAsync(HttpResponseMessage response)
-    {
-        try
-        {
-            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-            if (!string.IsNullOrWhiteSpace(problem?.Title))
-                return problem.Title;
-        }
-        catch
-        {
-            // odpowiedź nie jest ProblemDetails — spadamy do komunikatu ogólnego
-        }
-
-        return "Wystąpił błąd. Spróbuj ponownie.";
     }
 }

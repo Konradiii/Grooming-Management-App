@@ -153,4 +153,45 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
         
         await ctx.SaveChangesAsync(ct);
     }
+    
+    public async Task<int> CreateServiceBreedWithServiceAsync(int salonId, CreateServiceBreedWithServiceDto dto, CancellationToken ct)
+    {
+        var serviceExists = await ctx.Services
+            .AnyAsync(s => s.Name == dto.ServiceName && s.SalonId == salonId, ct);
+
+        if (serviceExists)
+        {
+            throw new ConflictException("Service with this name already exists");
+        }
+
+        var breedExists = await ctx.Breeds.AnyAsync(b => b.Id == dto.BreedId, ct);
+
+        if (!breedExists)
+        {
+            throw new NotFoundException("Breed not found");
+        }
+
+        var service = new Service
+        {
+            Name = dto.ServiceName,
+            Status = ActiveStatusEnum.Active,
+            SalonId = salonId
+        };
+
+        var serviceBreed = new ServiceBreed
+        {
+            BreedId = dto.BreedId,
+            Price = dto.Price,
+            Duration = dto.Duration,
+            Status = ActiveStatusEnum.Active,
+            SalonId = salonId
+        };
+
+        service.ServiceBreeds.Add(serviceBreed);
+
+        ctx.Services.Add(service);
+        await ctx.SaveChangesAsync(ct);
+
+        return serviceBreed.Id;
+    }
 }

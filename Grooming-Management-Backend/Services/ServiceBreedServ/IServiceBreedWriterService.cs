@@ -9,4 +9,5 @@ public interface IServiceBreedWriterService
     Task DeactivateServiceBreedAsync(int salonId, int serviceBreedId, CancellationToken ct);
     Task<int> AddServiceBreedAsync(int salonId, CreateServiceBreedDto dto, CancellationToken ct);
     Task UpdateServiceBreedAsync(int salonId, int serviceBreedId, UpdateServiceBreedDto dto, CancellationToken ct);
+    Task<int> CreateServiceBreedWithServiceAsync(int salonId, CreateServiceBreedWithServiceDto dto, CancellationToken ct);
 }

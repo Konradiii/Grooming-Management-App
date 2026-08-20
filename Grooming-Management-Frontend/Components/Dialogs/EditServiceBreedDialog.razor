@@ -1,0 +1,84 @@
+﻿@using Grooming_Management_App.DTOs.ServiceBreedDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1" Class="mb-1">@Item.ServiceName</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">@Item.BreedName</MudText>
+
+        <MudNumericField @bind-Value="price" Label="Cena (zł)" Variant="Variant.Outlined" Min="0" Class="mb-3" />
+        <MudNumericField @bind-Value="duration" Label="Czas trwania (min)" Variant="Variant.Outlined" Min="0" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public GetServiceBreedDto Item { get; set; } = default!;
+
+    private decimal price;
+    private int duration;
+    private string? errorMessage;
+    private bool isSaving;
+
+    protected override void OnInitialized()
+    {
+        price = Item.Price;
+        duration = Item.Duration;
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (price <= 0)
+        {
+            errorMessage = "Podaj cenę";
+            return;
+        }
+
+        if (duration <= 0)
+        {
+            errorMessage = "Podaj czas trwania";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new UpdateServiceBreedDto { Price = price, Duration = duration };
+            var response = await Api.PutAsync($"api/ServiceBreed/{Item.Id}", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
