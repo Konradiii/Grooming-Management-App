@@ -12,6 +12,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMudServices();
 builder.Services.AddScoped<TokenStore>();
 builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<ApiClient>();
 
 builder.Services.AddHttpClient("Api", client =>
 {

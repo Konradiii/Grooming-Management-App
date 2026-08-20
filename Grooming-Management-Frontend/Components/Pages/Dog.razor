@@ -2,7 +2,8 @@
 @rendermode InteractiveServer
 @inherits AuthenticatedPage
 @using Grooming_Management_App.DTOs.DogDTO
-@inject IHttpClientFactory HttpClientFactory
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
 
 
 <MudText Typo="Typo.h5" Class="mb-4">Psy</MudText>
@@ -53,10 +54,7 @@ else
     {
         try
         {
-            var client = HttpClientFactory.CreateClient("Api");
-            TokenStore.ApplyTo(client);
-
-            var result = await client.GetFromJsonAsync<List<GetDogDto>>("api/Dog");
+            var result = await Api.GetAsync<List<GetDogDto>>("api/Dog");
             dogs = result ?? new();
         }
         catch (Exception ex)
@@ -67,9 +65,6 @@ else
         {
             isLoading = false;
         }
-        
-        
     }
-
 
 }
