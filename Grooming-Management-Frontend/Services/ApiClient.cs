@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using Grooming_Management_App.DTOs.AuthDTO;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Grooming_Management_Frontend.Services;
 
@@ -65,5 +66,20 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
 
         await tokenStore.SetTokensAsync(tokens.AccessToken, tokens.RefreshToken);
         return true;
+    }
+    public static async Task<string> ReadErrorAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            if (!string.IsNullOrWhiteSpace(problem?.Title))
+                return problem.Title;
+        }
+        catch
+        {
+            // odpowiedź nie jest ProblemDetails — spadamy do komunikatu ogólnego
+        }
+
+        return "Wystąpił błąd. Spróbuj ponownie.";
     }
 }

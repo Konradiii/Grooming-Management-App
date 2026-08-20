@@ -1,0 +1,84 @@
+﻿@using Grooming_Management_App.DTOs.DogOwner
+@using Grooming_Management_App.DTOs.DogOwnerDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="firstName" Label="Imię" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="lastName" Label="Nazwisko" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="phone" Label="Telefon" Variant="Variant.Outlined" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string firstName = string.Empty;
+    private string lastName = string.Empty;
+    private string phone = string.Empty;
+
+    private string? errorMessage;
+    private bool isSaving;
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+        {
+            errorMessage = "Podaj imię i nazwisko";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            errorMessage = "Podaj numer telefonu";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new CreateDogOwnerDto
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                Phone = phone
+            };
+
+            var response = await Api.PostAsync("api/DogOwner", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

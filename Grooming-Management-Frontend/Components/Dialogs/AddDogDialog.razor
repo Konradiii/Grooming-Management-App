@@ -179,7 +179,7 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                errorMessage = await response.Content.ReadAsStringAsync();
+                errorMessage = await ApiClient.ReadErrorAsync(response);
                 return;
             }
 
