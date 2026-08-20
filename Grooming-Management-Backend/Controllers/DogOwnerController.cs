@@ -1,4 +1,5 @@
 ﻿using Grooming_Management_App.DTOs.DogOwner;
+using Grooming_Management_App.DTOs.DogOwnerDTO;
 using Grooming_Management_App.Services.CurrentUserServ;
 using Grooming_Management_App.Services.DogOwner;
 using Microsoft.AspNetCore.Authorization;

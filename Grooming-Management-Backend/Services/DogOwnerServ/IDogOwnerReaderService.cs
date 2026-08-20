@@ -1,4 +1,4 @@
-﻿using Grooming_Management_App.DTOs.DogOwner;
+﻿using Grooming_Management_App.DTOs.DogOwnerDTO;
 
 namespace Grooming_Management_App.Services.DogOwner;
 

@@ -1,4 +1,4 @@
-﻿namespace Grooming_Management_App.DTOs.DogOwner;
+﻿namespace Grooming_Management_App.DTOs.DogOwnerDTO;
 
 public class GetDogOwnerDto
 {
@@ -6,4 +6,6 @@ public class GetDogOwnerDto
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public string Phone { get; set; }
+    
+    public int DogsCount { get; set; }
 }

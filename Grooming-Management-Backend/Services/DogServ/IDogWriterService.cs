@@ -10,6 +10,8 @@ public interface IDogWriterService
     
     Task UpdateDogAsync(int salonId, int dogId, UpdateDogDto dto, CancellationToken ct );
 
+    Task<int> CreateDogWithOwnerAsync(int salonId, CreateDogWithOwnerDto dto, CancellationToken ct);
+
 
 
 

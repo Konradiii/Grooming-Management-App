@@ -1,5 +1,6 @@
 ﻿using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.DTOs.DogOwner;
+using Grooming_Management_App.DTOs.DogOwnerDTO;
 using Grooming_Management_App.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +43,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
                 FirstName = e.FirstName,
                 LastName = e.LastName,
                 Phone = e.Phone,
+                DogsCount = e.Dogs.Count()
             }).ToListAsync(ct);
 
     }

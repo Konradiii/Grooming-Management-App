@@ -103,8 +103,43 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
         dogExists.DogOwnerId = dto.DogOwnerId;
         
         await ctx.SaveChangesAsync(ct);
+    }
 
+    public async Task<int> CreateDogWithOwnerAsync(int salonId, CreateDogWithOwnerDto dto, CancellationToken ct)
+    {
+        var ownerExists = await ctx.DogOwners
+            .AnyAsync(e => e.Phone == dto.Phone && e.SalonId == salonId, ct);
 
+        if (ownerExists)
+        {
+            throw new ConflictException("DogOwner with this phone number already exists");
+        }
+        
+        var breedExists = await ctx.Breeds.AnyAsync(b => b.Id == dto.BreedId, ct);
+        if (!breedExists) throw new NotFoundException("Breed not found");
+        
+        
+        var owner = new Models.DogOwner
+        {
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            Phone = dto.Phone,
+            SalonId = salonId
+        };
 
+        owner.Dogs.Add(new Dog
+        {
+            Name = dto.Name,
+            AgeInMonths = dto.AgeInMonths,
+            BreedId = dto.BreedId,
+            Notes = dto.Notes,
+            SalonId = salonId
+        });
+
+        ctx.DogOwners.Add(owner);
+        await ctx.SaveChangesAsync(ct);
+
+        return owner.Id;
+        
     }
 }

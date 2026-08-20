@@ -52,4 +52,14 @@ public class DogController(IDogReaderService readerService,IDogWriterService wri
         return NoContent();
     }
     
+    [HttpPost("with-owner")]
+    [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Tworzy jednocześnie nowego właściciela i jego psa")]
+    public async Task<IActionResult> CreateDogWithOwner(CreateDogWithOwnerDto dto, CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var newOwnerId = await writerService.CreateDogWithOwnerAsync(salonId, dto, ct);
+        return Created($"api/DogOwner/{newOwnerId}", new { id = newOwnerId });
+    }
+    
 }
