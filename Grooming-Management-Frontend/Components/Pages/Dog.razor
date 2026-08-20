@@ -2,8 +2,16 @@
 @rendermode InteractiveServer
 @inherits AuthenticatedPage
 @using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_Frontend.Components.Dialogs
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
+@inject IDialogService DialogService
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" 
+           StartIcon="@Icons.Material.Filled.Add" 
+           OnClick="OpenAddDialog" Class="mb-4">
+    Dodaj psa
+</MudButton>
 
 
 <MudText Typo="Typo.h5" Class="mb-4">Psy</MudText>
@@ -64,6 +72,19 @@ else
         finally
         {
             isLoading = false;
+        }
+    }
+    
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddDogDialog>("Nowy pies", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadDogsAsync();
+            StateHasChanged();
         }
     }
 
