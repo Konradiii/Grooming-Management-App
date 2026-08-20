@@ -1,5 +1,6 @@
 ﻿@page "/login"
 @rendermode InteractiveServer
+@inherits AuthenticatedPage
 @using Grooming_Management_App.DTOs.AuthDTO
 @using Grooming_Management_Frontend.Services
 @inject IHttpClientFactory HttpClientFactory
@@ -68,7 +69,7 @@
                 return;
             }
 
-            TokenStore.SetTokens(result.AccessToken, result.RefreshToken);
+            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken);
             Navigation.NavigateTo("/");
         }
         catch (Exception ex)

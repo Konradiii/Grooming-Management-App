@@ -1,3 +1,4 @@
+using Blazored.LocalStorage;
 using Grooming_Management_Frontend.Components;
 using Grooming_Management_Frontend.Services;
 using MudBlazor.Services;
@@ -11,6 +12,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMudServices();
 builder.Services.AddScoped<TokenStore>();
 builder.Services.AddScoped<AuthTokenHandler>();
+builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddHttpClient("Api", client =>
 {

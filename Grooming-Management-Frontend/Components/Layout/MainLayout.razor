@@ -1,4 +1,6 @@
-﻿@inherits LayoutComponentBase
+﻿@using Grooming_Management_Frontend.Services
+@inherits LayoutComponentBase
+
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -22,8 +24,19 @@
     </MudMainContent>
 </MudLayout>
 
+@inject TokenStore TokenStore
+
 @code {
     private bool drawerOpen = true;
 
     private void ToggleDrawer() => drawerOpen = !drawerOpen;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !TokenStore.IsLoggedIn)
+        {
+            await TokenStore.LoadFromStorageAsync();
+            StateHasChanged();
+        }
+    }
 }
