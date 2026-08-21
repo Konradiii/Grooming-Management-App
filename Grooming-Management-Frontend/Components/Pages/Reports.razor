@@ -1,0 +1,170 @@
+@page "/raporty"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.EarningDTO
+@using Grooming_Management_Frontend.Services
+@using Radzen.Documents.Spreadsheet
+@inject ApiClient Api
+
+<MudText Typo="Typo.h5" Class="mb-4">Raporty</MudText>
+
+<MudGrid Class="mb-4">
+    <MudItem xs="12" sm="4">
+        <MudDatePicker @bind-Date="dateFrom" Label="Od" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" sm="4">
+        <MudDatePicker @bind-Date="dateTo" Label="Do" Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="12" sm="4" Class="d-flex align-center">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="isLoading" OnClick="LoadDataAsync">
+            @(isLoading ? "Ładowanie..." : "Pokaż")
+        </MudButton>
+    </MudItem>
+</MudGrid>
+
+<div class="d-flex gap-2 mb-4">
+    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => SetRange(0))">Ten miesiąc</MudButton>
+    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => SetRange(-1))">Poprzedni miesiąc</MudButton>
+</div>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.body2">Przychód</MudText>
+                <MudText Typo="Typo.h4">@TotalRevenue.ToString("0.00") zł</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.body2">Wynagrodzenia</MudText>
+                <MudText Typo="Typo.h4">@TotalSettlement.ToString("0.00") zł</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.body2">Zostaje</MudText>
+                <MudText Typo="Typo.h4">@((TotalRevenue - TotalSettlement).ToString("0.00")) zł</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.h6" Class="mb-3">Rozliczenie pracowników</MudText>
+
+    @if (!settlements.Any())
+    {
+        <MudAlert Severity="Severity.Info">Brak ukończonych wizyt w tym okresie</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="settlements" Hover="true" Striped="true" Class="mb-6">
+            <HeaderContent>
+                <MudTh>Groomer</MudTh>
+                <MudTh>Wizyt</MudTh>
+                <MudTh>Przychód</MudTh>
+                <MudTh>Wynagrodzenie</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.GroomerFullName</MudTd>
+                <MudTd>@context.VisitsCount</MudTd>
+                <MudTd>@context.TotalRevenue.ToString("0.00") zł</MudTd>
+                <MudTd>@context.Settlement.ToString("0.00") zł</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+
+    @if (byDay.Any())
+    {
+        <MudText Typo="Typo.h6" Class="mb-3">Przychód dzienny</MudText>
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudChart ChartType="ChartType.Bar"
+                      ChartSeries="Series"
+                      XAxisLabels="ChartLabels"
+                      Width="100%" Height="350px" />
+        </MudPaper>
+    }
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    private DateTime? dateFrom = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime? dateTo = DateTime.Today;
+
+    private List<GetGroomerSettlementDto> settlements = new();
+    private List<GetEarningsByDayDto> byDay = new();
+
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private decimal TotalRevenue => settlements.Sum(s => s.TotalRevenue);
+    private decimal TotalSettlement => settlements.Sum(s => s.Settlement);
+
+    private List<MudBlazor.ChartSeries<double>> Series => new()
+    {
+        new MudBlazor.ChartSeries<double>
+        {
+            Name = "Przychód",
+            Data = byDay.Select(d => (double)d.Earnings).ToArray()
+        }
+    };
+
+    private string[] ChartLabels => byDay.Select(d => d.Day.ToString("dd.MM")).ToArray();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void SetRange(int monthOffset)
+    {
+        var target = DateTime.Today.AddMonths(monthOffset);
+        dateFrom = new DateTime(target.Year, target.Month, 1);
+        dateTo = monthOffset == 0
+            ? DateTime.Today
+            : dateFrom.Value.AddMonths(1).AddDays(-1);
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (dateFrom == null || dateTo == null) return;
+
+        errorMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var from = dateFrom.Value.Date.ToString("yyyy-MM-ddTHH:mm:ss");
+            var to = dateTo.Value.Date.AddDays(1).AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ss");
+
+            settlements = await Api.GetAsync<List<GetGroomerSettlementDto>>(
+                $"api/Earnings/GetGroomerSettlements?dateFrom={from}&dateTo={to}") ?? new();
+
+            byDay = await Api.GetAsync<List<GetEarningsByDayDto>>(
+                $"api/Earnings/GetByDay?dateFrom={from}&dateTo={to}") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -11,7 +11,7 @@
 @inject IDialogService DialogService
 @inject NavigationManager Navigation
 
-<MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+<MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
            OnClick="@(() => Navigation.NavigateTo("/groomerzy"))" Class="mb-4">
     Wróć do listy
 </MudButton>
@@ -29,7 +29,7 @@ else
     <MudText Typo="Typo.h5" Class="mb-1">@groomer.FirstName @groomer.LastName</MudText>
     <MudChip T="string" Size="Size.Small" Class="mb-4"
              Color="@(groomer.ActiveStatus == ActiveStatusEnum.Active ? Color.Success : Color.Default)">
-        @(groomer.ActiveStatus == ActiveStatusEnum.Active ? "Aktywny" : "Nieaktywny")
+        @EnumLabels.ActiveStatus(groomer.ActiveStatus)
     </MudChip>
 
     <MudTabs Elevation="1" Rounded="true" ApplyEffectsToContainer="true">
@@ -38,7 +38,7 @@ else
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
                        OnClick="OpenAddScheduleDialog" Class="mt-4 mb-4">
-                Dodaj przedział
+                Dodaj godziny pracy
             </MudButton>
 
             @if (!schedules.Any())
@@ -67,11 +67,11 @@ else
             }
         </MudTabPanel>
 
-        <MudTabPanel Text="Zarezerwuj wolny czas">
+        <MudTabPanel Text="Blokady czasu">
             <MudButton Variant="Variant.Filled" Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="OpenAddScheduleDialog" Class="mt-4 mb-4">
-                Dodaj przedział
+                       OnClick="OpenAddTimeOffDialog" Class="mt-4 mb-4">
+                Zarezerwuj wolny czas
             </MudButton>
 
             @if (!timeOffs.Any())
@@ -102,6 +102,33 @@ else
             }
         </MudTabPanel>
 
+        <MudTabPanel Text="Rozliczenie">
+            <MudSelect T="SettlementTypeEnum" @bind-Value="settlementType"
+                       Label="Sposób rozliczenia" Variant="Variant.Outlined"
+                       Class="mt-4 mb-3" Style="max-width: 400px;">
+                <MudSelectItem T="SettlementTypeEnum" Value="SettlementTypeEnum.None">Brak</MudSelectItem>
+                <MudSelectItem T="SettlementTypeEnum" Value="SettlementTypeEnum.Hourly">Godzinowe</MudSelectItem>
+                <MudSelectItem T="SettlementTypeEnum" Value="SettlementTypeEnum.Percentage">Procentowe</MudSelectItem>
+            </MudSelect>
+
+            @if (settlementType != SettlementTypeEnum.None)
+            {
+                <MudNumericField @bind-Value="settlementRate"
+                                 Label="@(settlementType == SettlementTypeEnum.Hourly ? "Stawka (zł/h)" : "Udział (%)")"
+                                 Variant="Variant.Outlined" Min="0"
+                                 Class="mb-3" Style="max-width: 400px;" />
+            }
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       Disabled="isSavingSettlement" OnClick="SaveSettlementAsync">
+                @(isSavingSettlement ? "Zapisywanie..." : "Zapisz")
+            </MudButton>
+
+            <MudText Typo="Typo.body2" Class="mt-4">
+                Zmiana dotyczy tylko nowych wizyt. Rozliczenia z przeszłości pozostają bez zmian.
+            </MudText>
+        </MudTabPanel>
+
     </MudTabs>
 }
 
@@ -116,6 +143,10 @@ else
     private GetGroomerDto? groomer;
     private List<GetGroomerScheduleDto> schedules = new();
     private List<GetGroomerTimeOffDto> timeOffs = new();
+
+    private SettlementTypeEnum settlementType;
+    private decimal settlementRate;
+    private bool isSavingSettlement;
 
     private bool isLoading = true;
     private string? errorMessage;
@@ -136,6 +167,13 @@ else
         try
         {
             groomer = await Api.GetAsync<GetGroomerDto>($"api/Groomer/{GroomerId}");
+
+            if (groomer != null)
+            {
+                settlementType = groomer.SettlementType;
+                settlementRate = groomer.SettlementRate;
+            }
+
             await LoadSchedulesAsync();
             await LoadTimeOffsAsync();
         }
@@ -159,6 +197,43 @@ else
     {
         var result = await Api.GetAsync<List<GetGroomerTimeOffDto>>($"api/GroomerTimeOff?groomerId={GroomerId}");
         timeOffs = result ?? new();
+    }
+
+    private async Task SaveSettlementAsync()
+    {
+        if (groomer == null) return;
+
+        errorMessage = null;
+        isSavingSettlement = true;
+
+        try
+        {
+            var dto = new EditGroomerDto
+            {
+                FirstName = groomer.FirstName,
+                LastName = groomer.LastName,
+                SettlementType = settlementType,
+                SettlementRate = settlementType == SettlementTypeEnum.None ? 0 : settlementRate
+            };
+
+            var response = await Api.PutAsync($"api/Groomer/{GroomerId}/EditGroomer", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            await LoadAllAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSavingSettlement = false;
+        }
     }
 
     private async Task OpenAddScheduleDialog()
@@ -226,16 +301,4 @@ else
             errorMessage = await ApiClient.ReadErrorAsync(response);
         }
     }
-
-    private static string DayName(DayOfWeekEnum day) => day switch
-    {
-        DayOfWeekEnum.Monday => "Poniedziałek",
-        DayOfWeekEnum.Tuesday => "Wtorek",
-        DayOfWeekEnum.Wednesday => "Środa",
-        DayOfWeekEnum.Thursday => "Czwartek",
-        DayOfWeekEnum.Friday => "Piątek",
-        DayOfWeekEnum.Saturday => "Sobota",
-        DayOfWeekEnum.Sunday => "Niedziela",
-        _ => day.ToString()
-    };
 }

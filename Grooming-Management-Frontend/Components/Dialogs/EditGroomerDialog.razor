@@ -29,6 +29,7 @@
     private string lastName = string.Empty;
     private string? errorMessage;
     private bool isSaving;
+    
 
     protected override void OnInitialized()
     {
@@ -50,7 +51,14 @@
 
         try
         {
-            var dto = new EditGroomerDto { FirstName = firstName, LastName = lastName };
+            var dto = new EditGroomerDto
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                SettlementType = Groomer.SettlementType,
+                SettlementRate = Groomer.SettlementRate
+            };
+            
             var response = await Api.PutAsync($"api/Groomer/{Groomer.Id}/EditGroomer", dto);
 
             if (!response.IsSuccessStatusCode)
