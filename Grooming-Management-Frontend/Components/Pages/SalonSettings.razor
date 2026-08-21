@@ -1,0 +1,163 @@
+@page "/ustawienia"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.SalonDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h5" Class="mb-4">Ustawienia salonu</MudText>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (salon == null)
+{
+    <MudAlert Severity="Severity.Error">Nie udało się pobrać danych salonu</MudAlert>
+}
+else
+{
+    <MudPaper Class="pa-6 mb-4">
+        <MudText Typo="Typo.h6" Class="mb-4">Dane salonu</MudText>
+
+        <MudTextField @bind-Value="name" Label="Nazwa" Variant="Variant.Outlined" Class="mb-3" />
+
+        <MudGrid>
+            <MudItem xs="12" md="8">
+                <MudTextField @bind-Value="street" Label="Ulica" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudTextField @bind-Value="buildingNumber" Label="Nr budynku" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudTextField @bind-Value="apartmentNumber" Label="Nr lokalu" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="postalCode" Label="Kod pocztowy" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="8">
+                <MudTextField @bind-Value="city" Label="Miasto" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+   
+
+    @if (errorMessage != null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+    }
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               Disabled="isSaving" OnClick="SaveAsync">
+        @(isSaving ? "Zapisywanie..." : "Zapisz zmiany")
+    </MudButton>
+}
+
+@code {
+    private GetSalonDto? salon;
+    private bool isLoading = true;
+    private bool isSaving;
+    private string? errorMessage;
+
+    private string name = string.Empty;
+    private string? street;
+    private string? buildingNumber;
+    private string? apartmentNumber;
+    private string? postalCode;
+    private string? city;
+    private int minBookingHoursAhead;
+    private int maxBookingDaysAhead;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadSalonAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadSalonAsync()
+    {
+        try
+        {
+            salon = await Api.GetAsync<GetSalonDto>("api/Salon");
+
+            if (salon != null)
+            {
+                name = salon.Name;
+                street = salon.Street;
+                buildingNumber = salon.BuildingNumber;
+                apartmentNumber = salon.ApartmentNumber;
+                postalCode = salon.PostalCode;
+                city = salon.City;
+                minBookingHoursAhead = salon.MinBookingHoursAhead;
+                maxBookingDaysAhead = salon.MaxBookingDaysAhead;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            errorMessage = "Podaj nazwę salonu";
+            return;
+        }
+
+        if (maxBookingDaysAhead <= 0)
+        {
+            errorMessage = "Maksymalne wyprzedzenie musi być większe od zera";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new UpdateSalonDto
+            {
+                Name = name,
+                Street = street,
+                BuildingNumber = buildingNumber,
+                ApartmentNumber = apartmentNumber,
+                PostalCode = postalCode,
+                City = city,
+                MinBookingHoursAhead = minBookingHoursAhead,
+                MaxBookingDaysAhead = maxBookingDaysAhead
+            };
+
+            var response = await Api.PutAsync("api/Salon", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            Snackbar.Add("Zapisano zmiany", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+}

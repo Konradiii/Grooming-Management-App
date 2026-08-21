@@ -86,8 +86,11 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
             ApartmentNumber = dto.ApartmentNumber,
             PostalCode = dto.PostalCode,
             City = dto.City,
-            MinBookingHoursAhead = 24,
-            MaxBookingDaysAhead = 90
+            MinBookingHoursAhead = 0,
+            MaxBookingDaysAhead = 550,
+            SubscriptionStatus = SubscriptionStatusEnum.Trial,
+            SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30)
+            
             
         };
 
