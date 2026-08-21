@@ -6,13 +6,23 @@ namespace Grooming_Management_Frontend.Components;
 public abstract class AuthenticatedPage : ComponentBase
 {
     [Inject] protected TokenStore TokenStore { get; set; } = default!;
+    [Inject] protected NavigationManager Navigation { get; set; } = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !TokenStore.IsLoggedIn)
+        if (!firstRender) return;
+
+        if (!TokenStore.IsLoggedIn)
         {
             await TokenStore.LoadFromStorageAsync();
-            StateHasChanged();
         }
+
+        if (!TokenStore.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+            return;
+        }
+
+        StateHasChanged();
     }
 }

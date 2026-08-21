@@ -1,15 +1,28 @@
 ﻿@using Grooming_Management_Frontend.Services
 @inherits LayoutComponentBase
 @inject TokenStore TokenStore
+@inject ApiClient Api
+@inject NavigationManager Navigation
+
+
+
 
 <MudLayout>
+    
     <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" />
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer"/>
+        <MudText Typo="Typo.h6">Grooming Management</MudText>
+        <MudSpacer/>
+        <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync"/>
+    </MudAppBar>
+
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer"/>
         <MudText Typo="Typo.h6">Grooming Management</MudText>
     </MudAppBar>
 
     <MudDrawer @bind-Open="drawerOpen" Elevation="2">
-        <NavMenu />
+        <NavMenu/>
     </MudDrawer>
 
     <MudMainContent>
@@ -20,7 +33,20 @@
 </MudLayout>
 
 @code {
+
     private bool drawerOpen = true;
 
     private void ToggleDrawer() => drawerOpen = !drawerOpen;
+
+    private async Task LogoutAsync()
+    {
+        if (TokenStore.RefreshToken != null)
+        {
+            await Api.PostAsync<object?>(
+                $"api/Auth/Logout?refreshToken={Uri.EscapeDataString(TokenStore.RefreshToken)}", null);
+        }
+
+        await TokenStore.ClearAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
 }
