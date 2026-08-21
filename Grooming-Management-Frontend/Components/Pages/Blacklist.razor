@@ -1,0 +1,149 @@
+@page "/czarna-lista"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.BlacklistDto
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h5" Class="mb-4">Czarna lista</MudText>
+
+<div class="d-flex gap-4 mb-4 align-center">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Block"
+               OnClick="OpenAddDialog">
+        Zablokuj klienta
+    </MudButton>
+
+    <MudTextField @bind-Value="search" Label="Szukaj"
+                  Placeholder="Imię, nazwisko lub pies"
+                  Variant="Variant.Outlined" Immediate="true"
+                  Clearable="true" Style="max-width: 400px;" />
+</div>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (!FilteredEntries.Any())
+{
+    <MudAlert Severity="Severity.Info">Czarna lista jest pusta</MudAlert>
+}
+else
+{
+    <MudTable Items="FilteredEntries" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Właściciel</MudTh>
+            <MudTh>Pies</MudTh>
+            <MudTh Style="width: 60px;" />
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.DogOwnerFullName</MudTd>
+            <MudTd>@(context.DogName ?? "cały klient")</MudTd>
+            <MudTd>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomLeft">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Info" OnClick="@(() => ShowDetailsAsync(context.Id))">
+                        Szczegóły
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Delete" OnClick="@(() => DeleteAsync(context.Id))">
+                        Usuń z listy
+                    </MudMenuItem>
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    private List<GetAllBlacklistDto> entries = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? search;
+
+    private IEnumerable<GetAllBlacklistDto> FilteredEntries =>
+        entries.Where(e =>
+            string.IsNullOrWhiteSpace(search) ||
+            e.DogOwnerFullName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+            (e.DogName != null && e.DogName.Contains(search, StringComparison.OrdinalIgnoreCase)));
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadEntriesAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        try
+        {
+            entries = await Api.GetAsync<List<GetAllBlacklistDto>>("api/Blacklist") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ShowDetailsAsync(int id)
+    {
+        var details = await Api.GetAsync<GetDetailsBlackListDto>($"api/Blacklist/{id}");
+
+        if (details == null) return;
+
+        var message = $"{details.DogOwnerFullName}"
+                      + (details.DogName != null ? $" — {details.DogName}" : "")
+                      + $"\n\nPowód: {details.Reason}"
+                      + $"\nDodano: {details.CreatedAt:dd.MM.yyyy}";
+
+        var parameters = new DialogParameters<MessageDialog>
+        {
+            { x => x.Message, message }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        await DialogService.ShowAsync<MessageDialog>("Szczegóły blokady", parameters, options);
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        var response = await Api.DeleteAsync($"api/Blacklist/{id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadEntriesAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddBlacklistDialog>("Zablokuj klienta", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadEntriesAsync();
+            StateHasChanged();
+        }
+    }
+}

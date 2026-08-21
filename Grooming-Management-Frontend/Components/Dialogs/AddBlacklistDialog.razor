@@ -1,0 +1,166 @@
+@using Grooming_Management_App.DTOs.BlacklistDto
+@using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_App.DTOs.DogOwnerDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudRadioGroup T="bool" @bind-Value="blockWholeClient" Class="mb-4">
+            <MudRadio T="bool" Value="true">Cały klient</MudRadio>
+            <MudRadio T="bool" Value="false">Tylko jeden pies</MudRadio>
+        </MudRadioGroup>
+
+        @if (blockWholeClient)
+        {
+            <MudAutocomplete T="GetDogOwnerDto"
+                             @bind-Value="selectedOwner"
+                             Label="Właściciel"
+                             Placeholder="Wpisz nazwisko lub telefon"
+                             SearchFunc="SearchOwners"
+                             ToStringFunc="@(o => o == null ? "" : $"{o.FirstName} {o.LastName} ({o.Phone})")"
+                             Variant="Variant.Outlined"
+                             Class="mb-3" />
+        }
+        else
+        {
+            <MudAutocomplete T="GetDogDto"
+                             @bind-Value="selectedDog"
+                             Label="Pies"
+                             Placeholder="Wpisz imię psa lub nazwisko właściciela"
+                             SearchFunc="SearchDogs"
+                             ToStringFunc="@(d => d == null ? "" : $"{d.Name} — {d.DogOwnerFullName}")"
+                             Variant="Variant.Outlined"
+                             Class="mb-3" />
+        }
+
+        <MudTextField @bind-Value="reason" Label="Powód" Variant="Variant.Outlined" Lines="3" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zablokuj")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private bool blockWholeClient = true;
+    private GetDogOwnerDto? selectedOwner;
+    private GetDogDto? selectedDog;
+    private string reason = string.Empty;
+
+    private List<GetDogOwnerDto> owners = new();
+    private List<GetDogDto> dogs = new();
+
+    private string? errorMessage;
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        owners = await Api.GetAsync<List<GetDogOwnerDto>>("api/DogOwner") ?? new();
+        dogs = await Api.GetAsync<List<GetDogDto>>("api/Dog") ?? new();
+    }
+
+    private Task<IEnumerable<GetDogOwnerDto>> SearchOwners(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetDogOwnerDto>>(owners);
+
+        var filtered = owners.Where(o =>
+            o.FirstName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            o.LastName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            o.Phone.Contains(value));
+
+        return Task.FromResult(filtered);
+    }
+
+    private Task<IEnumerable<GetDogDto>> SearchDogs(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetDogDto>>(dogs);
+
+        var filtered = dogs.Where(d =>
+            d.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            d.DogOwnerFullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(filtered);
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (blockWholeClient && selectedOwner == null)
+        {
+            errorMessage = "Wybierz właściciela";
+            return;
+        }
+
+        if (!blockWholeClient && selectedDog == null)
+        {
+            errorMessage = "Wybierz psa";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            errorMessage = "Podaj powód blokady";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            HttpResponseMessage response;
+
+            if (blockWholeClient)
+            {
+                var dto = new CreateBlacklistByDogOwnerDto
+                {
+                    DogOwnerId = selectedOwner!.Id,
+                    Reason = reason
+                };
+
+                response = await Api.PostAsync("api/Blacklist/ByDogOwner", dto);
+            }
+            else
+            {
+                var dto = new CreateBlacklistByDogDto
+                {
+                    DogId = selectedDog!.Id,
+                    Reason = reason
+                };
+
+                response = await Api.PostAsync("api/Blacklist/ByDog", dto);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

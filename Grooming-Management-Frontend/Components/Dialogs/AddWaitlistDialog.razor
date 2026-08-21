@@ -1,0 +1,138 @@
+@using Grooming_Management_App.DTOs.WaitlistDTO
+@using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_App.DTOs.DogOwnerDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudAutocomplete T="GetDogOwnerDto"
+                         Value="selectedOwner"
+                         ValueChanged="OnOwnerChanged"
+                         Label="Właściciel"
+                         Placeholder="Wpisz nazwisko lub telefon"
+                         SearchFunc="SearchOwners"
+                         ToStringFunc="@(o => o == null ? "" : $"{o.FirstName} {o.LastName} ({o.Phone})")"
+                         Variant="Variant.Outlined"
+                         Class="mb-3" />
+
+        @if (ownerDogs.Any())
+        {
+            <MudSelect T="GetDogDto" @bind-Value="selectedDog"
+                       Label="Pies (opcjonalnie)" Placeholder="Dowolny"
+                       ToStringFunc="@(d => d == null ? "" : d.Name)"
+                       Variant="Variant.Outlined" Clearable="true" Class="mb-3">
+                @foreach (var d in ownerDogs)
+                {
+                    <MudSelectItem T="GetDogDto" Value="d">@d.Name (@d.BreedName)</MudSelectItem>
+                }
+            </MudSelect>
+        }
+
+        <MudSelect T="int" @bind-Value="priority" Label="Priorytet"
+                   Variant="Variant.Outlined">
+            <MudSelectItem T="int" Value="1">Niski</MudSelectItem>
+            <MudSelectItem T="int" Value="2">Średni</MudSelectItem>
+            <MudSelectItem T="int" Value="3">Wysoki</MudSelectItem>
+        </MudSelect>
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private GetDogOwnerDto? selectedOwner;
+    private GetDogDto? selectedDog;
+    private int priority = 1;
+
+    private List<GetDogOwnerDto> owners = new();
+    private List<GetDogDto> dogs = new();
+    private List<GetDogDto> ownerDogs = new();
+
+    private string? errorMessage;
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        owners = await Api.GetAsync<List<GetDogOwnerDto>>("api/DogOwner") ?? new();
+        dogs = await Api.GetAsync<List<GetDogDto>>("api/Dog") ?? new();
+    }
+
+    private Task<IEnumerable<GetDogOwnerDto>> SearchOwners(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetDogOwnerDto>>(owners);
+
+        var filtered = owners.Where(o =>
+            o.FirstName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            o.LastName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            o.Phone.Contains(value));
+
+        return Task.FromResult(filtered);
+    }
+
+    private void OnOwnerChanged(GetDogOwnerDto? owner)
+    {
+        selectedOwner = owner;
+        selectedDog = null;
+
+        ownerDogs = owner == null
+            ? new()
+            : dogs.Where(d => d.DogOwnerFullName == $"{owner.FirstName} {owner.LastName}").ToList();
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (selectedOwner == null)
+        {
+            errorMessage = "Wybierz właściciela";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new CreateWaitlistDto
+            {
+                DogOwnerId = selectedOwner.Id,
+                DogId = selectedDog?.Id,
+                Priority = priority
+            };
+
+            var response = await Api.PostAsync("api/Waitlist", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,155 @@
+@page "/lista-oczekujacych"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.WaitlistDTO
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject MudBlazor.IDialogService DialogService
+
+<MudText Typo="Typo.h5" Class="mb-4">Lista oczekujących</MudText>
+
+<div class="d-flex gap-4 mb-4 align-center">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenAddDialog">
+        Dodaj do listy
+    </MudButton>
+
+    <MudTextField @bind-Value="search" Label="Szukaj"
+                  Placeholder="Imię, nazwisko lub pies"
+                  Variant="Variant.Outlined" Immediate="true"
+                  Clearable="true" Style="max-width: 400px;" />
+</div>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (!FilteredEntries.Any())
+{
+    <MudAlert Severity="Severity.Info">Lista oczekujących jest pusta</MudAlert>
+}
+else
+{
+    <MudTable Items="FilteredEntries" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Priorytet</MudTh>
+            <MudTh>Właściciel</MudTh>
+            <MudTh>Telefon</MudTh>
+            <MudTh>Pies</MudTh>
+            <MudTh>Dodano</MudTh>
+            <MudTh Style="width: 60px;" />
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small" Color="@PriorityColor(context.Priority)">
+                    @PriorityName(context.Priority)
+                </MudChip>
+            </MudTd>
+            <MudTd>@context.DogOwnerFullName</MudTd>
+            <MudTd>@context.DogOwnerPhone</MudTd>
+            <MudTd>@(context.DogName ?? "—")</MudTd>
+            <MudTd>@context.CreatedAt.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                               OnClick="@(() => DeleteAsync(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    private List<GetWaitlistDto> entries = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? search;
+
+    private IEnumerable<GetWaitlistDto> FilteredEntries =>
+        entries
+            .Where(e =>
+                string.IsNullOrWhiteSpace(search) ||
+                e.DogOwnerFullName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                (e.DogName != null && e.DogName.Contains(search, StringComparison.OrdinalIgnoreCase)))
+            .Where(e =>
+                string.IsNullOrWhiteSpace(search) ||
+                e.DogOwnerFullName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                e.DogOwnerPhone.Contains(search) ||
+                (e.DogName != null && e.DogName.Contains(search, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(e => e.Priority)
+            .ThenBy(e => e.CreatedAt);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadEntriesAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        try
+        {
+            entries = await Api.GetAsync<List<GetWaitlistDto>>("api/Waitlist") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        var response = await Api.DeleteAsync($"api/Waitlist/{id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadEntriesAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddWaitlistDialog>("Dodaj do listy oczekujących", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadEntriesAsync();
+            StateHasChanged();
+        }
+    }
+
+    private static string PriorityName(int priority) => priority switch
+    {
+        3 => "Wysoki",
+        2 => "Średni",
+        _ => "Niski"
+    };
+
+    private static Color PriorityColor(int priority) => priority switch
+    {
+        3 => Color.Error,
+        2 => Color.Warning,
+        _ => Color.Default
+    };
+}
