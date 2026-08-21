@@ -6,6 +6,7 @@
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject IDialogService DialogService
+@inject NavigationManager Navigation
 
 <MudButton Variant="Variant.Filled" Color="Color.Primary" 
            StartIcon="@Icons.Material.Filled.Add" 
@@ -26,7 +27,9 @@ else if (errorMessage != null)
 }
 else
 {
-    <MudTable Items="dogs" Hover="true" Striped="true">
+    <MudTable Items="dogs" Hover="true" Striped="true"
+              T="GetDogDto"
+              OnRowClick="@((TableRowClickEventArgs<GetDogDto> args) => OpenDetails(args.Item!.Id))">
         <HeaderContent>
             <MudTh>Imię</MudTh>
             <MudTh>Rasa</MudTh>
@@ -36,7 +39,9 @@ else
             <MudTd>@context.Name</MudTd>
             <MudTd>@context.BreedName</MudTd>
             <MudTd>@context.DogOwnerFullName</MudTd>
+            
         </RowTemplate>
+        
         
     </MudTable>
 }
@@ -86,6 +91,11 @@ else
             await LoadDogsAsync();
             StateHasChanged();
         }
+    }
+    
+    private void OpenDetails(int dogId)
+    {
+        Navigation.NavigateTo($"/psy/{dogId}");
     }
 
 }

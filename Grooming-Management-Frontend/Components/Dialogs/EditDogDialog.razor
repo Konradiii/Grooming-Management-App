@@ -1,0 +1,120 @@
+@using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_App.DTOs.Breed
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="dogName" Label="Imię psa" Variant="Variant.Outlined" Class="mb-3" />
+        <MudNumericField @bind-Value="ageInMonths" Label="Wiek (miesiące)" Variant="Variant.Outlined" Min="0" Class="mb-3" />
+
+        <MudAutocomplete T="GetBreedDto"
+                         @bind-Value="selectedBreed"
+                         Label="Rasa"
+                         Placeholder="Wpisz nazwę rasy"
+                         SearchFunc="SearchBreeds"
+                         ToStringFunc="@(b => b == null ? "" : b.Name)"
+                         Variant="Variant.Outlined"
+                         Class="mb-3" />
+
+        <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="3" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public GetDogDetailsDto Dog { get; set; } = default!;
+
+    private string dogName = string.Empty;
+    private int ageInMonths;
+    private GetBreedDto? selectedBreed;
+    private string? notes;
+
+    private List<GetBreedDto> breeds = new();
+    private string? errorMessage;
+    private bool isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dogName = Dog.Name;
+        ageInMonths = Dog.AgeInMonths ?? 0;;
+        notes = Dog.Notes;
+
+        breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
+        selectedBreed = breeds.FirstOrDefault(b => b.Name == Dog.BreedName);
+    }
+
+    private Task<IEnumerable<GetBreedDto>> SearchBreeds(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetBreedDto>>(breeds);
+
+        var filtered = breeds.Where(b =>
+            b.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(filtered);
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(dogName))
+        {
+            errorMessage = "Podaj imię psa";
+            return;
+        }
+
+        if (selectedBreed == null)
+        {
+            errorMessage = "Wybierz rasę";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new UpdateDogDto
+            {
+                Name = dogName,
+                AgeInMonths = ageInMonths,
+                BreedId = selectedBreed.Id,
+                Notes = notes,
+                DogOwnerId = Dog.DogOwnerId
+            };
+
+            var response = await Api.PutAsync($"api/Dog/{Dog.Id}", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

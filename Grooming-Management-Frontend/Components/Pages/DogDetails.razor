@@ -1,0 +1,176 @@
+@page "/psy/{DogId:int}"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_App.DTOs.VisitDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+           OnClick="@(() => Navigation.NavigateTo("/psy"))" Class="mb-4">
+    Wróć do listy
+</MudButton>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (dog == null)
+{
+    <MudAlert Severity="Severity.Error">Nie znaleziono psa</MudAlert>
+}
+else
+{
+    <div class="d-flex align-center gap-4 mb-4">
+        <div>
+            <MudText Typo="Typo.h5">@dog.Name</MudText>
+            <MudText Typo="Typo.body2">@dog.BreedName</MudText>
+        </div>
+        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="OpenEditDialog" />
+    </div>
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Class="mb-3">Dane</MudText>
+
+                <div class="d-flex justify-space-between mb-2">
+                    <MudText Typo="Typo.body2">Wiek</MudText>
+                    <MudText Typo="Typo.body2">@AgeText(dog.AgeInMonths ?? 0)</MudText>
+                </div>
+
+                <div class="d-flex justify-space-between mb-2">
+                    <MudText Typo="Typo.body2">Właściciel</MudText>
+                    <MudLink Href="@($"/wlasciciele/{dog.DogOwnerId}")">@dog.DogOwnerFullName</MudLink>
+                </div>
+
+                <div class="d-flex justify-space-between">
+                    <MudText Typo="Typo.body2">Telefon</MudText>
+                    <MudText Typo="Typo.body2">@dog.DogOwnerPhone</MudText>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1" Style="height: 100%;">
+                <MudText Typo="Typo.subtitle2" Class="mb-3">Notatki</MudText>
+                <MudText Typo="Typo.body2">
+                    @(string.IsNullOrWhiteSpace(dog.Notes) ? "Brak notatek" : dog.Notes)
+                </MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudText Typo="Typo.h6" Class="mb-3">Historia wizyt</MudText>
+
+    @if (!visits.Any())
+    {
+        <MudAlert Severity="Severity.Info">Brak wizyt</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="visits.OrderByDescending(v => v.Date)" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Data</MudTh>
+                <MudTh>Usługa</MudTh>
+                <MudTh>Groomer</MudTh>
+                <MudTh>Status</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Date.ToString("dd.MM.yyyy HH:mm")</MudTd>
+                <MudTd>@context.ServiceName</MudTd>
+                <MudTd>@context.GroomerName</MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small" Color="@StatusColor(context.Status)">
+                        @EnumLabels.Status(context.Status)
+                    </MudChip>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    [Parameter] public int DogId { get; set; }
+
+    private GetDogDetailsDto? dog;
+    private List<GetAllVisitsDto> visits = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadAllAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAllAsync()
+    {
+        try
+        {
+            dog = await Api.GetAsync<GetDogDetailsDto>($"api/Dog/{DogId}");
+            visits = await Api.GetAsync<List<GetAllVisitsDto>>($"api/Visit?DogId={DogId}") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenEditDialog()
+    {
+        if (dog == null) return;
+
+        var parameters = new DialogParameters<EditDogDialog>
+        {
+            { x => x.Dog, dog }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditDogDialog>("Edycja psa", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadAllAsync();
+            StateHasChanged();
+        }
+    }
+
+    private static string AgeText(int months)
+    {
+        if (months < 12)
+            return $"{months} mies.";
+
+        var years = months / 12;
+        var rest = months % 12;
+
+        return rest == 0 ? $"{years} lat" : $"{years} lat {rest} mies.";
+    }
+
+    private static Color StatusColor(StatusEnum status) => status switch
+    {
+        StatusEnum.Completed => Color.Success,
+        StatusEnum.Cancelled => Color.Default,
+        StatusEnum.NoShow => Color.Error,
+        _ => Color.Primary
+    };
+}
