@@ -85,7 +85,7 @@ else
                 VisitId = v.Id,
                 Start = v.Date,
                 End = v.Date.AddMinutes(v.EstimatedDuration),
-                Text = $"{v.DogName} ({v.BreedName})\n{v.GroomerName}",
+                Text = $"{v.DogName} ({v.BreedName})\n{v.GroomerName}\n{EnumLabels.Status(v.Status)}",
                 GroomerId = v.GroomerId,
                 Status = v.Status
             });
@@ -143,9 +143,22 @@ else
         await OpenAddVisitDialog(args.Start, args.End);
     }
 
-    private void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<VisitAppointment> args)
+    private async Task OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<VisitAppointment> args)
     {
-        // później: dialog ze szczegółami wizyty
+        var parameters = new MudBlazor.DialogParameters<VisitDetailsDialog>
+        {
+            { x => x.VisitId, args.Data.VisitId }
+        };
+
+        var options = new MudBlazor.DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<VisitDetailsDialog>("Szczegóły wizyty", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
     }
 
     private async Task OpenAddVisitDialog(DateTime? start = null, DateTime? end = null)

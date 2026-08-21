@@ -55,7 +55,7 @@ else
                         <MudTh Style="width: 60px;" />
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd>@DayName(context.DayOfWeek)</MudTd>
+                        <MudTd>@EnumLabels.DayOfWeek(context.DayOfWeek)</MudTd>
                         <MudTd>@context.StartTime.ToString("HH\\:mm")</MudTd>
                         <MudTd>@context.EndTime.ToString("HH\\:mm")</MudTd>
                         <MudTd>

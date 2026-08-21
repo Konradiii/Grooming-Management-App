@@ -2,23 +2,50 @@
 @using Grooming_Management_App.DTOs.DogDTO
 @using Grooming_Management_App.DTOs.GroomerDTO
 @using Grooming_Management_App.DTOs.ServiceBreedDTO
+@using Grooming_Management_App.DTOs.Breed
 @using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 
 <MudDialog>
     <DialogContent>
-        <MudAutocomplete T="GetDogDto"
-                         Value="selectedDog"
-                         ValueChanged="OnDogChanged"
-                         Label="Pies"
-                         Placeholder="Wpisz imię psa lub nazwisko właściciela"
-                         SearchFunc="SearchDogs"
-                         ToStringFunc="@(d => d == null ? "" : $"{d.Name} — {d.DogOwnerFullName}")"
-                         Variant="Variant.Outlined"
-                         Class="mb-3" />
+        <MudCheckBox @bind-Value="withNewDog" Label="Nowy klient" Class="mb-4" />
 
-        @if (selectedDog != null)
+        @if (withNewDog)
+        {
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Właściciel</MudText>
+            <MudTextField @bind-Value="firstName" Label="Imię" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="lastName" Label="Nazwisko" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTextField @bind-Value="phone" Label="Telefon" Variant="Variant.Outlined" Class="mb-4" />
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Pies</MudText>
+            <MudTextField @bind-Value="dogName" Label="Imię psa" Variant="Variant.Outlined" Class="mb-3" />
+            <MudNumericField @bind-Value="ageInMonths" Label="Wiek (miesiące)" Variant="Variant.Outlined" Min="0" Class="mb-3" />
+
+            <MudAutocomplete T="GetBreedDto"
+                             Value="selectedBreed"
+                             ValueChanged="OnBreedChanged"
+                             Label="Rasa"
+                             Placeholder="Wpisz nazwę rasy"
+                             SearchFunc="SearchBreeds"
+                             ToStringFunc="@(b => b == null ? "" : b.Name)"
+                             Variant="Variant.Outlined"
+                             Class="mb-4" />
+        }
+        else
+        {
+            <MudAutocomplete T="GetDogDto"
+                             Value="selectedDog"
+                             ValueChanged="OnDogChanged"
+                             Label="Pies"
+                             Placeholder="Wpisz imię psa lub nazwisko właściciela"
+                             SearchFunc="SearchDogs"
+                             ToStringFunc="@(d => d == null ? "" : $"{d.Name} — {d.DogOwnerFullName}")"
+                             Variant="Variant.Outlined"
+                             Class="mb-3" />
+        }
+
+        @if (availableServices.Any())
         {
             <MudSelect T="GetServiceBreedDto" Value="selectedService" ValueChanged="OnServiceChanged"
                        Label="Usługa" Placeholder="Wybierz usługę"
@@ -31,13 +58,12 @@
                     </MudSelectItem>
                 }
             </MudSelect>
-
-            @if (!availableServices.Any())
-            {
-                <MudAlert Severity="Severity.Warning" Class="mb-3">
-                    Brak pozycji cennika dla rasy @selectedDog.BreedName
-                </MudAlert>
-            }
+        }
+        else if (HasBreedSelected)
+        {
+            <MudAlert Severity="Severity.Warning" Class="mb-3">
+                Brak pozycji cennika dla tej rasy
+            </MudAlert>
         }
 
         <MudSelect T="GetGroomerDto" @bind-Value="selectedGroomer"
@@ -63,7 +89,7 @@
             </MudItem>
         </MudGrid>
 
-        <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="2" />
+        <MudTextField @bind-Value="notes" Label="Notatki do wizyty" Variant="Variant.Outlined" Lines="2" />
 
         @if (errorMessage != null)
         {
@@ -84,8 +110,18 @@
     [Parameter] public DateTime? InitialStart { get; set; }
     [Parameter] public DateTime? InitialEnd { get; set; }
 
+    private bool withNewDog;
+
+    private string firstName = string.Empty;
+    private string lastName = string.Empty;
+    private string phone = string.Empty;
+    private string dogName = string.Empty;
+    private int ageInMonths;
+    private GetBreedDto? selectedBreed;
+
     private List<GetDogDto> dogs = new();
     private List<GetGroomerDto> groomers = new();
+    private List<GetBreedDto> breeds = new();
     private List<GetServiceBreedDto> allServices = new();
     private List<GetServiceBreedDto> availableServices = new();
 
@@ -99,6 +135,8 @@
 
     private bool isSaving;
     private string? errorMessage;
+
+    private bool HasBreedSelected => withNewDog ? selectedBreed != null : selectedDog != null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,6 +155,7 @@
 
         dogs = await Api.GetAsync<List<GetDogDto>>("api/Dog") ?? new();
         groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+        breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
         allServices = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds") ?? new();
     }
 
@@ -132,15 +171,37 @@
         return Task.FromResult(filtered);
     }
 
+    private Task<IEnumerable<GetBreedDto>> SearchBreeds(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetBreedDto>>(breeds);
+
+        var filtered = breeds.Where(b =>
+            b.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(filtered);
+    }
+
     private void OnDogChanged(GetDogDto? dog)
     {
         selectedDog = dog;
         selectedService = null;
+        FilterServices(dog?.BreedName);
+    }
 
-        availableServices = dog == null
+    private void OnBreedChanged(GetBreedDto? breed)
+    {
+        selectedBreed = breed;
+        selectedService = null;
+        FilterServices(breed?.Name);
+    }
+
+    private void FilterServices(string? breedName)
+    {
+        availableServices = breedName == null
             ? new()
             : allServices
-                .Where(s => s.BreedName == dog.BreedName && s.Status == ActiveStatusEnum.Active)
+                .Where(s => s.BreedName == breedName && s.Status == ActiveStatusEnum.Active)
                 .ToList();
     }
 
@@ -148,7 +209,6 @@
     {
         selectedService = service;
 
-        // czas z cennika jako podpowiedź, tylko gdy nie przyszedł z kalendarza
         if (service != null && InitialEnd == null)
             durationMinutes = service.Duration;
     }
@@ -157,7 +217,33 @@
     {
         errorMessage = null;
 
-        if (selectedDog == null)
+        if (withNewDog)
+        {
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            {
+                errorMessage = "Podaj imię i nazwisko właściciela";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                errorMessage = "Podaj numer telefonu";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dogName))
+            {
+                errorMessage = "Podaj imię psa";
+                return;
+            }
+
+            if (selectedBreed == null)
+            {
+                errorMessage = "Wybierz rasę";
+                return;
+            }
+        }
+        else if (selectedDog == null)
         {
             errorMessage = "Wybierz psa";
             return;
@@ -192,18 +278,41 @@
         try
         {
             var visitDate = selectedDate.Value.Date.Add(selectedTime.Value);
+            HttpResponseMessage response;
 
-            var dto = new AddVisitDto
+            if (withNewDog)
             {
-                DogId = selectedDog.Id,
-                GroomerId = selectedGroomer.Id,
-                ServiceBreedId = selectedService.Id,
-                Date = visitDate,
-                DurationMinutes = durationMinutes,
-                Notes = notes
-            };
+                var dto = new CreateVisitWithNewDogDto
+                {
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Phone = phone,
+                    DogName = dogName,
+                    AgeInMonths = ageInMonths,
+                    BreedId = selectedBreed!.Id,
+                    GroomerId = selectedGroomer.Id,
+                    ServiceBreedId = selectedService.Id,
+                    Date = visitDate,
+                    DurationMinutes = durationMinutes,
+                    Notes = notes
+                };
 
-            var response = await Api.PostAsync("api/Visit", dto);
+                response = await Api.PostAsync("api/Visit/with-new-dog", dto);
+            }
+            else
+            {
+                var dto = new AddVisitDto
+                {
+                    DogId = selectedDog!.Id,
+                    GroomerId = selectedGroomer.Id,
+                    ServiceBreedId = selectedService.Id,
+                    Date = visitDate,
+                    DurationMinutes = durationMinutes,
+                    Notes = notes
+                };
+
+                response = await Api.PostAsync("api/Visit", dto);
+            }
 
             if (!response.IsSuccessStatusCode)
             {

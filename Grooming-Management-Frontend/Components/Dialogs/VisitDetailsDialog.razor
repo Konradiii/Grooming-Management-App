@@ -1,0 +1,164 @@
+@using Grooming_Management_App.DTOs.VisitDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        @if (isLoading)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else if (visit == null)
+        {
+            <MudAlert Severity="Severity.Error">Nie znaleziono wizyty</MudAlert>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6">@visit.DogName</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">@visit.BreedName</MudText>
+
+            <MudSimpleTable Dense="true" Elevation="0" Class="mb-4">
+                <tbody>
+                    <tr>
+                        <td><MudText Typo="Typo.body2">Właściciel</MudText></td>
+                        <td>@visit.DogOwnerFullName</td>
+                    </tr>
+                    <tr>
+                        <td><MudText Typo="Typo.body2">Termin</MudText></td>
+                        <td>@visit.Date.ToString("dd.MM.yyyy HH:mm")</td>
+                    </tr>
+                    <tr>
+                        <td><MudText Typo="Typo.body2">Czas trwania</MudText></td>
+                        <td>@visit.EstimatedDuration min</td>
+                    </tr>
+                    <tr>
+                        <td><MudText Typo="Typo.body2">Groomer</MudText></td>
+                        <td>@visit.GroomerFullName</td>
+                    </tr>
+                    <tr>
+                        <td><MudText Typo="Typo.body2">Usługa</MudText></td>
+                        <td>@visit.ServiceName</td>
+                    </tr>
+                    <tr>
+                        <td><MudText Typo="Typo.body2">Sugerowana cena</MudText></td>
+                        <td>@visit.ProposedPrice.ToString("0.00") zł</td>
+                    </tr>
+                </tbody>
+            </MudSimpleTable>
+
+            @if (!string.IsNullOrWhiteSpace(visit.Notes))
+            {
+                <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">@visit.Notes</MudAlert>
+            }
+
+            <MudSelect T="StatusEnum" @bind-Value="status" Label="Status"
+                       Variant="Variant.Outlined" Class="mb-3">
+                <MudSelectItem T="StatusEnum" Value="StatusEnum.Scheduled">Zaplanowana</MudSelectItem>
+                <MudSelectItem T="StatusEnum" Value="StatusEnum.Completed">Ukończona</MudSelectItem>
+                <MudSelectItem T="StatusEnum" Value="StatusEnum.Cancelled">Odwołana</MudSelectItem>
+                <MudSelectItem T="StatusEnum" Value="StatusEnum.NoShow">Nie przyszedł</MudSelectItem>
+            </MudSelect>
+
+            @if (status == StatusEnum.Completed)
+            {
+                <MudNumericField @bind-Value="finalPrice" Label="Cena końcowa (zł)"
+                                 Variant="Variant.Outlined" Min="0" />
+            }
+        }
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Zamknij</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int VisitId { get; set; }
+
+    private GetVisitDetailsDto? visit;
+    private StatusEnum status;
+    private decimal finalPrice;
+
+    private bool isLoading = true;
+    private bool isSaving;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            visit = await Api.GetAsync<GetVisitDetailsDto>($"api/Visit/{VisitId}");
+
+            if (visit != null)
+            {
+                status = visit.Status;
+                finalPrice = visit.FinalPrice ?? visit.ProposedPrice;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (visit == null) return;
+
+        errorMessage = null;
+        isSaving = true;
+
+        try
+        {
+            if (status != visit.Status)
+            {
+                var response = await Api.PutAsync<object?>(
+                    $"api/Visit/{VisitId}/status?status={status}", null);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    errorMessage = await ApiClient.ReadErrorAsync(response);
+                    return;
+                }
+            }
+
+            if (status == StatusEnum.Completed && finalPrice != visit.FinalPrice)
+            {
+                var response = await Api.PutAsync<object?>(
+                    $"api/Visit/{VisitId}/final-price?finalPrice={finalPrice}", null);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    errorMessage = await ApiClient.ReadErrorAsync(response);
+                    return;
+                }
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

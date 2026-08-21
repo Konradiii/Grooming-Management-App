@@ -40,7 +40,7 @@ else
             <MudTd>
                 <MudChip T="string" Size="Size.Small"
                          Color="@(context.ActiveStatus == ActiveStatusEnum.Active ? Color.Success : Color.Default)">
-                    @(context.ActiveStatus == ActiveStatusEnum.Active ? "Aktywny" : "Nieaktywny")
+                    @EnumLabels.ActiveStatus(context.ActiveStatus)
                 </MudChip>
             </MudTd>
             <MudTd Style="width: 60px;">
