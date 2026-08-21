@@ -2,7 +2,6 @@
 @using Grooming_Management_App.DTOs.DogDTO
 @using Grooming_Management_App.DTOs.GroomerDTO
 @using Grooming_Management_App.DTOs.ServiceBreedDTO
-@using Grooming_Management_App.DTOs.AvailabilityDTO
 @using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
@@ -23,7 +22,7 @@
         {
             <MudSelect T="GetServiceBreedDto" Value="selectedService" ValueChanged="OnServiceChanged"
                        Label="Usługa" Placeholder="Wybierz usługę"
-                       ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} — {s.Price:0.00} zł, {s.Duration} min")"
+                       ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} — {s.Price:0.00} zł")"
                        Variant="Variant.Outlined" Class="mb-3">
                 @foreach (var sb in availableServices)
                 {
@@ -41,50 +40,28 @@
             }
         }
 
-        @if (selectedService != null)
-        {
-            <MudSelect T="GetGroomerDto" Value="selectedGroomer" ValueChanged="OnGroomerChanged"
-                       Label="Groomer" Placeholder="Wybierz groomera"
-                       ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
-                       Variant="Variant.Outlined" Class="mb-3">
-                @foreach (var g in groomers)
-                {
-                    <MudSelectItem T="GetGroomerDto" Value="g">@g.FirstName @g.LastName</MudSelectItem>
-                }
-            </MudSelect>
-
-            <MudDatePicker Date="selectedDate" DateChanged="OnDateChanged"
-                           Label="Data" Variant="Variant.Outlined"
-                           MinDate="DateTime.Today" Class="mb-3" />
-        }
-
-        @if (isLoadingSlots)
-        {
-            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mb-3" />
-        }
-        else if (selectedGroomer != null && selectedDate != null)
-        {
-            @if (!availableSlots.Any())
+        <MudSelect T="GetGroomerDto" @bind-Value="selectedGroomer"
+                   Label="Groomer" Placeholder="Wybierz groomera"
+                   ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
+                   Variant="Variant.Outlined" Class="mb-3">
+            @foreach (var g in groomers)
             {
-                <MudAlert Severity="Severity.Info" Class="mb-3">
-                    Brak wolnych terminów tego dnia
-                </MudAlert>
+                <MudSelectItem T="GetGroomerDto" Value="g">@g.FirstName @g.LastName</MudSelectItem>
             }
-            else
-            {
-                <MudText Typo="Typo.body2" Class="mb-2">Wolne terminy</MudText>
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    @foreach (var slot in availableSlots)
-                    {
-                        <MudButton Variant="@(selectedSlot == slot ? Variant.Filled : Variant.Outlined)"
-                                   Color="Color.Primary" Size="Size.Small"
-                                   OnClick="@(() => selectedSlot = slot)">
-                            @slot
-                        </MudButton>
-                    }
-                </div>
-            }
-        }
+        </MudSelect>
+
+        <MudGrid Class="mb-3">
+            <MudItem xs="12" md="5">
+                <MudDatePicker @bind-Date="selectedDate" Label="Data" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" md="3">
+                <MudTimePicker @bind-Time="selectedTime" Label="Godzina" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" md="4">
+                <MudNumericField @bind-Value="durationMinutes" Label="Czas (min)"
+                                 Variant="Variant.Outlined" Min="15" Step="15" />
+            </MudItem>
+        </MudGrid>
 
         <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="2" />
 
@@ -104,26 +81,40 @@
 
 @code {
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public DateTime? InitialStart { get; set; }
+    [Parameter] public DateTime? InitialEnd { get; set; }
 
     private List<GetDogDto> dogs = new();
     private List<GetGroomerDto> groomers = new();
     private List<GetServiceBreedDto> allServices = new();
     private List<GetServiceBreedDto> availableServices = new();
-    private List<string> availableSlots = new();
 
     private GetDogDto? selectedDog;
     private GetServiceBreedDto? selectedService;
     private GetGroomerDto? selectedGroomer;
     private DateTime? selectedDate = DateTime.Today;
-    private string? selectedSlot;
+    private TimeSpan? selectedTime = new TimeSpan(9, 0, 0);
+    private int durationMinutes = 60;
     private string? notes;
 
-    private bool isLoadingSlots;
     private bool isSaving;
     private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        if (InitialStart != null)
+        {
+            selectedDate = InitialStart.Value.Date;
+            selectedTime = InitialStart.Value.TimeOfDay;
+
+            if (InitialEnd != null)
+            {
+                var minutes = (int)(InitialEnd.Value - InitialStart.Value).TotalMinutes;
+                if (minutes >= 15)
+                    durationMinutes = minutes;
+            }
+        }
+
         dogs = await Api.GetAsync<List<GetDogDto>>("api/Dog") ?? new();
         groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
         allServices = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds") ?? new();
@@ -145,8 +136,6 @@
     {
         selectedDog = dog;
         selectedService = null;
-        selectedSlot = null;
-        availableSlots.Clear();
 
         availableServices = dog == null
             ? new()
@@ -155,52 +144,13 @@
                 .ToList();
     }
 
-    private async Task OnServiceChanged(GetServiceBreedDto? service)
+    private void OnServiceChanged(GetServiceBreedDto? service)
     {
         selectedService = service;
-        selectedSlot = null;
-        await LoadSlotsAsync();
-    }
 
-    private async Task OnGroomerChanged(GetGroomerDto? groomer)
-    {
-        selectedGroomer = groomer;
-        selectedSlot = null;
-        await LoadSlotsAsync();
-    }
-
-    private async Task OnDateChanged(DateTime? date)
-    {
-        selectedDate = date;
-        selectedSlot = null;
-        await LoadSlotsAsync();
-    }
-
-    private async Task LoadSlotsAsync()
-    {
-        availableSlots.Clear();
-
-        if (selectedService == null || selectedGroomer == null || selectedDate == null)
-            return;
-
-        isLoadingSlots = true;
-
-        try
-        {
-            var date = DateOnly.FromDateTime(selectedDate.Value).ToString("yyyy-MM-dd");
-            var url = $"api/Availability?date={date}&serviceBreedId={selectedService.Id}&groomerId={selectedGroomer.Id}";
-
-            var result = await Api.GetAsync<List<GetAvailabilityDto>>(url);
-            availableSlots = result?.FirstOrDefault()?.AvailableSlots ?? new();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Nie udało się pobrać terminów: {ex.Message}";
-        }
-        finally
-        {
-            isLoadingSlots = false;
-        }
+        // czas z cennika jako podpowiedź, tylko gdy nie przyszedł z kalendarza
+        if (service != null && InitialEnd == null)
+            durationMinutes = service.Duration;
     }
 
     private async Task SaveAsync()
@@ -225,9 +175,15 @@
             return;
         }
 
-        if (selectedSlot == null)
+        if (selectedDate == null || selectedTime == null)
         {
-            errorMessage = "Wybierz termin";
+            errorMessage = "Podaj datę i godzinę";
+            return;
+        }
+
+        if (durationMinutes <= 0)
+        {
+            errorMessage = "Podaj czas trwania";
             return;
         }
 
@@ -235,8 +191,7 @@
 
         try
         {
-            var time = TimeOnly.Parse(selectedSlot);
-            var visitDate = selectedDate!.Value.Date.Add(time.ToTimeSpan());
+            var visitDate = selectedDate.Value.Date.Add(selectedTime.Value);
 
             var dto = new AddVisitDto
             {
@@ -244,6 +199,7 @@
                 GroomerId = selectedGroomer.Id,
                 ServiceBreedId = selectedService.Id,
                 Date = visitDate,
+                DurationMinutes = durationMinutes,
                 Notes = notes
             };
 

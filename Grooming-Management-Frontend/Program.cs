@@ -2,6 +2,14 @@ using Blazored.LocalStorage;
 using Grooming_Management_Frontend.Components;
 using Grooming_Management_Frontend.Services;
 using MudBlazor.Services;
+using Radzen;
+using System.Globalization;
+
+var culture = new CultureInfo("pl-PL");
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +21,7 @@ builder.Services.AddMudServices();
 builder.Services.AddScoped<TokenStore>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<ApiClient>();
+builder.Services.AddRadzenComponents();
 
 builder.Services.AddHttpClient("Api", client =>
 {

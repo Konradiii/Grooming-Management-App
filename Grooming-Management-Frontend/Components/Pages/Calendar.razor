@@ -1,0 +1,172 @@
+@page "/kalendarz"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Radzen
+@using Grooming_Management_App.DTOs.VisitDTO
+@using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h5" Class="mb-4">Kalendarz</MudText>
+
+<div class="d-flex gap-4 mb-4 align-center">
+    <MudButton Variant="MudBlazor.Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="@(() => OpenAddVisitDialog())">
+        Dodaj wizytę
+    </MudButton>
+
+    <MudSelect T="int?" @bind-Value="groomerFilter" Label="Groomer"
+               Placeholder="Wszyscy" Variant="MudBlazor.Variant.Outlined"
+               Clearable="true" Style="max-width: 300px;">
+        @foreach (var g in groomers)
+        {
+            <MudSelectItem T="int?" Value="g.Id">@g.FirstName @g.LastName</MudSelectItem>
+        }
+    </MudSelect>
+</div>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <RadzenScheduler @ref="scheduler"
+                     TItem="VisitAppointment"
+                     Data="Appointments"
+                     StartProperty="Start"
+                     EndProperty="End"
+                     TextProperty="Text"
+                     SlotSelect="OnSlotSelect"
+                     AppointmentSelect="OnAppointmentSelect"
+                     AppointmentRender="OnAppointmentRender"
+                     Style="height: 700px;">
+        <RadzenDayView StartTime="TimeSpan.FromHours(6)" EndTime="TimeSpan.FromHours(22)" />
+        <RadzenWeekView StartTime="TimeSpan.FromHours(6)" EndTime="TimeSpan.FromHours(22)" 
+                        HeaderFormat="ddd dd.MM" />
+        <RadzenMonthView />
+    </RadzenScheduler>
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    private RadzenScheduler<VisitAppointment>? scheduler;
+
+    private List<GetAllVisitsDto> visits = new();
+    private List<GetGroomerDto> groomers = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private int? groomerFilter;
+
+    public class VisitAppointment
+    {
+        public int VisitId { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public int GroomerId { get; set; }
+        public StatusEnum Status { get; set; }
+    }
+
+    private IEnumerable<VisitAppointment> Appointments =>
+        visits
+            .Where(v => groomerFilter == null || v.GroomerId == groomerFilter)
+            .Select(v => new VisitAppointment
+            {
+                VisitId = v.Id,
+                Start = v.Date,
+                End = v.Date.AddMinutes(v.EstimatedDuration),
+                Text = $"{v.DogName} ({v.BreedName})\n{v.GroomerName}",
+                GroomerId = v.GroomerId,
+                Status = v.Status
+            });
+    
+    
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+            visits = await Api.GetAsync<List<GetAllVisitsDto>>("api/Visit") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static readonly string[] GroomerColors =
+    {
+        "#5c6bc0", "#26a69a", "#ef6c00", "#8e24aa",
+        "#43a047", "#e53935", "#00acc1", "#fb8c00"
+    };
+
+    private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<VisitAppointment> args)
+    {
+        var index = groomers.FindIndex(g => g.Id == args.Data.GroomerId);
+        var color = index >= 0
+            ? GroomerColors[index % GroomerColors.Length]
+            : "#78909c";
+
+        var opacity = args.Data.Status is StatusEnum.Cancelled or StatusEnum.NoShow ? "0.4" : "1";
+
+        args.Attributes["style"] = $"background: {color}; opacity: {opacity}; white-space: pre-line;";
+    }
+
+    private async Task OnSlotSelect(SchedulerSlotSelectEventArgs args)
+    {
+        await OpenAddVisitDialog(args.Start, args.End);
+    }
+
+    private void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<VisitAppointment> args)
+    {
+        // później: dialog ze szczegółami wizyty
+    }
+
+    private async Task OpenAddVisitDialog(DateTime? start = null, DateTime? end = null)
+    {
+        var parameters = new MudBlazor.DialogParameters<AddVisitDialog>
+        {
+            { x => x.InitialStart, start },
+            { x => x.InitialEnd, end }
+        };
+
+        var options = new MudBlazor.DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddVisitDialog>("Nowa wizyta", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+    
+    
+}
+
