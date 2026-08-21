@@ -17,4 +17,5 @@ public class GetVisitDetailsDto
     public string GroomerFullName { get; set; }
     public string ServiceName { get; set; }
     public string BreedName { get; set; }
+    public string? AssistantGroomerFullName { get; set; }
 }

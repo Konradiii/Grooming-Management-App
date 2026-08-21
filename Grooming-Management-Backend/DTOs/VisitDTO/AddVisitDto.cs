@@ -8,4 +8,5 @@ public class AddVisitDto
     public int ServiceBreedId { get; set; }
     public string? Notes { get; set; }
     public int? DurationMinutes { get; set; }
+    public int? AssistantGroomerId { get; set; }
 }

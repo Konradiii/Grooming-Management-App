@@ -33,6 +33,9 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 EstimatedDuration = v.EstimatedDuration,
                 Status = v.Status,
                 BreedName = v.Dog.Breed.Name,
+                AssistantGroomerFullName = v.AssistantGroomer != null
+                    ? v.AssistantGroomer.FirstName + " " + v.AssistantGroomer.LastName
+                    : null,
 
             }).ToListAsync(ct);
     }
@@ -58,6 +61,9 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 GroomerFullName =  v.Groomer.FirstName + " " + v.Groomer.LastName,
                 ServiceName = v.ServiceBreed.Service.Name,
                 BreedName =  v.ServiceBreed.Breed.Name,
+                AssistantGroomerFullName = v.AssistantGroomer != null
+                    ? v.AssistantGroomer.FirstName + " " + v.AssistantGroomer.LastName
+                    : null,
                 
             }).FirstOrDefaultAsync(ct);
 
@@ -116,6 +122,19 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             .AnyAsync(v => v.DogId == dto.DogId 
                            && v.Date == dto.Date 
                            && v.SalonId == salonId, ct);
+        
+        if (dto.AssistantGroomerId != null)
+        {
+            if (dto.AssistantGroomerId == dto.GroomerId)
+                throw new ConflictException("Assistant must be a different groomer");
+
+            var assistantExists = await ctx.Groomers
+                .AnyAsync(g => g.Id == dto.AssistantGroomerId && g.SalonId == salonId, ct);
+
+            if (!assistantExists)
+                throw new NotFoundException("Assistant groomer not found");
+        }
+        
 
         if (duplicateExists)
         {
@@ -169,7 +188,8 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             GroomerId = dto.GroomerId,
             ServiceBreedId = dto.ServiceBreedId,
             SettlementType = groomer.SettlementType,
-            SettlementRate = groomer.SettlementRate
+            SettlementRate = groomer.SettlementRate,
+            AssistantGroomerId = dto.AssistantGroomerId
         };
         
         ctx.Visits.Add(newVisit);

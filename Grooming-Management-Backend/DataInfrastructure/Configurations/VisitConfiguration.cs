@@ -60,6 +60,11 @@ public class VisitConfiguration : IEntityTypeConfiguration<Visit>
         builder.Property(v => v.SettlementRate)
             .HasPrecision(18, 2);
         
+        builder.HasOne(v => v.AssistantGroomer)
+            .WithMany()
+            .HasForeignKey(v => v.AssistantGroomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
             
         
         

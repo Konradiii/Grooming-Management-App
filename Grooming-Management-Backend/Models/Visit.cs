@@ -13,6 +13,9 @@ public class Visit
     public StatusEnum Status { get; set; }
     public string? Notes { get; set; }
     
+    public int? AssistantGroomerId { get; set; }
+    public Groomer? AssistantGroomer { get; set; }
+    
     public SettlementTypeEnum SettlementType { get; set; }
     public decimal SettlementRate { get; set; }
     

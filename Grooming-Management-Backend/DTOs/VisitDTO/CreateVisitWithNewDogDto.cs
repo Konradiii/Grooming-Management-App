@@ -17,4 +17,5 @@ public class CreateVisitWithNewDogDto
     public DateTime Date { get; set; }
     public int? DurationMinutes { get; set; }
     public string? Notes { get; set; }
+    public int? AssistantGroomerId { get; set; }
 }
