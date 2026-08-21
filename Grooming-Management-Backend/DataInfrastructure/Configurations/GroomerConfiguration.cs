@@ -31,6 +31,8 @@ public class GroomerConfiguration : IEntityTypeConfiguration<Groomer>
             .HasMaxLength(50);
         builder.Property(e=> e.ActiveStatus)
             .IsRequired();
+        builder.Property(g => g.SettlementRate)
+            .HasPrecision(18, 2);
         
 
     }

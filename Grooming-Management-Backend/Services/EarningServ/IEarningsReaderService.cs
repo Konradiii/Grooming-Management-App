@@ -10,4 +10,7 @@ public interface IEarningsReaderService
     Task<List<GetEarningsByGroomerDto>> GetEarningsByGroomerAsync(int salonId, DateTime dateFrom, DateTime dateTo, CancellationToken ct);
 
     Task<List<GetEarningsByDayDto>> GetEarningsByDayAsync(int salonId, DateTime dateFrom, DateTime dateTo, CancellationToken ct);
+    
+    Task<List<GetGroomerSettlementDto>> GetGroomerSettlementsAsync(
+        int salonId, DateTime dateFrom, DateTime dateTo, CancellationToken ct);
 }

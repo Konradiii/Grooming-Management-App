@@ -13,6 +13,9 @@ public class Visit
     public StatusEnum Status { get; set; }
     public string? Notes { get; set; }
     
+    public SettlementTypeEnum SettlementType { get; set; }
+    public decimal SettlementRate { get; set; }
+    
     //
     public int SalonId { get; set; }
     public Salon Salon { get; set; }

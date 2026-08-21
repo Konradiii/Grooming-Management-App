@@ -97,12 +97,12 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             throw new NotFoundException("Dog not found");
         }
         
-        var groomerExists = await ctx.Groomers
+        var groomer = await ctx.Groomers
             .Where(g => salonId == g.SalonId)
-            .Where(d => d.Id == dto.GroomerId)
-            .AnyAsync(ct);
-        
-        if (!groomerExists)
+            .Where(g => g.Id == dto.GroomerId)
+            .FirstOrDefaultAsync(ct);
+
+        if (groomer == null)
         {
             throw new NotFoundException("Groomer not found");
         }
@@ -168,6 +168,8 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             DogOwnerId = dog.DogOwnerId,
             GroomerId = dto.GroomerId,
             ServiceBreedId = dto.ServiceBreedId,
+            SettlementType = groomer.SettlementType,
+            SettlementRate = groomer.SettlementRate
         };
         
         ctx.Visits.Add(newVisit);
@@ -275,10 +277,12 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         throw new ConflictException("Service breed doesn't exist for that breed");
     }
 
-    var groomerExists = await ctx.Groomers
-        .AnyAsync(g => g.Id == dto.GroomerId && g.SalonId == salonId, ct);
+    var groomer = await ctx.Groomers
+        .Where(g => salonId == g.SalonId)
+        .Where(g => g.Id == dto.GroomerId)
+        .FirstOrDefaultAsync(ct);
 
-    if (!groomerExists)
+    if (groomer == null)
     {
         throw new NotFoundException("Groomer not found");
     }
@@ -341,7 +345,9 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         Dog = dog,
         DogOwner = owner,
         GroomerId = dto.GroomerId,
-        ServiceBreedId = dto.ServiceBreedId
+        ServiceBreedId = dto.ServiceBreedId,
+        SettlementType = groomer.SettlementType,
+        SettlementRate = groomer.SettlementRate
     };
 
     ctx.DogOwners.Add(owner);

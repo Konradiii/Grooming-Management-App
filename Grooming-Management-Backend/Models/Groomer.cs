@@ -7,6 +7,8 @@ public class Groomer
     public int Id { get; set; }
     public string FirstName { get; set; }
     public string LastName { get; set; }
+    public SettlementTypeEnum SettlementType { get; set; }
+    public decimal SettlementRate { get; set; }
     
     public ActiveStatusEnum ActiveStatus  { get; set; }
     

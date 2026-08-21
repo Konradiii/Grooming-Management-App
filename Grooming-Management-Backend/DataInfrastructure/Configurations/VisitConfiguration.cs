@@ -57,6 +57,9 @@ public class VisitConfiguration : IEntityTypeConfiguration<Visit>
             .HasForeignKey(x=>x.ServiceBreedId)
             .OnDelete(DeleteBehavior.Restrict);
         
+        builder.Property(v => v.SettlementRate)
+            .HasPrecision(18, 2);
+        
             
         
         

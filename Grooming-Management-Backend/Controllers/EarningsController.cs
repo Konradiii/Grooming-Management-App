@@ -37,6 +37,16 @@ public class EarningsController(IEarningsReaderService readerService, ICurrentUs
         var res2 = await readerService.GetEarningsByDayAsync(salonId, dateFrom, dateTo, ct);
         return res2;
     }
+    
+    [HttpGet("GetGroomerSettlements")]
+    [Authorize(Roles = "Owner")]
+    [EndpointSummary("Zwraca rozliczenia pracowników za okres")]
+    public async Task<List<GetGroomerSettlementDto>> GetGroomerSettlements(
+        DateTime dateFrom, DateTime dateTo, CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        return await readerService.GetGroomerSettlementsAsync(salonId, dateFrom, dateTo, ct);
+    }
 
     
 }

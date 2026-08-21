@@ -4,6 +4,7 @@ using Grooming_Management_App.DataInfrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Grooming_Management_App.Migrations
 {
     [DbContext(typeof(GroomingDbContext))]
-    partial class GroomingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260821135848_AddGroomerSettlement")]
+    partial class AddGroomerSettlement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -625,13 +628,6 @@ namespace Grooming_Management_App.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ServiceBreedId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("SettlementRate")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("SettlementType")
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
