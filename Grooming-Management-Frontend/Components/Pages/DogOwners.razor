@@ -6,6 +6,8 @@
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject IDialogService DialogService
+@inject NavigationManager Navigation
+
 
 
 <MudText Typo="Typo.h5" Class="mb-4">Właściciele</MudText>
@@ -26,7 +28,9 @@ else
         Dodaj właściciela
     </MudButton>
     
-    <MudTable Items="owners" Hover="true" Striped="true">
+    <MudTable Items="owners" Hover="true" Striped="true"
+              T="GetDogOwnerDto"
+              OnRowClick="@((TableRowClickEventArgs<GetDogOwnerDto> args) => Navigation.NavigateTo($"/wlasciciele/{args.Item!.Id}"))">
         <HeaderContent>
             <MudTh>Imię</MudTh>
             <MudTh>Nazwisko</MudTh>

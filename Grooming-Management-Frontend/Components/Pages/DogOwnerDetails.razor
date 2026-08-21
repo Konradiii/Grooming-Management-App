@@ -1,0 +1,138 @@
+@page "/wlasciciele/{OwnerId:int}"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.DogOwnerDTO
+@using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+           OnClick="@(() => Navigation.NavigateTo("/wlasciciele"))" Class="mb-4">
+    Wróć do listy
+</MudButton>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (owner == null)
+{
+    <MudAlert Severity="Severity.Error">Nie znaleziono właściciela</MudAlert>
+}
+else
+{
+    <div class="d-flex align-center gap-4 mb-4">
+        <div>
+            <MudText Typo="Typo.h5">@owner.FirstName @owner.LastName</MudText>
+            <MudText Typo="Typo.body2">@owner.Phone</MudText>
+        </div>
+        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="OpenEditDialog" />
+    </div>
+
+    <div class="d-flex align-center justify-space-between mb-3">
+        <MudText Typo="Typo.h6">Psy</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDogDialog">
+            Dodaj psa
+        </MudButton>
+    </div>
+
+    @if (!dogs.Any())
+    {
+        <MudAlert Severity="Severity.Info">Brak psów</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="dogs" Hover="true" Striped="true"
+                  T="GetDogDto"
+                  OnRowClick="@((TableRowClickEventArgs<GetDogDto> args) => Navigation.NavigateTo($"/psy/{args.Item!.Id}"))">
+            <HeaderContent>
+                <MudTh>Imię</MudTh>
+                <MudTh>Rasa</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Name</MudTd>
+                <MudTd>@context.BreedName</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    [Parameter] public int OwnerId { get; set; }
+
+    private GetDogOwnerDto? owner;
+    private List<GetDogDto> dogs = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadAllAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAllAsync()
+    {
+        try
+        {
+            owner = await Api.GetAsync<GetDogOwnerDto>($"api/DogOwner/{OwnerId}");
+            dogs = await Api.GetAsync<List<GetDogDto>>($"api/Dog?dogOwnerId={OwnerId}") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenEditDialog()
+    {
+        if (owner == null) return;
+
+        var parameters = new DialogParameters<EditDogOwnerDialog>
+        {
+            { x => x.Owner, owner }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditDogOwnerDialog>("Edycja właściciela", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadAllAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenAddDogDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddDogDialog>("Nowy pies", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadAllAsync();
+            StateHasChanged();
+        }
+    }
+}
