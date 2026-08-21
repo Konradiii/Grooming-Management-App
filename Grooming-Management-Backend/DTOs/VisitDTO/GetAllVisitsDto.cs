@@ -10,4 +10,7 @@ public class GetAllVisitsDto
     public string GroomerName { get; set; }
     public string ServiceName { get; set; }
     public StatusEnum Status { get; set; }
+    public int GroomerId { get; set; }
+    public int EstimatedDuration { get; set; }
+    public string BreedName { get; set; }
 }

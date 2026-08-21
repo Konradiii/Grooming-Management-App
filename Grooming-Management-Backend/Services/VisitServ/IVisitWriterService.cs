@@ -12,6 +12,9 @@ public interface IVisitWriterService
     Task ChangeVisitStatusAsync(int salonId, int visitId, StatusEnum status, CancellationToken ct);
     
     Task UpdateFinalPriceAsync(int salonId, int visitId, decimal finalPrice, CancellationToken ct);
-    
+
+    Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNewDogDto dto, CancellationToken ct);
+
+
     //Task<int> BookVisitByClientAsync(int salonId, int userId, AddVisitDto dto, CancellationToken ct);
 }

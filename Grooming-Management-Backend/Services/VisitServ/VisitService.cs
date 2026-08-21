@@ -20,14 +20,19 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             .Where(v => filter.GroomerId == null || filter.GroomerId == v.GroomerId)
             .Where(e => filter.DateFrom == null || e.Date > filter.DateFrom )
             .Where(e => filter.DateTo == null ||  e.Date <= filter.DateTo)
+            .Where(v => filter.DogId == null || v.DogId == filter.DogId)
+            .Where(v => filter.Status == null || v.Status == filter.Status)
             .Select(v => new GetAllVisitsDto
             {
                 Id = v.Id,
                 Date = v.Date,
                 DogName = v.Dog.Name,
+                GroomerId = v.GroomerId,
                 GroomerName = v.Groomer.FirstName + " " + v.Groomer.LastName,
                 ServiceName = v.ServiceBreed.Service.Name,
-                Status = v.Status
+                EstimatedDuration = v.EstimatedDuration,
+                Status = v.Status,
+                BreedName = v.Dog.Breed.Name,
 
             }).ToListAsync(ct);
     }
@@ -52,7 +57,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 DogOwnerFullName =  v.DogOwner.FirstName + " " + v.DogOwner.LastName,
                 GroomerFullName =  v.Groomer.FirstName + " " + v.Groomer.LastName,
                 ServiceName = v.ServiceBreed.Service.Name,
-                BreedName =  v.ServiceBreed.Breed.Name
+                BreedName =  v.ServiceBreed.Breed.Name,
                 
             }).FirstOrDefaultAsync(ct);
 
@@ -67,6 +72,10 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
     
     public async Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct)
     {
+        if (dto.DurationMinutes is <= 0)
+        {
+            throw new ConflictException("Duration must be greater than zero");
+        }
 
         var serviceBreed = await ctx.ServiceBreeds
             .Where(g => salonId == g.SalonId)
@@ -121,8 +130,10 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         }
 
 
+        var duration = dto.DurationMinutes ?? serviceBreed.Duration;
+
         var startTime = dto.Date;
-        var endTime = dto.Date.AddMinutes(serviceBreed.Duration);
+        var endTime = dto.Date.AddMinutes(duration);
         
         var visitOverlaps = await ctx.Visits
             .Where(e => e.GroomerId == dto.GroomerId)
@@ -148,7 +159,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         {
             CreatedAt = DateTime.UtcNow,
             Date = dto.Date,
-            EstimatedDuration = serviceBreed.Duration,
+            EstimatedDuration = duration,
             ProposedPrice = serviceBreed.Price,
             Status = StatusEnum.Scheduled,
             Notes = dto.Notes,
@@ -156,7 +167,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             DogId = dto.DogId,
             DogOwnerId = dog.DogOwnerId,
             GroomerId = dto.GroomerId,
-            ServiceBreedId = dto.ServiceBreedId
+            ServiceBreedId = dto.ServiceBreedId,
         };
         
         ctx.Visits.Add(newVisit);
@@ -218,6 +229,128 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         
         
     }
+    
+    public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNewDogDto dto, CancellationToken ct)
+{
+    if (dto.DurationMinutes is <= 0)
+    {
+        throw new ConflictException("Duration must be greater than zero");
+    }
+
+    var blacklistedByPhone = await ctx.Blacklists
+        .Where(b => b.SalonId == salonId)
+        .AnyAsync(b => b.DogOwner.Phone == dto.Phone, ct);
+
+    if (blacklistedByPhone)
+    {
+        throw new ConflictException("This client is on Blacklist!");
+    }
+
+    var ownerExists = await ctx.DogOwners
+        .AnyAsync(o => o.Phone == dto.Phone && o.SalonId == salonId, ct);
+
+    if (ownerExists)
+    {
+        throw new ConflictException("DogOwner with this phone number already exists");
+    }
+
+    var breedExists = await ctx.Breeds.AnyAsync(b => b.Id == dto.BreedId, ct);
+
+    if (!breedExists)
+    {
+        throw new NotFoundException("Breed not found");
+    }
+
+    var serviceBreed = await ctx.ServiceBreeds
+        .Where(s => s.Id == dto.ServiceBreedId && s.SalonId == salonId)
+        .FirstOrDefaultAsync(ct);
+
+    if (serviceBreed == null)
+    {
+        throw new NotFoundException("Service breed not found");
+    }
+
+    if (serviceBreed.BreedId != dto.BreedId)
+    {
+        throw new ConflictException("Service breed doesn't exist for that breed");
+    }
+
+    var groomerExists = await ctx.Groomers
+        .AnyAsync(g => g.Id == dto.GroomerId && g.SalonId == salonId, ct);
+
+    if (!groomerExists)
+    {
+        throw new NotFoundException("Groomer not found");
+    }
+
+    var duration = dto.DurationMinutes ?? serviceBreed.Duration;
+    var startTime = dto.Date;
+    var endTime = dto.Date.AddMinutes(duration);
+
+    var visitOverlaps = await ctx.Visits
+        .Where(v => v.GroomerId == dto.GroomerId)
+        .Where(v => v.SalonId == salonId)
+        .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
+        .AnyAsync(v => startTime < v.Date.AddMinutes(v.EstimatedDuration)
+                    && endTime > v.Date, ct);
+
+    if (visitOverlaps)
+    {
+        throw new ConflictException("Groomer already has a visit at this time");
+    }
+
+    var timeOffOverlaps = await ctx.GroomerTimeOffs
+        .Where(t => t.SalonId == salonId)
+        .Where(t => t.GroomerId == dto.GroomerId)
+        .AnyAsync(t => startTime < t.EndDate.ToDateTime(t.EndTime)
+                    && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
+
+    if (timeOffOverlaps)
+    {
+        throw new ConflictException("Groomer is unavailable at this time");
+    }
+
+    var owner = new Models.DogOwner
+    {
+        FirstName = dto.FirstName,
+        LastName = dto.LastName,
+        Phone = dto.Phone,
+        SalonId = salonId
+    };
+
+    var dog = new Dog
+    {
+        Name = dto.DogName,
+        AgeInMonths = dto.AgeInMonths,
+        BreedId = dto.BreedId,
+        Notes = dto.DogNotes,
+        SalonId = salonId
+    };
+
+    owner.Dogs.Add(dog);
+
+    var visit = new Visit
+    {
+        CreatedAt = DateTime.UtcNow,
+        Date = dto.Date,
+        EstimatedDuration = duration,
+        ProposedPrice = serviceBreed.Price,
+        Status = StatusEnum.Scheduled,
+        Notes = dto.Notes,
+        SalonId = salonId,
+        Dog = dog,
+        DogOwner = owner,
+        GroomerId = dto.GroomerId,
+        ServiceBreedId = dto.ServiceBreedId
+    };
+
+    ctx.DogOwners.Add(owner);
+    ctx.Visits.Add(visit);
+
+    await ctx.SaveChangesAsync(ct);
+
+    return visit.Id;
+}
 /*
  
 // Zaczątek portalu klienta — nieaktywne.

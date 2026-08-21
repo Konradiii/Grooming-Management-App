@@ -39,6 +39,8 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
                 Notes = e.Notes,
                 BreedName = e.Breed.Name,
                 DogOwnerFullName = e.DogOwner.FirstName + " " + e.DogOwner.LastName,
+                DogOwnerId = e.DogOwnerId,
+                DogOwnerPhone = e.DogOwner.Phone,
                 
             }
             ).FirstOrDefaultAsync(ct);

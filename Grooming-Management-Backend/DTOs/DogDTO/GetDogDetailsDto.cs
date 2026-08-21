@@ -8,5 +8,7 @@ public class GetDogDetailsDto
     public string? Notes { get; set; }
     public string DogOwnerFullName { get; set; }
     public string BreedName { get; set; }
+    public int DogOwnerId { get; set; }
+    public string DogOwnerPhone { get; set; }
     
 }

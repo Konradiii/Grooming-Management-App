@@ -6,6 +6,7 @@ public class VisitFilterDto
 {
     public StatusEnum? Status { get; set; }
     public int? GroomerId { get; set; }
+    public int? DogId { get; set; }
     public DateTime? DateFrom { get; set; }
     public DateTime? DateTo { get; set; }
 }

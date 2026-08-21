@@ -69,6 +69,16 @@ public class VisitController(IVisitReaderService readerService,IVisitWriterServi
         return NoContent();
     }
     
+    [HttpPost("with-new-dog")]
+    [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Tworzy wizytę wraz z nowym klientem i psem")]
+    public async Task<IActionResult> CreateVisitWithNewDog(CreateVisitWithNewDogDto dto, CancellationToken ct)
+    {
+        var salonId = userService.SalonId;
+        var newVisitId = await writerService.CreateVisitWithNewDogAsync(salonId, dto, ct);
+        return Created($"api/Visit/{newVisitId}", new { id = newVisitId });
+    }
+    
     /*
     [HttpPost("book")]
     [Authorize(Roles = "Client")]
