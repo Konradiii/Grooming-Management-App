@@ -11,7 +11,6 @@ CultureInfo.DefaultThreadCurrentUICulture = culture;
 
 
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
@@ -28,7 +27,14 @@ builder.Services.AddHttpClient("Api", client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"]!);
 });
 
+
+
 var app = builder.Build();
+
+app.UseRequestLocalization(new RequestLocalizationOptions()
+    .SetDefaultCulture("pl-PL")
+    .AddSupportedCultures("pl-PL")
+    .AddSupportedUICultures("pl-PL"));
 
 
 

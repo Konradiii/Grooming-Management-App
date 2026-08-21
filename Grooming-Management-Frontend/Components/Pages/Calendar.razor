@@ -45,10 +45,10 @@ else
                      AppointmentSelect="OnAppointmentSelect"
                      AppointmentRender="OnAppointmentRender"
                      Style="height: 700px;">
-        <RadzenDayView StartTime="TimeSpan.FromHours(6)" EndTime="TimeSpan.FromHours(22)" />
-        <RadzenWeekView StartTime="TimeSpan.FromHours(6)" EndTime="TimeSpan.FromHours(22)" 
-                        HeaderFormat="ddd dd.MM" />
-        <RadzenMonthView />
+        <RadzenDayView StartTime="TimeSpan.FromHours(6)" EndTime="TimeSpan.FromHours(22)"
+                       TimeFormat="HH:mm" />
+        <RadzenWeekView StartTime="TimeSpan.FromHours(6)" EndTime="TimeSpan.FromHours(22)"
+                        HeaderFormat="ddd dd.MM" TimeFormat="HH:mm" />
     </RadzenScheduler>
 }
 

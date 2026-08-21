@@ -1,4 +1,5 @@
 using Grooming_Management_App.Enums;
+using MudBlazor;
 
 namespace Grooming_Management_Frontend.Services;
 
@@ -39,5 +40,13 @@ public static class EnumLabels
         SubscriptionStatusEnum.PastDue => "Zaległość",
         SubscriptionStatusEnum.Suspended => "Zawieszona",
         _ => status.ToString()
+    };
+    
+    public static Color StatusColor(StatusEnum status) => status switch
+    {
+        StatusEnum.Completed => Color.Success,
+        StatusEnum.Cancelled => Color.Default,
+        StatusEnum.NoShow => Color.Error,
+        _ => Color.Primary
     };
 }
