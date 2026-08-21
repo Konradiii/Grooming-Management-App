@@ -8,4 +8,7 @@ public class GetGroomerDto
     public string FirstName { get; set; }
     public string LastName { get; set; }
     public ActiveStatusEnum ActiveStatus { get; set; }
+    public SettlementTypeEnum SettlementType { get; set; }
+    public decimal SettlementRate { get; set; }
+    public bool HasAccount { get; set; }
 }

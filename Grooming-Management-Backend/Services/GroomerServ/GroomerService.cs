@@ -63,6 +63,9 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
                 FirstName = e.FirstName,
                 LastName = e.LastName,
                 ActiveStatus = e.ActiveStatus,
+                SettlementType = e.SettlementType,
+                SettlementRate = e.SettlementRate,
+                HasAccount = e.UserId != null,
             }).FirstOrDefaultAsync(ct);
         if (result == null)
         {
@@ -82,6 +85,9 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
                 FirstName = e.FirstName,
                 LastName = e.LastName,
                 ActiveStatus = e.ActiveStatus,
+                SettlementType = e.SettlementType,
+                SettlementRate = e.SettlementRate,
+                HasAccount = e.UserId != null,
             }).ToListAsync(ct);
         
     }
@@ -97,6 +103,8 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
         }
         edited.FirstName = dto.FirstName;
         edited.LastName = dto.LastName;
+        edited.SettlementType = dto.SettlementType;
+        edited.SettlementRate = dto.SettlementRate;
         
         await ctx.SaveChangesAsync(ct);
         

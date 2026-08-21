@@ -8,5 +8,6 @@ public class GetWaitlistDto
         public int Priority { get; set; }
         public string DogOwnerFullName { get; set; }
         public string? DogName { get; set; }
+        public string DogOwnerPhone { get; set; }
         
 }

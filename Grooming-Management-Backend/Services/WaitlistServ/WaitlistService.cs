@@ -63,6 +63,7 @@ public class WaitlistService(GroomingDbContext ctx) : IWaitlistReaderService, IW
                 Priority = e.Priority,
                 DogOwnerFullName = e.DogOwner.FirstName + " " + e.DogOwner.LastName,
                 DogName = e.Dog != null ? e.Dog.Name : null,
+                DogOwnerPhone = e.DogOwner.Phone,
             }).ToListAsync(ct);
     }
 }
