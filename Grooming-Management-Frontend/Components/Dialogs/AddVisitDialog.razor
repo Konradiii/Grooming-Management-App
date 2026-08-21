@@ -1,0 +1,271 @@
+@using Grooming_Management_App.DTOs.VisitDTO
+@using Grooming_Management_App.DTOs.DogDTO
+@using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.DTOs.ServiceBreedDTO
+@using Grooming_Management_App.DTOs.AvailabilityDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudAutocomplete T="GetDogDto"
+                         Value="selectedDog"
+                         ValueChanged="OnDogChanged"
+                         Label="Pies"
+                         Placeholder="Wpisz imię psa lub nazwisko właściciela"
+                         SearchFunc="SearchDogs"
+                         ToStringFunc="@(d => d == null ? "" : $"{d.Name} — {d.DogOwnerFullName}")"
+                         Variant="Variant.Outlined"
+                         Class="mb-3" />
+
+        @if (selectedDog != null)
+        {
+            <MudSelect T="GetServiceBreedDto" Value="selectedService" ValueChanged="OnServiceChanged"
+                       Label="Usługa" Placeholder="Wybierz usługę"
+                       ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} — {s.Price:0.00} zł, {s.Duration} min")"
+                       Variant="Variant.Outlined" Class="mb-3">
+                @foreach (var sb in availableServices)
+                {
+                    <MudSelectItem T="GetServiceBreedDto" Value="sb">
+                        @sb.ServiceName — @sb.Price.ToString("0.00") zł, @sb.Duration min
+                    </MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (!availableServices.Any())
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-3">
+                    Brak pozycji cennika dla rasy @selectedDog.BreedName
+                </MudAlert>
+            }
+        }
+
+        @if (selectedService != null)
+        {
+            <MudSelect T="GetGroomerDto" Value="selectedGroomer" ValueChanged="OnGroomerChanged"
+                       Label="Groomer" Placeholder="Wybierz groomera"
+                       ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
+                       Variant="Variant.Outlined" Class="mb-3">
+                @foreach (var g in groomers)
+                {
+                    <MudSelectItem T="GetGroomerDto" Value="g">@g.FirstName @g.LastName</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudDatePicker Date="selectedDate" DateChanged="OnDateChanged"
+                           Label="Data" Variant="Variant.Outlined"
+                           MinDate="DateTime.Today" Class="mb-3" />
+        }
+
+        @if (isLoadingSlots)
+        {
+            <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mb-3" />
+        }
+        else if (selectedGroomer != null && selectedDate != null)
+        {
+            @if (!availableSlots.Any())
+            {
+                <MudAlert Severity="Severity.Info" Class="mb-3">
+                    Brak wolnych terminów tego dnia
+                </MudAlert>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Class="mb-2">Wolne terminy</MudText>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @foreach (var slot in availableSlots)
+                    {
+                        <MudButton Variant="@(selectedSlot == slot ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => selectedSlot = slot)">
+                            @slot
+                        </MudButton>
+                    }
+                </div>
+            }
+        }
+
+        <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="2" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private List<GetDogDto> dogs = new();
+    private List<GetGroomerDto> groomers = new();
+    private List<GetServiceBreedDto> allServices = new();
+    private List<GetServiceBreedDto> availableServices = new();
+    private List<string> availableSlots = new();
+
+    private GetDogDto? selectedDog;
+    private GetServiceBreedDto? selectedService;
+    private GetGroomerDto? selectedGroomer;
+    private DateTime? selectedDate = DateTime.Today;
+    private string? selectedSlot;
+    private string? notes;
+
+    private bool isLoadingSlots;
+    private bool isSaving;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dogs = await Api.GetAsync<List<GetDogDto>>("api/Dog") ?? new();
+        groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+        allServices = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds") ?? new();
+    }
+
+    private Task<IEnumerable<GetDogDto>> SearchDogs(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetDogDto>>(dogs);
+
+        var filtered = dogs.Where(d =>
+            d.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            d.DogOwnerFullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(filtered);
+    }
+
+    private void OnDogChanged(GetDogDto? dog)
+    {
+        selectedDog = dog;
+        selectedService = null;
+        selectedSlot = null;
+        availableSlots.Clear();
+
+        availableServices = dog == null
+            ? new()
+            : allServices
+                .Where(s => s.BreedName == dog.BreedName && s.Status == ActiveStatusEnum.Active)
+                .ToList();
+    }
+
+    private async Task OnServiceChanged(GetServiceBreedDto? service)
+    {
+        selectedService = service;
+        selectedSlot = null;
+        await LoadSlotsAsync();
+    }
+
+    private async Task OnGroomerChanged(GetGroomerDto? groomer)
+    {
+        selectedGroomer = groomer;
+        selectedSlot = null;
+        await LoadSlotsAsync();
+    }
+
+    private async Task OnDateChanged(DateTime? date)
+    {
+        selectedDate = date;
+        selectedSlot = null;
+        await LoadSlotsAsync();
+    }
+
+    private async Task LoadSlotsAsync()
+    {
+        availableSlots.Clear();
+
+        if (selectedService == null || selectedGroomer == null || selectedDate == null)
+            return;
+
+        isLoadingSlots = true;
+
+        try
+        {
+            var date = DateOnly.FromDateTime(selectedDate.Value).ToString("yyyy-MM-dd");
+            var url = $"api/Availability?date={date}&serviceBreedId={selectedService.Id}&groomerId={selectedGroomer.Id}";
+
+            var result = await Api.GetAsync<List<GetAvailabilityDto>>(url);
+            availableSlots = result?.FirstOrDefault()?.AvailableSlots ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać terminów: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingSlots = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (selectedDog == null)
+        {
+            errorMessage = "Wybierz psa";
+            return;
+        }
+
+        if (selectedService == null)
+        {
+            errorMessage = "Wybierz usługę";
+            return;
+        }
+
+        if (selectedGroomer == null)
+        {
+            errorMessage = "Wybierz groomera";
+            return;
+        }
+
+        if (selectedSlot == null)
+        {
+            errorMessage = "Wybierz termin";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var time = TimeOnly.Parse(selectedSlot);
+            var visitDate = selectedDate!.Value.Date.Add(time.ToTimeSpan());
+
+            var dto = new AddVisitDto
+            {
+                DogId = selectedDog.Id,
+                GroomerId = selectedGroomer.Id,
+                ServiceBreedId = selectedService.Id,
+                Date = visitDate,
+                Notes = notes
+            };
+
+            var response = await Api.PostAsync("api/Visit", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
