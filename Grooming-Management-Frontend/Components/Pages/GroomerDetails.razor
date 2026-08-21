@@ -1,0 +1,241 @@
+@page "/groomerzy/{GroomerId:int}"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.DTOs.GroomerScheduleDTO
+@using Grooming_Management_App.DTOs.GroomerTimeOffDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+           OnClick="@(() => Navigation.NavigateTo("/groomerzy"))" Class="mb-4">
+    Wróć do listy
+</MudButton>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (groomer == null)
+{
+    <MudAlert Severity="Severity.Error">Nie znaleziono groomera</MudAlert>
+}
+else
+{
+    <MudText Typo="Typo.h5" Class="mb-1">@groomer.FirstName @groomer.LastName</MudText>
+    <MudChip T="string" Size="Size.Small" Class="mb-4"
+             Color="@(groomer.ActiveStatus == ActiveStatusEnum.Active ? Color.Success : Color.Default)">
+        @(groomer.ActiveStatus == ActiveStatusEnum.Active ? "Aktywny" : "Nieaktywny")
+    </MudChip>
+
+    <MudTabs Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-4">
+
+        <MudTabPanel Text="Grafik pracy">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenAddScheduleDialog" Class="mt-4 mb-4">
+                Dodaj przedział
+            </MudButton>
+
+            @if (!schedules.Any())
+            {
+                <MudAlert Severity="Severity.Info">Brak zdefiniowanego grafiku</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="schedules.OrderBy(s => s.DayOfWeek).ThenBy(s => s.StartTime)" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Dzień</MudTh>
+                        <MudTh>Od</MudTh>
+                        <MudTh>Do</MudTh>
+                        <MudTh Style="width: 60px;" />
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@DayName(context.DayOfWeek)</MudTd>
+                        <MudTd>@context.StartTime.ToString("HH\\:mm")</MudTd>
+                        <MudTd>@context.EndTime.ToString("HH\\:mm")</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                           OnClick="@(() => DeleteScheduleAsync(context.Id))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudTabPanel>
+
+        <MudTabPanel Text="Zarezerwuj wolny czas">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenAddScheduleDialog" Class="mt-4 mb-4">
+                Dodaj przedział
+            </MudButton>
+
+            @if (!timeOffs.Any())
+            {
+                <MudAlert Severity="Severity.Info">Brak blokad</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="timeOffs.OrderBy(t => t.StartDate)" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Od</MudTh>
+                        <MudTh>Do</MudTh>
+                        <MudTh>Godziny</MudTh>
+                        <MudTh>Powód</MudTh>
+                        <MudTh Style="width: 60px;" />
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.StartDate.ToString("dd.MM.yyyy")</MudTd>
+                        <MudTd>@context.EndDate.ToString("dd.MM.yyyy")</MudTd>
+                        <MudTd>@context.StartTime.ToString("HH\\:mm") – @context.EndTime.ToString("HH\\:mm")</MudTd>
+                        <MudTd>@context.Reason</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                           OnClick="@(() => DeleteTimeOffAsync(context.Id))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudTabPanel>
+
+    </MudTabs>
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    [Parameter] public int GroomerId { get; set; }
+
+    private GetGroomerDto? groomer;
+    private List<GetGroomerScheduleDto> schedules = new();
+    private List<GetGroomerTimeOffDto> timeOffs = new();
+
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadAllAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadAllAsync()
+    {
+        try
+        {
+            groomer = await Api.GetAsync<GetGroomerDto>($"api/Groomer/{GroomerId}");
+            await LoadSchedulesAsync();
+            await LoadTimeOffsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadSchedulesAsync()
+    {
+        var result = await Api.GetAsync<List<GetGroomerScheduleDto>>($"api/GroomerSchedule?groomerId={GroomerId}");
+        schedules = result ?? new();
+    }
+
+    private async Task LoadTimeOffsAsync()
+    {
+        var result = await Api.GetAsync<List<GetGroomerTimeOffDto>>($"api/GroomerTimeOff?groomerId={GroomerId}");
+        timeOffs = result ?? new();
+    }
+
+    private async Task OpenAddScheduleDialog()
+    {
+        var parameters = new DialogParameters<AddScheduleDialog>
+        {
+            { x => x.GroomerId, GroomerId }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddScheduleDialog>("Nowy przedział pracy", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadSchedulesAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenAddTimeOffDialog()
+    {
+        var parameters = new DialogParameters<AddTimeOffDialog>
+        {
+            { x => x.GroomerId, GroomerId }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddTimeOffDialog>("Nowa blokada czasu", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadTimeOffsAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteScheduleAsync(int scheduleId)
+    {
+        var response = await Api.DeleteAsync($"api/GroomerSchedule/{scheduleId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadSchedulesAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+
+    private async Task DeleteTimeOffAsync(int timeOffId)
+    {
+        var response = await Api.DeleteAsync($"api/GroomerTimeOff/{timeOffId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadTimeOffsAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+
+    private static string DayName(DayOfWeekEnum day) => day switch
+    {
+        DayOfWeekEnum.Monday => "Poniedziałek",
+        DayOfWeekEnum.Tuesday => "Wtorek",
+        DayOfWeekEnum.Wednesday => "Środa",
+        DayOfWeekEnum.Thursday => "Czwartek",
+        DayOfWeekEnum.Friday => "Piątek",
+        DayOfWeekEnum.Saturday => "Sobota",
+        DayOfWeekEnum.Sunday => "Niedziela",
+        _ => day.ToString()
+    };
+}

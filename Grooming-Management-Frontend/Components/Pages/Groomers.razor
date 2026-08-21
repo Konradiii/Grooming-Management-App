@@ -1,0 +1,156 @@
+@page "/groomerzy"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<MudText Typo="Typo.h5" Class="mb-4">Groomerzy</MudText>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary"
+           StartIcon="@Icons.Material.Filled.Add"
+           OnClick="OpenAddDialog" Class="mb-4">
+    Dodaj groomera
+</MudButton>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+}
+else
+{
+    <MudTable Items="groomers" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Imię</MudTh>
+            <MudTh>Nazwisko</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh Style="width: 60px;" />
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.FirstName</MudTd>
+            <MudTd>@context.LastName</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(context.ActiveStatus == ActiveStatusEnum.Active ? Color.Success : Color.Default)">
+                    @(context.ActiveStatus == ActiveStatusEnum.Active ? "Aktywny" : "Nieaktywny")
+                </MudChip>
+            </MudTd>
+            <MudTd Style="width: 60px;">
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Dense="true" AnchorOrigin="Origin.BottomLeft">
+                    <MudMenuItem Icon="@Icons.Material.Filled.Person" OnClick="@(() => OpenDetails(context.Id))">
+                        Karta groomera
+                    </MudMenuItem>
+                    <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))">
+                        Edytuj
+                    </MudMenuItem>
+                    @if (context.ActiveStatus == ActiveStatusEnum.Active)
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="@(() => ToggleStatusAsync(context, false))">
+                            Dezaktywuj
+                        </MudMenuItem>
+                    }
+                    else
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => ToggleStatusAsync(context, true))">
+                            Aktywuj
+                        </MudMenuItem>
+                    }
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<GetGroomerDto> groomers = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadGroomersAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadGroomersAsync()
+    {
+        try
+        {
+            var result = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer");
+            groomers = result ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OpenDetails(int groomerId)
+    {
+        Navigation.NavigateTo($"/groomerzy/{groomerId}");
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddGroomerDialog>("Nowy groomer", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadGroomersAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenEditDialog(GetGroomerDto groomer)
+    {
+        var parameters = new DialogParameters<EditGroomerDialog>
+        {
+            { x => x.Groomer, groomer }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditGroomerDialog>("Edycja groomera", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadGroomersAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleStatusAsync(GetGroomerDto groomer, bool activate)
+    {
+        var action = activate ? "ActivateGroomer" : "DeactivateGroomer";
+        var response = await Api.PutAsync<object?>($"api/Groomer/{groomer.Id}/{action}", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadGroomersAsync();
+            StateHasChanged();
+        }
+        else
+        {
+            errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+}

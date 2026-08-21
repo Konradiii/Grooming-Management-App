@@ -1,0 +1,108 @@
+@using Grooming_Management_App.DTOs.GroomerTimeOffDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudDatePicker @bind-Date="startDate" Label="Data od" Variant="Variant.Outlined" Class="mb-3" />
+        <MudDatePicker @bind-Date="endDate" Label="Data do" Variant="Variant.Outlined" Class="mb-3" />
+
+        <MudCheckBox @bind-Value="wholeDay" Label="Cały dzień" Class="mb-3" />
+
+        @if (!wholeDay)
+        {
+            <MudTimePicker @bind-Time="startTime" Label="Od godziny" Variant="Variant.Outlined" Class="mb-3" />
+            <MudTimePicker @bind-Time="endTime" Label="Do godziny" Variant="Variant.Outlined" Class="mb-3" />
+        }
+
+        <MudTextField @bind-Value="reason" Label="Powód" Variant="Variant.Outlined" Lines="2" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int GroomerId { get; set; }
+
+    private DateTime? startDate = DateTime.Today;
+    private DateTime? endDate = DateTime.Today;
+    private bool wholeDay = true;
+    private TimeSpan? startTime = new TimeSpan(9, 0, 0);
+    private TimeSpan? endTime = new TimeSpan(17, 0, 0);
+    private string? reason;
+
+    private string? errorMessage;
+    private bool isSaving;
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (startDate == null || endDate == null)
+        {
+            errorMessage = "Podaj daty";
+            return;
+        }
+
+        if (startDate > endDate)
+        {
+            errorMessage = "Data początkowa musi być wcześniejsza lub równa końcowej";
+            return;
+        }
+
+        var from = wholeDay ? new TimeOnly(0, 0) : TimeOnly.FromTimeSpan(startTime!.Value);
+        var to = wholeDay ? new TimeOnly(23, 59) : TimeOnly.FromTimeSpan(endTime!.Value);
+
+        if (from >= to)
+        {
+            errorMessage = "Godzina rozpoczęcia musi być wcześniejsza niż zakończenia";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new CreateGroomerTimeOffDto
+            {
+                GroomerId = GroomerId,
+                StartDate = DateOnly.FromDateTime(startDate.Value),
+                EndDate = DateOnly.FromDateTime(endDate.Value),
+                StartTime = from,
+                EndTime = to,
+                Reason = reason
+            };
+
+            var response = await Api.PostAsync("api/GroomerTimeOff", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

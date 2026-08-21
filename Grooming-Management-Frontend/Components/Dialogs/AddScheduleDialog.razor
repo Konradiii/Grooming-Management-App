@@ -1,0 +1,102 @@
+@using Grooming_Management_App.DTOs.GroomerScheduleDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        <MudSelect T="DayOfWeekEnum?" @bind-Value="dayOfWeek" Label="Dzień tygodnia"
+                   Placeholder="Wybierz dzień" Variant="Variant.Outlined" Class="mb-3">
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Monday">Poniedziałek</MudSelectItem>
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Tuesday">Wtorek</MudSelectItem>
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Wednesday">Środa</MudSelectItem>
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Thursday">Czwartek</MudSelectItem>
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Friday">Piątek</MudSelectItem>
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Saturday">Sobota</MudSelectItem>
+            <MudSelectItem T="DayOfWeekEnum?" Value="DayOfWeekEnum.Sunday">Niedziela</MudSelectItem>
+        </MudSelect>
+
+        <MudTimePicker @bind-Time="startTime" Label="Od godziny" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTimePicker @bind-Time="endTime" Label="Do godziny" Variant="Variant.Outlined" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int GroomerId { get; set; }
+
+    private DayOfWeekEnum? dayOfWeek;
+    private TimeSpan? startTime = new TimeSpan(9, 0, 0);
+    private TimeSpan? endTime = new TimeSpan(17, 0, 0);
+
+    private string? errorMessage;
+    private bool isSaving;
+
+    private async Task SaveAsync()
+    {
+        errorMessage = null;
+
+        if (dayOfWeek == null)
+        {
+            errorMessage = "Wybierz dzień tygodnia";
+            return;
+        }
+
+        if (startTime == null || endTime == null)
+        {
+            errorMessage = "Podaj godziny";
+            return;
+        }
+
+        if (startTime >= endTime)
+        {
+            errorMessage = "Godzina rozpoczęcia musi być wcześniejsza niż zakończenia";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new CreateGroomerScheduleDto
+            {
+                GroomerId = GroomerId,
+                DayOfWeek = dayOfWeek.Value,
+                StartTime = TimeOnly.FromTimeSpan(startTime.Value),
+                EndTime = TimeOnly.FromTimeSpan(endTime.Value)
+            };
+
+            var response = await Api.PostAsync("api/GroomerSchedule", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
