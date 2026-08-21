@@ -36,6 +36,10 @@
                    OnClick="LoginAsync">
             @(isLoading ? "Logowanie..." : "Zaloguj")
         </MudButton>
+        <MudButton Variant="Variant.Text" FullWidth="true" Class="mt-3"
+                   OnClick="@(() => Navigation.NavigateTo("/rejestracja"))">
+            Nie masz konta? Zarejestruj salon
+        </MudButton>
     </MudPaper>
 </MudContainer>
 

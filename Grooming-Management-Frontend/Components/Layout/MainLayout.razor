@@ -9,6 +9,7 @@
 
 <MudLayout>
     
+    
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer"/>
         <MudText Typo="Typo.h6">Grooming Management</MudText>
@@ -17,8 +18,11 @@
     </MudAppBar>
 
     <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer"/>
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" />
         <MudText Typo="Typo.h6">Grooming Management</MudText>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mr-3">@(TokenStore.IsOwner ? "Właściciel" : "Groomer")</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" OnClick="LogoutAsync" />
     </MudAppBar>
 
     <MudDrawer @bind-Open="drawerOpen" Elevation="2">

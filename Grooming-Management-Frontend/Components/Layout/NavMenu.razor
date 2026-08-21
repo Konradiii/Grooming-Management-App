@@ -1,12 +1,33 @@
-﻿<MudNavMenu>
+﻿@using Grooming_Management_Frontend.Services
+@inject TokenStore TokenStore
+
+
+<MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Pulpit</MudNavLink>
     <MudNavLink Href="/kalendarz" Icon="@Icons.Material.Filled.CalendarMonth">Kalendarz</MudNavLink>
     <MudNavLink Href="/wlasciciele" Icon="@Icons.Material.Filled.People">Właściciele</MudNavLink>
     <MudNavLink Href="/psy" Icon="@Icons.Material.Filled.Pets">Psy</MudNavLink>
-    <MudNavLink Href="/cennik" Icon="@Icons.Material.Filled.Sell">Cennik</MudNavLink>
-    <MudNavLink Href="/groomerzy" Icon="@Icons.Material.Filled.ContentCut">Groomerzy</MudNavLink>
-    <MudNavLink Href="/ustawienia" Icon="@Icons.Material.Filled.Settings">Ustawienia</MudNavLink>
-    <MudNavLink Href="/raporty" Icon="@Icons.Material.Filled.BarChart">Raporty</MudNavLink>
     <MudNavLink Href="/czarna-lista" Icon="@Icons.Material.Filled.Block">Czarna lista</MudNavLink>
     <MudNavLink Href="/lista-oczekujacych" Icon="@Icons.Material.Filled.HourglassEmpty">Lista oczekujących</MudNavLink>
+
+    @if (TokenStore.IsOwner)
+    {
+        <MudNavLink Href="/groomerzy" Icon="@Icons.Material.Filled.ContentCut">Groomerzy</MudNavLink>
+        <MudNavLink Href="/cennik" Icon="@Icons.Material.Filled.Sell">Cennik</MudNavLink>
+        <MudNavLink Href="/raporty" Icon="@Icons.Material.Filled.BarChart">Raporty</MudNavLink>
+        <MudNavLink Href="/ustawienia" Icon="@Icons.Material.Filled.Settings">Ustawienia</MudNavLink>
+    }
 </MudNavMenu>
+
+@code {
+    
+    protected override void OnInitialized()
+    {
+        TokenStore.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        TokenStore.OnChange -= StateHasChanged;
+    }
+}

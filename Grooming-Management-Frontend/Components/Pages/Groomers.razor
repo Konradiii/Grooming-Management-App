@@ -51,6 +51,14 @@ else
                     <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => OpenEditDialog(context))">
                         Edytuj
                     </MudMenuItem>
+
+                    @if (!context.HasAccount)
+                    {
+                        <MudMenuItem Icon="@Icons.Material.Filled.Key" OnClick="@(() => OpenAccountDialog(context))">
+                            Utwórz konto
+                        </MudMenuItem>
+                    }
+
                     @if (context.ActiveStatus == ActiveStatusEnum.Active)
                     {
                         <MudMenuItem Icon="@Icons.Material.Filled.VisibilityOff" OnClick="@(() => ToggleStatusAsync(context, false))">
@@ -151,6 +159,24 @@ else
         else
         {
             errorMessage = await ApiClient.ReadErrorAsync(response);
+        }
+    }
+    private async Task OpenAccountDialog(GetGroomerDto groomer)
+    {
+        var parameters = new DialogParameters<CreateGroomerAccountDialog>
+        {
+            { x => x.GroomerId, groomer.Id },
+            { x => x.GroomerName, $"{groomer.FirstName} {groomer.LastName}" }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<CreateGroomerAccountDialog>("Konto pracownika", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            await LoadGroomersAsync();
+            StateHasChanged();
         }
     }
 }

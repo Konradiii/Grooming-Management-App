@@ -1,0 +1,156 @@
+@page "/rejestracja"
+@rendermode InteractiveServer
+@layout EmptyLayout
+@using Grooming_Management_App.DTOs.AuthDTO
+@using Grooming_Management_Frontend.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject TokenStore TokenStore
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
+    <MudPaper Class="pa-8">
+        <MudText Typo="Typo.h5" Class="mb-6">Rejestracja salonu</MudText>
+
+        <MudTextField @bind-Value="salonName" Label="Nazwa salonu"
+                      Variant="Variant.Outlined" Class="mb-4" />
+
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Adres</MudText>
+
+        <MudGrid Class="mb-4">
+            <MudItem xs="12" md="8">
+                <MudTextField @bind-Value="street" Label="Ulica" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudTextField @bind-Value="buildingNumber" Label="Nr budynku" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="6" md="2">
+                <MudTextField @bind-Value="apartmentNumber" Label="Nr lokalu" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField @bind-Value="postalCode" Label="Kod pocztowy" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="8">
+                <MudTextField @bind-Value="city" Label="Miasto" Variant="Variant.Outlined" />
+            </MudItem>
+        </MudGrid>
+
+        <MudText Typo="Typo.subtitle2" Class="mb-2">Konto właściciela</MudText>
+
+        <MudTextField @bind-Value="email" Label="E-mail"
+                      Variant="Variant.Outlined" Class="mb-3" />
+
+        <MudTextField @bind-Value="password" Label="Hasło"
+                      InputType="InputType.Password"
+                      Variant="Variant.Outlined" Class="mb-3" />
+
+        <MudTextField @bind-Value="confirmPassword" Label="Powtórz hasło"
+                      InputType="InputType.Password"
+                      Variant="Variant.Outlined" Class="mb-4" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                   Disabled="isLoading" OnClick="RegisterAsync" Class="mb-3">
+            @(isLoading ? "Rejestracja..." : "Załóż konto")
+        </MudButton>
+
+        <MudButton Variant="Variant.Text" FullWidth="true"
+                   OnClick="@(() => Navigation.NavigateTo("/login"))">
+            Mam już konto
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string salonName = string.Empty;
+    private string? street;
+    private string? buildingNumber;
+    private string? apartmentNumber;
+    private string? postalCode;
+    private string? city;
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string confirmPassword = string.Empty;
+
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task RegisterAsync()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(salonName))
+        {
+            errorMessage = "Podaj nazwę salonu";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            errorMessage = "Podaj adres e-mail";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Podaj hasło";
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "Hasła nie są takie same";
+            return;
+        }
+
+        isLoading = true;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Api");
+
+            var dto = new RegisterNewSalonDto
+            {
+                SalonName = salonName,
+                Street = street,
+                BuildingNumber = buildingNumber,
+                ApartmentNumber = apartmentNumber,
+                PostalCode = postalCode,
+                City = city,
+                Email = email,
+                Password = password,
+                ConfirmPassword = confirmPassword
+            };
+
+            var response = await client.PostAsJsonAsync("api/Auth/RegisterSalon", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+
+            if (result == null)
+            {
+                errorMessage = "Nieprawidłowa odpowiedź serwera";
+                return;
+            }
+
+            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken);
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd połączenia: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

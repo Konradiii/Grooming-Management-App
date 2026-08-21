@@ -1,0 +1,109 @@
+@using Grooming_Management_App.DTOs.AuthDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+
+<MudDialog>
+    <DialogContent>
+        @if (result == null)
+        {
+            <MudText Typo="Typo.body2" Class="mb-4">
+                Konto dla: <strong>@GroomerName</strong>
+            </MudText>
+
+            <MudTextField @bind-Value="email" Label="E-mail groomera"
+                          Variant="Variant.Outlined" />
+
+            @if (errorMessage != null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+            }
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Success" Class="mb-4">
+                Konto zostało utworzone
+            </MudAlert>
+
+            <MudText Typo="Typo.body2">E-mail</MudText>
+            <MudText Typo="Typo.h6" Class="mb-3">@result.Email</MudText>
+
+            <MudText Typo="Typo.body2">Hasło tymczasowe</MudText>
+            <MudText Typo="Typo.h6" Class="mb-4">@result.TemporaryPassword</MudText>
+
+            <MudAlert Severity="Severity.Warning">
+                Przekaż te dane pracownikowi. Hasło nie będzie już widoczne — 
+                przy pierwszym logowaniu zostanie poproszony o jego zmianę.
+            </MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        @if (result == null)
+        {
+            <MudButton OnClick="Cancel">Anuluj</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                       Disabled="isSaving" OnClick="CreateAsync">
+                @(isSaving ? "Tworzenie..." : "Utwórz konto")
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close">
+                Gotowe
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public int GroomerId { get; set; }
+    [Parameter] public string GroomerName { get; set; } = string.Empty;
+
+    private string email = string.Empty;
+    private CreateGroomerAccountResultDto? result;
+
+    private string? errorMessage;
+    private bool isSaving;
+
+    private async Task CreateAsync()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            errorMessage = "Podaj adres e-mail";
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            var dto = new CreateAccountDto { Email = email };
+
+            var response = await Api.PostAsync(
+                $"api/Auth/RegisterGroomer?groomerId={GroomerId}", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            result = await response.Content.ReadFromJsonAsync<CreateGroomerAccountResultDto>();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}
