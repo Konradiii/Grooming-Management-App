@@ -49,4 +49,15 @@ public static class EnumLabels
         StatusEnum.NoShow => Color.Error,
         _ => Color.Primary
     };
+    
+    public static string Duration(int minutes)
+    {
+        if (minutes < 60)
+            return $"{minutes} min";
+
+        var hours = minutes / 60;
+        var rest = minutes % 60;
+
+        return rest == 0 ? $"{hours} h" : $"{hours} h {rest} min";
+    }
 }

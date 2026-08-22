@@ -29,7 +29,7 @@
                              Label="Pies"
                              Placeholder="Wpisz imię psa lub nazwisko właściciela"
                              SearchFunc="SearchDogs"
-                             ToStringFunc="@(d => d == null ? "" : $"{d.Name} — {d.DogOwnerFullName}")"
+                             ToStringFunc="@(d => d == null ? "" : $"{d.Name} ({d.BreedName}) - {d.DogOwnerFullName}")"
                              Variant="Variant.Outlined"
                              Class="mb-3" />
         }

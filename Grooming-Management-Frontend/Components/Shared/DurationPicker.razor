@@ -1,0 +1,28 @@
+﻿<MudGrid>
+    <MudItem xs="6">
+        <MudNumericField T="int" Value="Hours" ValueChanged="OnHoursChanged"
+                         Label="Godziny" Variant="Variant.Outlined" Min="0" Max="12" />
+    </MudItem>
+    <MudItem xs="6">
+        <MudNumericField T="int" Value="Minutes" ValueChanged="OnMinutesChanged"
+                         Label="Minuty" Variant="Variant.Outlined" Min="0" Max="59" Step="5" />
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+
+    private int Hours => Value / 60;
+    private int Minutes => Value % 60;
+
+    private async Task OnHoursChanged(int hours)
+    {
+        await ValueChanged.InvokeAsync(hours * 60 + Minutes);
+    }
+
+    private async Task OnMinutesChanged(int minutes)
+    {
+        await ValueChanged.InvokeAsync(Hours * 60 + minutes);
+    }
+}

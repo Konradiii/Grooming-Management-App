@@ -5,6 +5,7 @@
 @using Grooming_Management_App.DTOs.Breed
 @using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Services
+@using Grooming_Management_Frontend.Components.Shared
 @inject ApiClient Api
 
 <MudDialog>
@@ -38,9 +39,9 @@
                              Value="selectedDog"
                              ValueChanged="OnDogChanged"
                              Label="Pies"
-                             Placeholder="Wpisz imię psa lub nazwisko właściciela"
+                             Placeholder="Wpisz imię psa, rasę lub nazwisko właściciela"
                              SearchFunc="SearchDogs"
-                             ToStringFunc="@(d => d == null ? "" : $"{d.Name} — {d.DogOwnerFullName}")"
+                             ToStringFunc="@(d => d == null ? "" : $"{d.Name} ({d.BreedName}) - {d.DogOwnerFullName}")"
                              Variant="Variant.Outlined"
                              Class="mb-3" />
         }
@@ -49,12 +50,12 @@
         {
             <MudSelect T="GetServiceBreedDto" Value="selectedService" ValueChanged="OnServiceChanged"
                        Label="Usługa" Placeholder="Wybierz usługę"
-                       ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} — {s.Price:0.00} zł")"
+                       ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} - {s.Price:0.00} zł")"
                        Variant="Variant.Outlined" Class="mb-3">
                 @foreach (var sb in availableServices)
                 {
                     <MudSelectItem T="GetServiceBreedDto" Value="sb">
-                        @sb.ServiceName — @sb.Price.ToString("0.00") zł, @sb.Duration min
+                        @sb.ServiceName — @sb.Price.ToString("0.00") zł, @EnumLabels.Duration(sb.Duration)
                     </MudSelectItem>
                 }
             </MudSelect>
@@ -66,7 +67,7 @@
             </MudAlert>
         }
 
-        <MudSelect T="GetGroomerDto" @bind-Value="selectedGroomer"
+        <MudSelect T="GetGroomerDto" Value="selectedGroomer" ValueChanged="OnGroomerChanged"
                    Label="Groomer" Placeholder="Wybierz groomera"
                    ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
                    Variant="Variant.Outlined" Class="mb-3">
@@ -76,20 +77,35 @@
             }
         </MudSelect>
 
+        <MudCheckBox @bind-Value="withAssistant" Label="Pomoc Groomerska" Class="mb-3" />
+
+        @if (withAssistant)
+        {
+            <MudSelect T="GetGroomerDto" @bind-Value="selectedAssistant"
+                       Label="Pomoc" Placeholder="Wybierz osobę"
+                       ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
+                       Variant="Variant.Outlined" Class="mb-3">
+                @foreach (var g in groomers.Where(g => selectedGroomer == null || g.Id != selectedGroomer.Id))
+                {
+                    <MudSelectItem T="GetGroomerDto" Value="g">@g.FirstName @g.LastName</MudSelectItem>
+                }
+            </MudSelect>
+        }
+
         <MudGrid Class="mb-3">
-            <MudItem xs="12" md="5">
+            <MudItem xs="12" md="6">
                 <MudDatePicker @bind-Date="selectedDate" Label="Data" Variant="Variant.Outlined" />
             </MudItem>
-            <MudItem xs="6" md="3">
+            <MudItem xs="12" md="6">
                 <MudTimePicker @bind-Time="selectedTime" Label="Godzina" Variant="Variant.Outlined" />
-            </MudItem>
-            <MudItem xs="6" md="4">
-                <MudNumericField @bind-Value="durationMinutes" Label="Czas (min)"
-                                 Variant="Variant.Outlined" Min="15" Step="15" />
             </MudItem>
         </MudGrid>
 
-        <MudTextField @bind-Value="notes" Label="Notatki do wizyty" Variant="Variant.Outlined" Lines="2" />
+        <MudText Typo="Typo.body2" Class="mb-2">Czas trwania</MudText>
+        <DurationPicker @bind-Value="durationMinutes" />
+
+        <MudTextField @bind-Value="notes" Label="Notatki do wizyty"
+                      Variant="Variant.Outlined" Lines="2" Class="mt-3" />
 
         @if (errorMessage != null)
         {
@@ -111,6 +127,7 @@
     [Parameter] public DateTime? InitialEnd { get; set; }
 
     private bool withNewDog;
+    private bool withAssistant;
 
     private string firstName = string.Empty;
     private string lastName = string.Empty;
@@ -128,6 +145,7 @@
     private GetDogDto? selectedDog;
     private GetServiceBreedDto? selectedService;
     private GetGroomerDto? selectedGroomer;
+    private GetGroomerDto? selectedAssistant;
     private DateTime? selectedDate = DateTime.Today;
     private TimeSpan? selectedTime = new TimeSpan(9, 0, 0);
     private int durationMinutes = 60;
@@ -166,6 +184,7 @@
 
         var filtered = dogs.Where(d =>
             d.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            d.BreedName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
             d.DogOwnerFullName.Contains(value, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(filtered);
@@ -194,6 +213,14 @@
         selectedBreed = breed;
         selectedService = null;
         FilterServices(breed?.Name);
+    }
+
+    private void OnGroomerChanged(GetGroomerDto? groomer)
+    {
+        selectedGroomer = groomer;
+
+        if (selectedAssistant != null && groomer != null && selectedAssistant.Id == groomer.Id)
+            selectedAssistant = null;
     }
 
     private void FilterServices(string? breedName)
@@ -261,6 +288,12 @@
             return;
         }
 
+        if (withAssistant && selectedAssistant == null)
+        {
+            errorMessage = "Wybierz osobę do pomocy";
+            return;
+        }
+
         if (selectedDate == null || selectedTime == null)
         {
             errorMessage = "Podaj datę i godzinę";
@@ -278,6 +311,7 @@
         try
         {
             var visitDate = selectedDate.Value.Date.Add(selectedTime.Value);
+            var assistantId = withAssistant ? selectedAssistant?.Id : null;
             HttpResponseMessage response;
 
             if (withNewDog)
@@ -291,6 +325,7 @@
                     AgeInMonths = ageInMonths,
                     BreedId = selectedBreed!.Id,
                     GroomerId = selectedGroomer.Id,
+                    AssistantGroomerId = assistantId,
                     ServiceBreedId = selectedService.Id,
                     Date = visitDate,
                     DurationMinutes = durationMinutes,
@@ -305,6 +340,7 @@
                 {
                     DogId = selectedDog!.Id,
                     GroomerId = selectedGroomer.Id,
+                    AssistantGroomerId = assistantId,
                     ServiceBreedId = selectedService.Id,
                     Date = visitDate,
                     DurationMinutes = durationMinutes,

@@ -20,7 +20,7 @@
         {
             <MudSelect T="GetDogDto" @bind-Value="selectedDog"
                        Label="Pies (opcjonalnie)" Placeholder="Dowolny"
-                       ToStringFunc="@(d => d == null ? "" : d.Name)"
+                       ToStringFunc="@(d => d == null ? "" : $"{d.Name} ({d.BreedName})")"
                        Variant="Variant.Outlined" Clearable="true" Class="mb-3">
                 @foreach (var d in ownerDogs)
                 {

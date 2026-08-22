@@ -30,12 +30,19 @@
                     </tr>
                     <tr>
                         <td><MudText Typo="Typo.body2">Czas trwania</MudText></td>
-                        <td>@visit.EstimatedDuration min</td>
+                        <td>@EnumLabels.Duration(visit.EstimatedDuration)</td>
                     </tr>
-                    <tr>
-                        <td><MudText Typo="Typo.body2">Groomer</MudText></td>
-                        <td>@visit.GroomerFullName</td>
-                    </tr>
+                <tr>
+                    <td><MudText Typo="Typo.body2">Groomer</MudText></td>
+                    <td>@visit.GroomerFullName</td>
+                </tr>
+                @if (visit.AssistantGroomerFullName != null)
+                         {
+                             <tr>
+                                 <td><MudText Typo="Typo.body2">Pomoc</MudText></td>
+                                 <td>@visit.AssistantGroomerFullName</td>
+                             </tr>
+                         }
                     <tr>
                         <td><MudText Typo="Typo.body2">Usługa</MudText></td>
                         <td>@visit.ServiceName</td>
@@ -138,8 +145,10 @@
 
             if (status == StatusEnum.Completed && finalPrice != visit.FinalPrice)
             {
+                var priceParam = finalPrice.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
                 var response = await Api.PutAsync<object?>(
-                    $"api/Visit/{VisitId}/final-price?finalPrice={finalPrice}", null);
+                    $"api/Visit/{VisitId}/final-price?finalPrice={priceParam}", null);
 
                 if (!response.IsSuccessStatusCode)
                 {
