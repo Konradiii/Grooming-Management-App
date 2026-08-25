@@ -22,6 +22,11 @@ public abstract class AuthenticatedPage : ComponentBase
             Navigation.NavigateTo("/login", forceLoad: false);
             return;
         }
+        if (TokenStore.RequiresPasswordChange)
+        {
+            Navigation.NavigateTo("/zmiana-hasla");
+            return;
+        }
 
         StateHasChanged();
     }

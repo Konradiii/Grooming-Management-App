@@ -24,7 +24,7 @@
                Clearable="true" Style="max-width: 300px;">
         @foreach (var g in groomers)
         {
-            <MudSelectItem T="int?" Value="g.Id">@g.FirstName @g.LastName</MudSelectItem>
+            <MudSelectItem T="int?" Value="g.Id">@g.FullName</MudSelectItem>
         }
     </MudSelect>
 </div>
@@ -89,7 +89,7 @@ else
     private RadzenScheduler<VisitAppointment>? scheduler;
 
     private List<GetAllVisitsDto> visits = new();
-    private List<GetGroomerDto> groomers = new();
+    private List<GetGroomerBasicDto> groomers = new();
     private bool isLoading = true;
     private string? errorMessage;
 
@@ -141,7 +141,7 @@ else
     {
         try
         {
-            groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+            groomers = await Api.GetAsync<List<GetGroomerBasicDto>>("api/Groomer/basic") ?? new();
             visits = await Api.GetAsync<List<GetAllVisitsDto>>("api/Visit") ?? new();
         }
         catch (Exception ex)

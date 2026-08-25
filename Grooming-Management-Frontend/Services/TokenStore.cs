@@ -7,23 +7,27 @@ public class TokenStore(ILocalStorageService localStorage)
 {
     private const string AccessTokenKey = "accessToken";
     private const string RefreshTokenKey = "refreshToken";
+    private const string RequiresPasswordChangeKey = "requiresPasswordChange";
 
     public event Action? OnChange;
 
     public string? AccessToken { get; private set; }
     public string? RefreshToken { get; private set; }
     public string? Role { get; private set; }
+    public bool RequiresPasswordChange { get; private set; }
 
     public bool IsLoggedIn => AccessToken != null;
     public bool IsOwner => Role == "Owner";
 
-    public async Task SetTokensAsync(string accessToken, string refreshToken)
+    public async Task SetTokensAsync(string accessToken, string refreshToken, bool requiresPasswordChange = false)
     {
         AccessToken = accessToken;
         RefreshToken = refreshToken;
+        RequiresPasswordChange = requiresPasswordChange;
 
         await localStorage.SetItemAsStringAsync(AccessTokenKey, accessToken);
         await localStorage.SetItemAsStringAsync(RefreshTokenKey, refreshToken);
+        await localStorage.SetItemAsync(RequiresPasswordChangeKey, requiresPasswordChange);
 
         ReadRoleFromToken();
         NotifyChanged();
@@ -33,6 +37,7 @@ public class TokenStore(ILocalStorageService localStorage)
     {
         AccessToken = await localStorage.GetItemAsStringAsync(AccessTokenKey);
         RefreshToken = await localStorage.GetItemAsStringAsync(RefreshTokenKey);
+        RequiresPasswordChange = await localStorage.GetItemAsync<bool>(RequiresPasswordChangeKey);
 
         ReadRoleFromToken();
         NotifyChanged();
@@ -43,9 +48,11 @@ public class TokenStore(ILocalStorageService localStorage)
         AccessToken = null;
         RefreshToken = null;
         Role = null;
+        RequiresPasswordChange = false;
 
         await localStorage.RemoveItemAsync(AccessTokenKey);
         await localStorage.RemoveItemAsync(RefreshTokenKey);
+        await localStorage.RemoveItemAsync(RequiresPasswordChangeKey);
 
         NotifyChanged();
     }

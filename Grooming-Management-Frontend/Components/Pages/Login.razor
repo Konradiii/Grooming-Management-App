@@ -75,8 +75,14 @@
                 return;
             }
 
-            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken);
-            Navigation.NavigateTo("/");
+            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken, result.RequiresPasswordChange);
+
+            if (result.RequiresPasswordChange)
+                Navigation.NavigateTo("/zmiana-hasla", forceLoad: false);
+            else
+                Navigation.NavigateTo("/");
+
+            Navigation.NavigateTo(result.RequiresPasswordChange ? "/zmiana-hasla" : "/");
         }
         catch (Exception ex)
         {

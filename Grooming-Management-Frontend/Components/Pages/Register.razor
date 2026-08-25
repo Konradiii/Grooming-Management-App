@@ -141,7 +141,7 @@
                 return;
             }
 
-            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken);
+            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken, result.RequiresPasswordChange);
             Navigation.NavigateTo("/");
         }
         catch (Exception ex)
