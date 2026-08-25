@@ -26,7 +26,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         {
             throw new ConflictException("Groomer already has an account");
         }
-        
+
         var emailTaken = await ctx.Users.Where(u => u.Email == dto.Email).AnyAsync(ct);
         if (emailTaken)
         {
@@ -35,49 +35,46 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         var randomBytes = RandomNumberGenerator.GetBytes(12);
         var temporaryPassword = Convert.ToBase64String(randomBytes);
-        
-       var hashedPassword = passwordHasher.HashPassword(temporaryPassword);
 
+        var hashedPassword = passwordHasher.HashPassword(temporaryPassword);
 
-       var newRegisteredUser = new User
-       {
-           Email = dto.Email,
-           PasswordHash = hashedPassword,
-           Role = RoleEnum.Groomer,
-           ActiveStatus = ActiveStatusEnum.Active,
-           RequiresPasswordChange = true,
-           CreatedAt = DateTime.UtcNow,
-           SalonId = salonId,
-           Groomer = groomer
-       };
-       
-       ctx.Users.Add(newRegisteredUser);
-       await ctx.SaveChangesAsync(ct);
+        var newRegisteredUser = new User
+        {
+            Email = dto.Email,
+            PasswordHash = hashedPassword,
+            Role = RoleEnum.Groomer,
+            ActiveStatus = ActiveStatusEnum.Active,
+            RequiresPasswordChange = true,
+            CreatedAt = DateTime.UtcNow,
+            SalonId = salonId,
+            Groomer = groomer
+        };
 
-       return new CreateGroomerAccountResultDto
-       {
-           Email = dto.Email,
-           TemporaryPassword = temporaryPassword,
-       };
+        ctx.Users.Add(newRegisteredUser);
+        await ctx.SaveChangesAsync(ct);
 
+        return new CreateGroomerAccountResultDto
+        {
+            Email = dto.Email,
+            TemporaryPassword = temporaryPassword,
+        };
     }
-    
+
     public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, CancellationToken ct)
     {
-        
         if (dto.Password != dto.ConfirmPassword)
         {
             throw new ConflictException("Passwords don't match");
         }
-        
+
         var emailTaken = await ctx.Users.Where(u => u.Email == dto.Email).AnyAsync(ct);
         if (emailTaken)
         {
             throw new ConflictException("Email already taken");
         }
-        
+
         var hashedPassword = passwordHasher.HashPassword(dto.Password);
-        
+
         var newSalon = new Salon
         {
             Name = dto.SalonName,
@@ -90,12 +87,9 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
             MaxBookingDaysAhead = 550,
             SubscriptionStatus = SubscriptionStatusEnum.Trial,
             SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30)
-            
-            
         };
 
-        
-        var ownerUser= new User
+        var ownerUser = new User
         {
             Email = dto.Email,
             PasswordHash = hashedPassword,
@@ -107,10 +101,11 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         };
         ctx.Users.Add(ownerUser);
         await ctx.SaveChangesAsync(ct);
-        
-        var refreshToken= tokenService.GenerateRefreshToken();
-        var accessToken = tokenService.GenerateAccessToken(ownerUser.Id, ownerUser.SalonId, ownerUser.Role);
-        
+
+        var refreshToken = tokenService.GenerateRefreshToken();
+        var accessToken = tokenService.GenerateAccessToken(
+            ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name);
+
         var newTokens = new RefreshToken
         {
             TokenHash = tokenService.HasherSH256(refreshToken),
@@ -128,10 +123,15 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
             AccessToken = accessToken,
         };
     }
-    
+
     public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken ct)
     {
-        var user = await ctx.Users.Where(u => u.Email == dto.Email).FirstOrDefaultAsync(ct);
+        var user = await ctx.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.Groomer)
+            .Include(u => u.Salon)
+            .Where(u => u.Email == dto.Email)
+            .FirstOrDefaultAsync(ct);
 
         if (user == null)
         {
@@ -147,38 +147,35 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         {
             throw new UnauthorizedException("User is inactive");
         }
-        
-        
-            var accessToken = tokenService.GenerateAccessToken(user.Id, user.SalonId, user.Role);
-            var refreshToken = tokenService.GenerateRefreshToken();
 
+        var accessToken = tokenService.GenerateAccessToken(
+            user.Id, user.SalonId, user.Role, ResolveDisplayName(user));
+        var refreshToken = tokenService.GenerateRefreshToken();
 
-            var newTokens = new RefreshToken
-            {
-                TokenHash = tokenService.HasherSH256(refreshToken),
-                ExpiresAt = DateTime.UtcNow.AddDays(3),
-                CreatedAt = DateTime.UtcNow,
-                RevokedAt = null,
-                User =  user
-            };
-            ctx.RefreshTokens.Add(newTokens);
-            await ctx.SaveChangesAsync(ct);
-            
-            return new LoginResponseDto
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
+        var newTokens = new RefreshToken
+        {
+            TokenHash = tokenService.HasherSH256(refreshToken),
+            ExpiresAt = DateTime.UtcNow.AddDays(3),
+            CreatedAt = DateTime.UtcNow,
+            RevokedAt = null,
+            User = user
+        };
+        ctx.RefreshTokens.Add(newTokens);
+        await ctx.SaveChangesAsync(ct);
 
-            };
-
+        return new LoginResponseDto
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            RequiresPasswordChange = user.RequiresPasswordChange
+        };
     }
-    
+
     public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
-        
         var hashedRefresh = tokenService.HasherSH256(refreshToken);
-        
-        var refreshExists = await ctx.RefreshTokens.Where(e=> hashedRefresh == e.TokenHash).FirstOrDefaultAsync(ct);
+
+        var refreshExists = await ctx.RefreshTokens.Where(e => hashedRefresh == e.TokenHash).FirstOrDefaultAsync(ct);
         if (refreshExists == null)
         {
             throw new UnauthorizedException("Refresh token not found");
@@ -186,47 +183,58 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         if (refreshExists.RevokedAt != null)
         {
-         throw new UnauthorizedException("Refresh token is already revoked");   
+            throw new UnauthorizedException("Refresh token is already revoked");
         }
 
         if (refreshExists.ExpiresAt < DateTime.UtcNow)
         {
             throw new UnauthorizedException("Refresh token is expired");
         }
-        
+
         refreshExists.RevokedAt = DateTime.UtcNow;
-        
-        var user = await ctx.Users.Where(e=>e.Id ==  refreshExists.UserId).FirstOrDefaultAsync(ct);
+
+        var user = await ctx.Users
+            .Include(u => u.Groomer)
+            .Include(u => u.Salon)
+            .Where(e => e.Id == refreshExists.UserId)
+            .FirstOrDefaultAsync(ct);
 
         if (user == null)
         {
             throw new NotFoundException("User not found");
         }
 
-        var newRefreshToken= tokenService.GenerateRefreshToken();
-        var newAccessToken = tokenService.GenerateAccessToken(refreshExists.UserId, user.SalonId, user.Role);
-        
+        var newRefreshToken = tokenService.GenerateRefreshToken();
+        var newAccessToken = tokenService.GenerateAccessToken(
+            refreshExists.UserId, user.SalonId, user.Role, ResolveDisplayName(user));
+
         var newTokens = new RefreshToken
         {
             TokenHash = tokenService.HasherSH256(newRefreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
-            User =  user
+            User = user
         };
         ctx.RefreshTokens.Add(newTokens);
         await ctx.SaveChangesAsync(ct);
-        
-        return new LoginResponseDto{AccessToken = newAccessToken, RefreshToken = newRefreshToken};
 
+        return new LoginResponseDto
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken,
+            RequiresPasswordChange = user.RequiresPasswordChange
+        };
     }
-    
+
     public async Task<LoginResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct)
     {
         var user = await ctx.Users
+            .Include(u => u.Groomer)
+            .Include(u => u.Salon)
             .Where(e => e.Id == userId)
             .FirstOrDefaultAsync(ct);
-        
+
         if (user == null)
         {
             throw new NotFoundException("User not found");
@@ -239,23 +247,23 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         {
             throw new UnauthorizedException("Invalid password");
         }
+
         user.PasswordHash = passwordHasher.HashPassword(dto.NewPassword);
         user.RequiresPasswordChange = false;
-        await ctx.SaveChangesAsync(ct);
-        
+
         var activeTokens = await ctx.RefreshTokens
             .Where(e => e.UserId == user.Id)
-            .Where(e=> e.RevokedAt == null)
-           .ToListAsync(ct);
+            .Where(e => e.RevokedAt == null)
+            .ToListAsync(ct);
 
         foreach (var token in activeTokens)
         {
             token.RevokedAt = DateTime.UtcNow;
         }
-        await ctx.SaveChangesAsync(ct);
-        
-        var newRefreshToken= tokenService.GenerateRefreshToken();
-        var newAccessToken = tokenService.GenerateAccessToken(user.Id, user.SalonId, user.Role);
+
+        var newRefreshToken = tokenService.GenerateRefreshToken();
+        var newAccessToken = tokenService.GenerateAccessToken(
+            user.Id, user.SalonId, user.Role, ResolveDisplayName(user));
 
         var newtoken = new RefreshToken
         {
@@ -265,7 +273,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
             RevokedAt = null,
             User = user
         };
-        
+
         ctx.RefreshTokens.Add(newtoken);
         await ctx.SaveChangesAsync(ct);
 
@@ -273,15 +281,14 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         {
             RefreshToken = newRefreshToken,
             AccessToken = newAccessToken,
+            RequiresPasswordChange = user.RequiresPasswordChange
         };
-
-
     }
 
     public async Task LogoutAsync(string refreshToken, CancellationToken ct)
     {
         var hashedToken = tokenService.HasherSH256(refreshToken);
-        
+
         var token = await ctx.RefreshTokens
             .Where(e => e.TokenHash == hashedToken)
             .FirstOrDefaultAsync(ct);
@@ -293,17 +300,15 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         if (token.RevokedAt != null)
         {
-            return; 
+            return;
         }
 
         token.RevokedAt = DateTime.UtcNow;
         await ctx.SaveChangesAsync(ct);
-        
     }
-    
+
     public async Task LogoutAllDevicesAsync(int userId, CancellationToken ct)
     {
-        
         var activeTokens = await ctx.RefreshTokens
             .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
             .ToListAsync(ct);
@@ -314,6 +319,13 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         }
 
         await ctx.SaveChangesAsync(ct);
-        
+    }
+
+    private static string ResolveDisplayName(User user)
+    {
+        if (user.Groomer != null)
+            return user.Groomer.FirstName + " " + user.Groomer.LastName;
+
+        return user.Salon?.Name ?? user.Email;
     }
 }

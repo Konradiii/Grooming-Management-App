@@ -14,6 +14,7 @@ public class TokenStore(ILocalStorageService localStorage)
     public string? AccessToken { get; private set; }
     public string? RefreshToken { get; private set; }
     public string? Role { get; private set; }
+    public string? FullName { get; private set; }
     public bool RequiresPasswordChange { get; private set; }
 
     public bool IsLoggedIn => AccessToken != null;
@@ -29,7 +30,7 @@ public class TokenStore(ILocalStorageService localStorage)
         await localStorage.SetItemAsStringAsync(RefreshTokenKey, refreshToken);
         await localStorage.SetItemAsync(RequiresPasswordChangeKey, requiresPasswordChange);
 
-        ReadRoleFromToken();
+        ReadClaimsFromToken();
         NotifyChanged();
     }
 
@@ -39,7 +40,7 @@ public class TokenStore(ILocalStorageService localStorage)
         RefreshToken = await localStorage.GetItemAsStringAsync(RefreshTokenKey);
         RequiresPasswordChange = await localStorage.GetItemAsync<bool>(RequiresPasswordChangeKey);
 
-        ReadRoleFromToken();
+        ReadClaimsFromToken();
         NotifyChanged();
     }
 
@@ -48,6 +49,7 @@ public class TokenStore(ILocalStorageService localStorage)
         AccessToken = null;
         RefreshToken = null;
         Role = null;
+        FullName = null;
         RequiresPasswordChange = false;
 
         await localStorage.RemoveItemAsync(AccessTokenKey);
@@ -68,9 +70,10 @@ public class TokenStore(ILocalStorageService localStorage)
 
     private void NotifyChanged() => OnChange?.Invoke();
 
-    private void ReadRoleFromToken()
+    private void ReadClaimsFromToken()
     {
         Role = null;
+        FullName = null;
 
         if (AccessToken == null) return;
 
@@ -91,13 +94,17 @@ public class TokenStore(ILocalStorageService localStorage)
                 if (prop.Name.EndsWith("/role") || prop.Name == "role")
                 {
                     Role = prop.Value.GetString();
-                    return;
+                }
+                else if (prop.Name == "fullName")
+                {
+                    var value = prop.Value.GetString();
+                    FullName = string.IsNullOrWhiteSpace(value) ? null : value;
                 }
             }
         }
         catch
         {
-            // token nieczytelny — rola zostaje null
+            // token nieczytelny — rola i nazwa zostają null
         }
     }
 }
