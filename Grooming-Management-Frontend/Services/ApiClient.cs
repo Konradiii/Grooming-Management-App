@@ -23,11 +23,19 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
             tokenStore.ApplyTo(client);
             return client.GetAsync(url);
         });
-
+        
         if (!response.IsSuccessStatusCode)
             return default;
 
-        return await response.Content.ReadFromJsonAsync<T>(JsonOptions);
+        if (response.StatusCode == HttpStatusCode.NoContent)
+            return default;
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        if (string.IsNullOrWhiteSpace(json))
+            return default;
+
+        return JsonSerializer.Deserialize<T>(json, JsonOptions);
     }
 
     public async Task<HttpResponseMessage> PostAsync<T>(string url, T body)

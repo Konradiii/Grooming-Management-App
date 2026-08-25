@@ -34,6 +34,9 @@ public class GroomerConfiguration : IEntityTypeConfiguration<Groomer>
         builder.Property(g => g.SettlementRate)
             .HasPrecision(18, 2);
         
+        builder.Property(g => g.CanSeeAllVisits).HasDefaultValue(true);
+        builder.Property(g => g.CanCreateVisits).HasDefaultValue(true);
+        
 
     }
     

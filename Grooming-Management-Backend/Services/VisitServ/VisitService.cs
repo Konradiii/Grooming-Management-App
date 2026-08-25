@@ -6,22 +6,39 @@ using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Models;
 using Grooming_Management_App.Services.AvailabilityServ;
 using Grooming_Management_App.Services.BlacklistServ;
+using Grooming_Management_App.Services.CurrentUserServ;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.VisitServ;
 
-public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklistCheckService, IAvailabilityReaderService availabilityReaderService) : IVisitReaderService, IVisitWriterService
+public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklistCheckService, ICurrentUserService currentUser) : IVisitReaderService, IVisitWriterService
 {
     public async Task<List<GetAllVisitsDto>> GetAllVisitsAsync(int salonId, VisitFilterDto filter, CancellationToken ct)
     {
-        return await ctx.Visits
+        var query = ctx.Visits
             .Where(v => v.SalonId == salonId)
             .Where(v => filter.GroomerId == null || filter.GroomerId == v.GroomerId)
-            .Where(e => filter.DateFrom == null || e.Date > filter.DateFrom )
-            .Where(e => filter.DateTo == null ||  e.Date <= filter.DateTo)
+            .Where(e => filter.DateFrom == null || e.Date >= filter.DateFrom)
+            .Where(e => filter.DateTo == null || e.Date <= filter.DateTo)
             .Where(v => filter.DogId == null || v.DogId == filter.DogId)
-            .Where(v => filter.Status == null || v.Status == filter.Status)
+            .Where(v => filter.Status == null || v.Status == filter.Status);
+
+        if (currentUser.Role == RoleEnum.Groomer)
+        {
+            var me = await GetCurrentGroomerAsync(salonId, ct);
+
+            if (me == null)
+                return new List<GetAllVisitsDto>();
+
+            if (!me.CanSeeAllVisits)
+            {
+                var myId = me.Id;
+                query = query.Where(v => v.GroomerId == myId || v.AssistantGroomerId == myId);
+            }
+        }
+
+        return await query
             .Select(v => new GetAllVisitsDto
             {
                 Id = v.Id,
@@ -36,8 +53,8 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 AssistantGroomerFullName = v.AssistantGroomer != null
                     ? v.AssistantGroomer.FirstName + " " + v.AssistantGroomer.LastName
                     : null,
-
-            }).ToListAsync(ct);
+            })
+            .ToListAsync(ct);
     }
     
     public async Task<GetVisitDetailsDto> GetVisitAsync(int salonId, int visitId, CancellationToken ct)
@@ -78,6 +95,15 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
     
     public async Task<int> AddVisitAsync(int salonId, AddVisitDto dto, CancellationToken ct)
     {
+        if (currentUser.Role == RoleEnum.Groomer)
+        {
+            var me = await GetCurrentGroomerAsync(salonId, ct);
+
+            if (me == null || !me.CanCreateVisits)
+                throw new ForbiddenException("Brak uprawnień do dodawania wizyt");
+        }
+        
+        
         if (dto.DurationMinutes is <= 0)
         {
             throw new ConflictException("Duration must be greater than zero");
@@ -122,6 +148,10 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             .AnyAsync(v => v.DogId == dto.DogId 
                            && v.Date == dto.Date 
                            && v.SalonId == salonId, ct);
+        if (duplicateExists)
+        {
+            throw new ConflictException("This dog already has a visit scheduled at this exact time");
+        }
         
         if (dto.AssistantGroomerId != null)
         {
@@ -133,12 +163,6 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
             if (!assistantExists)
                 throw new NotFoundException("Assistant groomer not found");
-        }
-        
-
-        if (duplicateExists)
-        {
-            throw new ConflictException("This dog already has a visit scheduled at this exact time");
         }
 
         var isBlocked = await blacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
@@ -377,6 +401,13 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
     return visit.Id;
 }
+    
+    private async Task<Groomer?> GetCurrentGroomerAsync(int salonId, CancellationToken ct)
+    {
+        return await ctx.Groomers
+            .FirstOrDefaultAsync(g => g.SalonId == salonId
+                                      && g.UserId == currentUser.UserId, ct);
+    }
 /*
  
 // Zaczątek portalu klienta — nieaktywne.

@@ -68,5 +68,23 @@ public class GroomerController(IGroomerReaderService readerService, IGroomerWrit
         var newGroomerId = await writerService.CreateGroomerAsync(dto, salonId, ct);
         return Created($"api/Groomer/{newGroomerId}", null);
     }
+
+    [HttpGet("basic")]
+    [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Zwraca uproszczoną listę groomerów salonu — bez danych rozliczeniowych")]
+    public async Task<ActionResult<List<GetGroomerBasicDto>>> GetAllBasic(CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var groomers = await readerService.GetAllGroomersBasicAsync(salonId, ct);
+        return groomers;
+    }
     
+    [HttpGet("me")]
+    [Authorize(Roles = "Owner,Groomer")]
+    public async Task<ActionResult<GetGroomerBasicDto?>> GetMe(CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var groomer = await readerService.GetCurrentGroomerAsync(salonId, ct);
+        return Ok(groomer);
+    }
 }

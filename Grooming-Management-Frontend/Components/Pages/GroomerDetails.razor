@@ -9,7 +9,6 @@
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject IDialogService DialogService
-@inject NavigationManager Navigation
 
 <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
            OnClick="@(() => Navigation.NavigateTo("/groomerzy"))" Class="mb-4">
@@ -129,6 +128,38 @@ else
             </MudText>
         </MudTabPanel>
 
+        <MudTabPanel Text="Uprawnienia">
+            <MudSwitch T="bool" @bind-Value="canSeeAllVisits"
+                       Color="Color.Primary" Class="mt-4">
+                Widzi wizyty wszystkich groomerów
+            </MudSwitch>
+            <MudText Typo="Typo.body2" Class="mb-4 ml-8" Style="opacity: 0.7;">
+                Wyłączone — pracownik widzi tylko wizyty, w których jest prowadzącym lub pomocą.
+            </MudText>
+
+            <MudSwitch T="bool" @bind-Value="canCreateVisits"
+                       Color="Color.Primary">
+                Może dodawać nowe wizyty
+            </MudSwitch>
+            <MudText Typo="Typo.body2" Class="mb-4 ml-8" Style="opacity: 0.7;">
+                Wyłączone — pracownik może tylko przeglądać i edytować istniejące wizyty.
+            </MudText>
+
+            @if (permissionsSaved)
+            {
+                <MudAlert Severity="Severity.Success" Class="mb-4">Zapisano uprawnienia</MudAlert>
+            }
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                       Disabled="isSavingPermissions" OnClick="SavePermissionsAsync">
+                @(isSavingPermissions ? "Zapisywanie..." : "Zapisz")
+            </MudButton>
+
+            <MudText Typo="Typo.body2" Class="mt-4">
+                Zmiana zaczyna obowiązywać przy następnym odświeżeniu ekranu przez pracownika.
+            </MudText>
+        </MudTabPanel>
+
     </MudTabs>
 }
 
@@ -147,6 +178,11 @@ else
     private SettlementTypeEnum settlementType;
     private decimal settlementRate;
     private bool isSavingSettlement;
+
+    private bool canSeeAllVisits;
+    private bool canCreateVisits;
+    private bool isSavingPermissions;
+    private bool permissionsSaved;
 
     private bool isLoading = true;
     private string? errorMessage;
@@ -172,6 +208,8 @@ else
             {
                 settlementType = groomer.SettlementType;
                 settlementRate = groomer.SettlementRate;
+                canSeeAllVisits = groomer.CanSeeAllVisits;
+                canCreateVisits = groomer.CanCreateVisits;
             }
 
             await LoadSchedulesAsync();
@@ -213,7 +251,9 @@ else
                 FirstName = groomer.FirstName,
                 LastName = groomer.LastName,
                 SettlementType = settlementType,
-                SettlementRate = settlementType == SettlementTypeEnum.None ? 0 : settlementRate
+                SettlementRate = settlementType == SettlementTypeEnum.None ? 0 : settlementRate,
+                CanSeeAllVisits = canSeeAllVisits,
+                CanCreateVisits = canCreateVisits
             };
 
             var response = await Api.PutAsync($"api/Groomer/{GroomerId}/EditGroomer", dto);
@@ -233,6 +273,47 @@ else
         finally
         {
             isSavingSettlement = false;
+        }
+    }
+
+    private async Task SavePermissionsAsync()
+    {
+        if (groomer == null) return;
+
+        errorMessage = null;
+        permissionsSaved = false;
+        isSavingPermissions = true;
+
+        try
+        {
+            var dto = new EditGroomerDto
+            {
+                FirstName = groomer.FirstName,
+                LastName = groomer.LastName,
+                SettlementType = settlementType,
+                SettlementRate = settlementType == SettlementTypeEnum.None ? 0 : settlementRate,
+                CanSeeAllVisits = canSeeAllVisits,
+                CanCreateVisits = canCreateVisits
+            };
+
+            var response = await Api.PutAsync($"api/Groomer/{GroomerId}/EditGroomer", dto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            permissionsSaved = true;
+            await LoadAllAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSavingPermissions = false;
         }
     }
 

@@ -11,4 +11,6 @@ public class GetGroomerDto
     public SettlementTypeEnum SettlementType { get; set; }
     public decimal SettlementRate { get; set; }
     public bool HasAccount { get; set; }
+    public bool CanSeeAllVisits { get; set; }
+    public bool CanCreateVisits { get; set; }
 }

@@ -15,6 +15,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             NotFoundException => (StatusCodes.Status404NotFound, exception.Message),
             ConflictException => (StatusCodes.Status409Conflict, exception.Message),
             UnauthorizedException => (StatusCodes.Status401Unauthorized, exception.Message),
+            ForbiddenException => (StatusCodes.Status403Forbidden, exception.Message),
             _ => (StatusCodes.Status500InternalServerError, "Wystąpił błąd servera.")
         };
         context.Response.StatusCode = status;

@@ -13,11 +13,14 @@
 <MudText Typo="Typo.h5" Class="mb-4">Kalendarz</MudText>
 
 <div class="d-flex gap-4 mb-4 align-center">
-    <MudButton Variant="MudBlazor.Variant.Filled" Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.Add"
-               OnClick="@(() => OpenAddVisitDialog())">
-        Dodaj wizytę
-    </MudButton>
+    @if (CanAddVisit)
+    {
+        <MudButton Variant="MudBlazor.Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="@(() => OpenAddVisitDialog())">
+            Dodaj wizytę
+        </MudButton>
+    }
 
     <MudSelect T="int?" @bind-Value="groomerFilter" Label="Groomer"
                Placeholder="Wszyscy" Variant="MudBlazor.Variant.Outlined"
@@ -94,6 +97,9 @@ else
     private string? errorMessage;
 
     private int? groomerFilter;
+    private GetGroomerBasicDto? me;
+
+    private bool CanAddVisit => TokenStore.IsOwner || me?.CanCreateVisits == true;
 
     public class VisitAppointment
     {
@@ -143,6 +149,7 @@ else
         {
             groomers = await Api.GetAsync<List<GetGroomerBasicDto>>("api/Groomer/basic") ?? new();
             visits = await Api.GetAsync<List<GetAllVisitsDto>>("api/Visit") ?? new();
+            me = await Api.GetAsync<GetGroomerBasicDto>("api/Groomer/me");
         }
         catch (Exception ex)
         {
@@ -177,6 +184,7 @@ else
 
     private async Task OnSlotSelect(SchedulerSlotSelectEventArgs args)
     {
+        if (!CanAddVisit) return;
         await OpenAddVisitDialog(args.Start, args.End);
     }
 

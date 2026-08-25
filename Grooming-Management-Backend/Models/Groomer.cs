@@ -11,6 +11,8 @@ public class Groomer
     public decimal SettlementRate { get; set; }
     
     public ActiveStatusEnum ActiveStatus  { get; set; }
+    public bool CanSeeAllVisits { get; set; }
+    public bool CanCreateVisits { get; set; }
     
     
     public int SalonId { get; set; }

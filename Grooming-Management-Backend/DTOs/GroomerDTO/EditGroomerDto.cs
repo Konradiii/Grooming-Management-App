@@ -8,4 +8,7 @@ public class EditGroomerDto
     public string LastName { get; set; }
     public SettlementTypeEnum SettlementType { get; set; }
     public decimal SettlementRate { get; set; }
+    public bool CanSeeAllVisits { get; set; }
+    public bool CanCreateVisits { get; set; }
+
 }

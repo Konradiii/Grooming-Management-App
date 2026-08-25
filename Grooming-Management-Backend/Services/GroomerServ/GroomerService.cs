@@ -3,11 +3,12 @@ using Grooming_Management_App.DTOs.GroomerDTO;
 using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Models;
+using Grooming_Management_App.Services.CurrentUserServ;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.GroomerServ;
 
-public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGroomerWriterService
+public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUser) : IGroomerReaderService, IGroomerWriterService
 {
     public async Task DeactivateGroomerAsync(int id, int salonId, CancellationToken ct)
     {
@@ -66,6 +67,8 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
                 SettlementType = e.SettlementType,
                 SettlementRate = e.SettlementRate,
                 HasAccount = e.UserId != null,
+                CanSeeAllVisits = e.CanSeeAllVisits,
+                CanCreateVisits = e.CanCreateVisits,
             }).FirstOrDefaultAsync(ct);
         if (result == null)
         {
@@ -92,6 +95,20 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
         
     }
     
+    public async Task<List<GetGroomerBasicDto>> GetAllGroomersBasicAsync(int salonId, CancellationToken ct)
+    {
+        
+        return await ctx.Groomers
+            .Where(g => g.SalonId == salonId)
+            .Select(e => new GetGroomerBasicDto
+            {
+                Id = e.Id,
+                FullName =e.FirstName + " " + e.LastName,
+                ActiveStatus = e.ActiveStatus,
+            }).ToListAsync(ct);
+        
+    }
+    
     public async Task EditGroomerAsync(EditGroomerDto dto, int id, int salonId,  CancellationToken ct)
     {
         var edited = await ctx.Groomers
@@ -105,6 +122,8 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
         edited.LastName = dto.LastName;
         edited.SettlementType = dto.SettlementType;
         edited.SettlementRate = dto.SettlementRate;
+        edited.CanSeeAllVisits = dto.CanSeeAllVisits;
+        edited.CanCreateVisits = dto.CanCreateVisits;
         
         await ctx.SaveChangesAsync(ct);
         
@@ -117,7 +136,9 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
             SalonId = salonId,
             FirstName = dto.FirstName,
             LastName = dto.LastName,
-            ActiveStatus = ActiveStatusEnum.Active
+            ActiveStatus = ActiveStatusEnum.Active,
+            CanSeeAllVisits = true,
+            CanCreateVisits = true,
         };
 
         ctx.Groomers.Add(newGroomer);
@@ -125,5 +146,23 @@ public class GroomerService(GroomingDbContext ctx) : IGroomerReaderService, IGro
 
         return newGroomer.Id;
 
+        
     }
+    
+    public async Task<GetGroomerBasicDto?> GetCurrentGroomerAsync(int salonId, CancellationToken ct)
+    {
+        return await ctx.Groomers
+            .Where(g => g.SalonId == salonId)
+            .Where(g => g.UserId == currentUser.UserId)
+            .Select(g => new GetGroomerBasicDto
+            {
+                Id = g.Id,
+                FullName = g.FirstName + " " + g.LastName,
+                ActiveStatus = g.ActiveStatus,
+                CanCreateVisits = g.CanCreateVisits
+            })
+            .FirstOrDefaultAsync(ct);
+    }
+    
+    
 }

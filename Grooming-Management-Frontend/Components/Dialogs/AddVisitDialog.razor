@@ -67,13 +67,13 @@
             </MudAlert>
         }
 
-        <MudSelect T="GetGroomerDto" Value="selectedGroomer" ValueChanged="OnGroomerChanged"
+        <MudSelect T="GetGroomerBasicDto" Value="selectedGroomer" ValueChanged="OnGroomerChanged"
                    Label="Groomer" Placeholder="Wybierz groomera"
-                   ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
+                   ToStringFunc="@(g => g == null ? "" : g.FullName)"
                    Variant="Variant.Outlined" Class="mb-3">
             @foreach (var g in groomers)
             {
-                <MudSelectItem T="GetGroomerDto" Value="g">@g.FirstName @g.LastName</MudSelectItem>
+                <MudSelectItem T="GetGroomerBasicDto" Value="g">@g.FullName</MudSelectItem>
             }
         </MudSelect>
 
@@ -81,13 +81,13 @@
 
         @if (withAssistant)
         {
-            <MudSelect T="GetGroomerDto" @bind-Value="selectedAssistant"
+            <MudSelect T="GetGroomerBasicDto" @bind-Value="selectedAssistant"
                        Label="Pomoc" Placeholder="Wybierz osobę"
-                       ToStringFunc="@(g => g == null ? "" : $"{g.FirstName} {g.LastName}")"
+                       ToStringFunc="@(g => g == null ? "" : g.FullName)"
                        Variant="Variant.Outlined" Class="mb-3">
                 @foreach (var g in groomers.Where(g => selectedGroomer == null || g.Id != selectedGroomer.Id))
                 {
-                    <MudSelectItem T="GetGroomerDto" Value="g">@g.FirstName @g.LastName</MudSelectItem>
+                    <MudSelectItem T="GetGroomerBasicDto" Value="g">@g.FullName</MudSelectItem>
                 }
             </MudSelect>
         }
@@ -137,15 +137,15 @@
     private GetBreedDto? selectedBreed;
 
     private List<GetDogDto> dogs = new();
-    private List<GetGroomerDto> groomers = new();
+    private List<GetGroomerBasicDto> groomers = new();
     private List<GetBreedDto> breeds = new();
     private List<GetServiceBreedDto> allServices = new();
     private List<GetServiceBreedDto> availableServices = new();
 
     private GetDogDto? selectedDog;
     private GetServiceBreedDto? selectedService;
-    private GetGroomerDto? selectedGroomer;
-    private GetGroomerDto? selectedAssistant;
+    private GetGroomerBasicDto? selectedGroomer;
+    private GetGroomerBasicDto? selectedAssistant;
     private DateTime? selectedDate = DateTime.Today;
     private TimeSpan? selectedTime = new TimeSpan(9, 0, 0);
     private int durationMinutes = 60;
@@ -172,7 +172,11 @@
         }
 
         dogs = await Api.GetAsync<List<GetDogDto>>("api/Dog") ?? new();
-        groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+
+        groomers = (await Api.GetAsync<List<GetGroomerBasicDto>>("api/Groomer/basic") ?? new())
+            .Where(g => g.ActiveStatus == ActiveStatusEnum.Active)
+            .ToList();
+
         breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
         allServices = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds") ?? new();
     }
@@ -215,7 +219,7 @@
         FilterServices(breed?.Name);
     }
 
-    private void OnGroomerChanged(GetGroomerDto? groomer)
+    private void OnGroomerChanged(GetGroomerBasicDto? groomer)
     {
         selectedGroomer = groomer;
 
