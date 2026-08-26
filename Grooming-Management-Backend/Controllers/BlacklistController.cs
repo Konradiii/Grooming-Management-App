@@ -10,6 +10,7 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Owner")]
 public class BlacklistController(IBlacklistService service, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]

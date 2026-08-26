@@ -60,4 +60,7 @@ public static class EnumLabels
 
         return rest == 0 ? $"{hours} h" : $"{hours} h {rest} min";
     }
+    
+    public static string LocalDateTime(DateTime utc)
+        => DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("dd.MM.yyyy HH:mm");
 }

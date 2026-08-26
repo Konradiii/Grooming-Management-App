@@ -50,7 +50,7 @@ else
             <MudTd>@context.DogOwnerFullName</MudTd>
             <MudTd>@context.DogOwnerPhone</MudTd>
             <MudTd>@(context.DogName ?? "-")</MudTd>
-            <MudTd>@context.CreatedAt.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd>@EnumLabels.LocalDateTime(context.CreatedAt)</MudTd>
             <MudTd>
                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
                                OnClick="@(() => DeleteAsync(context.Id))" />

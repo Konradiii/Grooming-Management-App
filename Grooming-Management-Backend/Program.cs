@@ -22,6 +22,7 @@ using Grooming_Management_App.Services.ServiceServ;
 using Grooming_Management_App.Services.SubscriptionServ;
 using Grooming_Management_App.Services.TokenServ;
 using Grooming_Management_App.Services.VisitServ;
+using Grooming_Management_App.Services.WaitlistServ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -143,6 +144,9 @@ builder.Services.AddScoped<IGroomerTimeOffReaderService, GroomerTimeOffService>(
 builder.Services.AddScoped<IAvailabilityReaderService, AvailabilityService>();
 
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+
+builder.Services.AddScoped<IWaitlistReaderService, WaitlistService>();
+builder.Services.AddScoped<IWaitlistWriterService, WaitlistService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
