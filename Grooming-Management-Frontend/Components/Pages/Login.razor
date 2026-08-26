@@ -51,18 +51,25 @@
     private async Task LoginAsync()
     {
         errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Podaj e-mail i hasło";
+            return;
+        }
+
         isLoading = true;
 
         try
         {
             var client = HttpClientFactory.CreateClient("Api");
-            var dto = new LoginDto { Email = email, Password = password };
+            var dto = new LoginDto { Email = email.Trim(), Password = password };
 
             var response = await client.PostAsJsonAsync("api/Auth/Login", dto);
 
             if (!response.IsSuccessStatusCode)
             {
-                errorMessage = "Nieprawidłowy e-mail lub hasło";
+                errorMessage = await ApiClient.ReadErrorAsync(response);
                 return;
             }
 
@@ -75,11 +82,6 @@
             }
 
             await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken, result.RequiresPasswordChange);
-
-            if (result.RequiresPasswordChange)
-                Navigation.NavigateTo("/zmiana-hasla", forceLoad: false);
-            else
-                Navigation.NavigateTo("/");
 
             Navigation.NavigateTo(result.RequiresPasswordChange ? "/zmiana-hasla" : "/");
         }

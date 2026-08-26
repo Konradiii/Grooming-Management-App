@@ -60,6 +60,13 @@ public static class ErrorMessages
         // Uprawnienia
         ["NO_PERMISSION_TO_CREATE_VISITS"] = "Nie masz uprawnień do dodawania wizyt",
         ["NOTIFICATION_ALREADY_SENT"] = "Powiadomienie o gotowości do odbioru zostało już wysłane",
+        
+        ["INVALID_EMAIL"] = "Nieprawidłowy adres e-mail",
+        ["INVALID_PHONE"] = "Nieprawidłowy numer telefonu",
+        ["NAME_REQUIRED"] = "Nazwa nie może być pusta",
+        ["REASON_REQUIRED"] = "Podaj powód",
+        ["PASSWORD_TOO_SHORT"] = "Hasło musi mieć co najmniej 8 znaków",
+        ["INVALID_PRICE"] = "Cena musi być większa od zera",
     };
 
     public static string Translate(string? code)

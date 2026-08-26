@@ -47,6 +47,7 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
     
     public async Task<int> AddToBlacklistByDogOwnerAsync(int salonId, CreateBlacklistByDogOwnerDto dto, CancellationToken ct)
     {
+        Validate.NotEmpty(dto.Reason, ErrorCodes.ReasonRequired);
         
         var alreadyBlocked = await ctx.Blacklists
             .AnyAsync(b => b.DogOwnerId == dto.DogOwnerId && b.SalonId == salonId, ct);
@@ -71,6 +72,8 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
     
     public async Task<int> AddToBlacklistByDogAsync(int salonId, CreateBlacklistByDogDto dto, CancellationToken ct)
     {
+        
+        Validate.NotEmpty(dto.Reason, ErrorCodes.ReasonRequired);
         
         var dog = await ctx.Dogs
             .Where(e => e.Id == dto.DogId && e.SalonId == salonId)

@@ -54,7 +54,8 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
 
     public async Task<int> CreateDogAsync(int salonId, CreateDogDto dto, CancellationToken ct)
     {
-        
+
+        Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
         var dogOwnerExists = await ctx.DogOwners.AnyAsync(e => e.Id == dto.DogOwnerId && e.SalonId == salonId, ct);
         
 
@@ -83,6 +84,7 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
 
     public async Task UpdateDogAsync(int salonId, int dogId, UpdateDogDto dto, CancellationToken ct)
     {
+        Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
         
         var dogExists = await ctx.Dogs.Where(e=> e.SalonId == salonId && e.Id== dogId).FirstOrDefaultAsync(ct);
         if (dogExists == null)

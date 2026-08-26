@@ -14,6 +14,9 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 {
     public async Task<CreateGroomerAccountResultDto> RegisterGroomerAccountAsync(int salonId, int groomerId, CreateAccountDto dto, CancellationToken ct)
     {
+        
+        Validate.Email(dto.Email);
+        
         var groomer = await ctx.Groomers
             .Where(g => g.Id == groomerId && g.SalonId == salonId)
             .FirstOrDefaultAsync(ct);
@@ -60,116 +63,127 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         };
     }
 
-    public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, CancellationToken ct)
+public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, CancellationToken ct)
+{
+    Validate.NotEmpty(dto.SalonName, ErrorCodes.NameRequired);
+    Validate.Email(dto.Email);
+
+    if (dto.Password != dto.ConfirmPassword)
     {
-        if (dto.Password != dto.ConfirmPassword)
-        {
-            throw new ConflictException(ErrorCodes.PasswordsDoNotMatch);
-        }
-
-        var emailTaken = await ctx.Users.Where(u => u.Email == dto.Email).AnyAsync(ct);
-        if (emailTaken)
-        {
-            throw new ConflictException(ErrorCodes.EmailTaken);
-        }
-
-        var hashedPassword = passwordHasher.HashPassword(dto.Password);
-
-        var newSalon = new Salon
-        {
-            Name = dto.SalonName,
-            Street = dto.Street,
-            BuildingNumber = dto.BuildingNumber,
-            ApartmentNumber = dto.ApartmentNumber,
-            PostalCode = dto.PostalCode,
-            City = dto.City,
-            MinBookingHoursAhead = 0,
-            MaxBookingDaysAhead = 550,
-            SubscriptionStatus = SubscriptionStatusEnum.Trial,
-            SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30)
-        };
-
-        var ownerUser = new User
-        {
-            Email = dto.Email,
-            PasswordHash = hashedPassword,
-            Role = RoleEnum.Owner,
-            ActiveStatus = ActiveStatusEnum.Active,
-            RequiresPasswordChange = false,
-            CreatedAt = DateTime.UtcNow,
-            Salon = newSalon
-        };
-        ctx.Users.Add(ownerUser);
-        await ctx.SaveChangesAsync(ct);
-
-        var refreshToken = tokenService.GenerateRefreshToken();
-        var accessToken = tokenService.GenerateAccessToken(
-            ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name);
-
-        var newTokens = new RefreshToken
-        {
-            TokenHash = tokenService.HashToken(refreshToken),
-            ExpiresAt = DateTime.UtcNow.AddDays(3),
-            CreatedAt = DateTime.UtcNow,
-            RevokedAt = null,
-            User = ownerUser
-        };
-        ctx.RefreshTokens.Add(newTokens);
-        await ctx.SaveChangesAsync(ct);
-
-        return new LoginResponseDto
-        {
-            RefreshToken = refreshToken,
-            AccessToken = accessToken,
-        };
+        throw new ConflictException(ErrorCodes.PasswordsDoNotMatch);
     }
 
-    public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken ct)
+    if (dto.Password.Length < 8)
     {
-        var user = await ctx.Users
-            .IgnoreQueryFilters()
-            .Include(u => u.Groomer)
-            .Include(u => u.Salon)
-            .Where(u => u.Email == dto.Email)
-            .FirstOrDefaultAsync(ct);
-
-        if (user == null)
-        {
-            throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
-        }
-
-        if (!passwordHasher.VerifyHashedPassword(dto.Password, user.PasswordHash))
-        {
-            throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
-        }
-
-        if (user.ActiveStatus == ActiveStatusEnum.Inactive)
-        {
-            throw new UnauthorizedException(ErrorCodes.UserInactive);
-        }
-
-        var accessToken = tokenService.GenerateAccessToken(
-            user.Id, user.SalonId, user.Role, ResolveDisplayName(user));
-        var refreshToken = tokenService.GenerateRefreshToken();
-
-        var newTokens = new RefreshToken
-        {
-            TokenHash = tokenService.HashToken(refreshToken),
-            ExpiresAt = DateTime.UtcNow.AddDays(3),
-            CreatedAt = DateTime.UtcNow,
-            RevokedAt = null,
-            User = user
-        };
-        ctx.RefreshTokens.Add(newTokens);
-        await ctx.SaveChangesAsync(ct);
-
-        return new LoginResponseDto
-        {
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            RequiresPasswordChange = user.RequiresPasswordChange
-        };
+        throw new ConflictException(ErrorCodes.PasswordTooShort);
     }
+
+    var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+
+    var emailTaken = await ctx.Users.Where(u => u.Email == normalizedEmail).AnyAsync(ct);
+    if (emailTaken)
+    {
+        throw new ConflictException(ErrorCodes.EmailTaken);
+    }
+
+    var hashedPassword = passwordHasher.HashPassword(dto.Password);
+
+    var newSalon = new Salon
+    {
+        Name = dto.SalonName.Trim(),
+        Street = dto.Street,
+        BuildingNumber = dto.BuildingNumber,
+        ApartmentNumber = dto.ApartmentNumber,
+        PostalCode = dto.PostalCode,
+        City = dto.City,
+        MinBookingHoursAhead = 0,
+        MaxBookingDaysAhead = 550,
+        SubscriptionStatus = SubscriptionStatusEnum.Trial,
+        SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30)
+    };
+
+    var ownerUser = new User
+    {
+        Email = normalizedEmail,
+        PasswordHash = hashedPassword,
+        Role = RoleEnum.Owner,
+        ActiveStatus = ActiveStatusEnum.Active,
+        RequiresPasswordChange = false,
+        CreatedAt = DateTime.UtcNow,
+        Salon = newSalon
+    };
+    ctx.Users.Add(ownerUser);
+    await ctx.SaveChangesAsync(ct);
+
+    var refreshToken = tokenService.GenerateRefreshToken();
+    var accessToken = tokenService.GenerateAccessToken(
+        ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name);
+
+    var newTokens = new RefreshToken
+    {
+        TokenHash = tokenService.HashToken(refreshToken),
+        ExpiresAt = tokenService.GetRefreshTokenExpiration(),
+        CreatedAt = DateTime.UtcNow,
+        RevokedAt = null,
+        User = ownerUser
+    };
+    ctx.RefreshTokens.Add(newTokens);
+    await ctx.SaveChangesAsync(ct);
+
+    return new LoginResponseDto
+    {
+        RefreshToken = refreshToken,
+        AccessToken = accessToken,
+    };
+}
+public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken ct)
+{
+    var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+
+    var user = await ctx.Users
+        .IgnoreQueryFilters()
+        .Include(u => u.Groomer)
+        .Include(u => u.Salon)
+        .Where(u => u.Email == normalizedEmail)
+        .FirstOrDefaultAsync(ct);
+
+    if (user == null)
+    {
+        throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
+    }
+
+    if (!passwordHasher.VerifyHashedPassword(dto.Password, user.PasswordHash))
+    {
+        throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
+    }
+
+    if (user.ActiveStatus == ActiveStatusEnum.Inactive)
+    {
+        throw new UnauthorizedException(ErrorCodes.UserInactive);
+    }
+
+    var accessToken = tokenService.GenerateAccessToken(
+        user.Id, user.SalonId, user.Role, ResolveDisplayName(user));
+    var refreshToken = tokenService.GenerateRefreshToken();
+
+    var newTokens = new RefreshToken
+    {
+        TokenHash = tokenService.HashToken(refreshToken),
+        ExpiresAt = tokenService.GetRefreshTokenExpiration(),
+        CreatedAt = DateTime.UtcNow,
+        RevokedAt = null,
+        User = user
+    };
+    ctx.RefreshTokens.Add(newTokens);
+    await ctx.SaveChangesAsync(ct);
+
+    return new LoginResponseDto
+    {
+        AccessToken = accessToken,
+        RefreshToken = refreshToken,
+        RequiresPasswordChange = user.RequiresPasswordChange
+    };
+}
 
     public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
@@ -229,6 +243,16 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
     public async Task<LoginResponseDto> ChangePasswordAsync(int userId, ChangePasswordDto dto, CancellationToken ct)
     {
+        if (dto.NewPassword != dto.ConfirmNewPassword)
+        {
+            throw new ConflictException(ErrorCodes.PasswordsDoNotMatch);
+        }
+
+        if (dto.NewPassword.Length < 8)
+        {
+            throw new ConflictException(ErrorCodes.PasswordTooShort);
+        }
+
         var user = await ctx.Users
             .Include(u => u.Groomer)
             .Include(u => u.Salon)
@@ -239,10 +263,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         {
             throw new NotFoundException(ErrorCodes.UserNotFound);
         }
-        if (dto.NewPassword != dto.ConfirmNewPassword)
-        {
-            throw new ConflictException(ErrorCodes.InvalidCredentials);
-        }
+
         if (!passwordHasher.VerifyHashedPassword(dto.CurrentPassword, user.PasswordHash))
         {
             throw new UnauthorizedException(ErrorCodes.InvalidPassword);
@@ -268,7 +289,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         var newtoken = new RefreshToken
         {
             TokenHash = tokenService.HashToken(newRefreshToken),
-            ExpiresAt = DateTime.UtcNow.AddDays(3),
+            ExpiresAt = tokenService.GetRefreshTokenExpiration(),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
             User = user

@@ -57,4 +57,11 @@ public static class ErrorCodes
 
     // Forbidden
     public const string NoPermissionToCreateVisits = "NO_PERMISSION_TO_CREATE_VISITS";
+    
+    public const string InvalidEmail = "INVALID_EMAIL";
+    public const string InvalidPhone = "INVALID_PHONE";
+    public const string NameRequired = "NAME_REQUIRED";
+    public const string ReasonRequired = "REASON_REQUIRED";
+    public const string PasswordTooShort = "PASSWORD_TOO_SHORT";
+    public const string InvalidPrice = "INVALID_PRICE";
 }

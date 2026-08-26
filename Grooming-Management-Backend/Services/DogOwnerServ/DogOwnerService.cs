@@ -50,6 +50,11 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
 
     public async Task<int> CreateDogOwnerAsync(CreateDogOwnerDto dto, int salonId, CancellationToken ct)
     {
+        
+        Validate.NotEmpty(dto.FirstName, ErrorCodes.NameRequired);
+        Validate.NotEmpty(dto.LastName, ErrorCodes.NameRequired);
+        Validate.PolishPhone(dto.Phone);
+        
         var ownerExists = await ctx.DogOwners
             .AnyAsync(e => e.Phone == dto.Phone && e.SalonId == salonId, ct);
 
@@ -77,6 +82,10 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
     public async Task EditDogOwnerAsync(EditDogOwnerDto dto, int id, int salonId, CancellationToken ct)
     {
 
+        Validate.NotEmpty(dto.FirstName, ErrorCodes.NameRequired);
+        Validate.NotEmpty(dto.LastName, ErrorCodes.NameRequired);
+        Validate.PolishPhone(dto.Phone);
+        
         var ownerExists = await ctx.DogOwners
             .AnyAsync(e => e.Phone == dto.Phone && e.SalonId == salonId, ct);
 

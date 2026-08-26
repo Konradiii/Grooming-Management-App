@@ -35,6 +35,7 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
     
     public async Task UpdateSalonAsync(UpdateSalonDto dto, int salonId, CancellationToken ct)
     {
+        Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
         
         if (dto.MinBookingHoursAhead < 0)
         {

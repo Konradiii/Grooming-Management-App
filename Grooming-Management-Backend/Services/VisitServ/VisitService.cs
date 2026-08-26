@@ -310,6 +310,12 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
         if (me == null || !me.CanCreateVisits)
             throw new ForbiddenException(ErrorCodes.NoPermissionToCreateVisits);
     }
+    
+    Validate.NotEmpty(dto.FirstName, ErrorCodes.NameRequired);
+    Validate.NotEmpty(dto.LastName, ErrorCodes.NameRequired);
+    Validate.NotEmpty(dto.DogName, ErrorCodes.NameRequired);
+    Validate.PolishPhone(dto.Phone);
+    
 
     if (dto.DurationMinutes is <= 0)
     {
@@ -405,15 +411,15 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
 
     var owner = new Models.DogOwner
     {
-        FirstName = dto.FirstName,
-        LastName = dto.LastName,
-        Phone = dto.Phone,
+        FirstName = dto.FirstName.Trim(),
+        LastName = dto.LastName.Trim(),
+        Phone = dto.Phone.Trim(),
         SalonId = salonId
     };
 
     var dog = new Dog
     {
-        Name = dto.DogName,
+        Name = dto.DogName.Trim(),
         AgeInMonths = dto.AgeInMonths,
         BreedId = dto.BreedId,
         Notes = dto.DogNotes,

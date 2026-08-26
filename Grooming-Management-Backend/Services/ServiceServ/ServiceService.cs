@@ -91,32 +91,37 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
 
         
     }
-    
     public async Task<int> AddServiceAsync(int salonId, string newName, CancellationToken ct)
     {
+        Validate.NotEmpty(newName, ErrorCodes.NameRequired);
 
-        var serviceExist = await ctx.Services.AnyAsync(s =>s.Name == newName, ct);
+        var trimmedName = newName.Trim();
+
+        var serviceExist = await ctx.Services
+            .AnyAsync(s => s.Name == trimmedName && s.SalonId == salonId, ct);
+
         if (serviceExist)
         {
             throw new ConflictException(ErrorCodes.ServiceNameTaken);
         }
-        
+
         var newService = new Service
         {
-            Name = newName,
+            Name = trimmedName,
             Status = ActiveStatusEnum.Active,
             SalonId = salonId
         };
         ctx.Services.Add(newService);
         await ctx.SaveChangesAsync(ct);
         return newService.Id;
-
-
     }
-    
+
     public async Task EditNameServiceAsync(int salonId, int serviceId, string newName, CancellationToken ct)
     {
-        
+        Validate.NotEmpty(newName, ErrorCodes.NameRequired);
+
+        var trimmedName = newName.Trim();
+
         var service = await ctx.Services
             .Where(s => s.SalonId == salonId && s.Id == serviceId)
             .FirstOrDefaultAsync(ct);
@@ -125,9 +130,19 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
         {
             throw new NotFoundException(ErrorCodes.ServiceNotFound);
         }
-        service.Name = newName;
+
+        var nameTaken = await ctx.Services
+            .AnyAsync(s => s.Name == trimmedName
+                           && s.SalonId == salonId
+                           && s.Id != serviceId, ct);
+
+        if (nameTaken)
+        {
+            throw new ConflictException(ErrorCodes.ServiceNameTaken);
+        }
+
+        service.Name = trimmedName;
         await ctx.SaveChangesAsync(ct);
-        
     }
     
 }
