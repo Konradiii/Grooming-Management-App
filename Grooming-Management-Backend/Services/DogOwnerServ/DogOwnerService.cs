@@ -25,7 +25,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
         
         if (dogOwner == null)
         {
-            throw new NotFoundException($"DogOwner with id: {id} not found");
+            throw new NotFoundException(ErrorCodes.DogOwnerNotFound);
         }
 
         return dogOwner;
@@ -55,7 +55,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
 
         if (ownerExists)
         {
-            throw new ConflictException("DogOwner with this phone number already exists");
+            throw new ConflictException(ErrorCodes.DogOwnerNotFound);
         }
         
         
@@ -82,7 +82,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
 
         if (ownerExists)
         {
-            throw new ConflictException("DogOwner with this phone number already exists");
+            throw new ConflictException(ErrorCodes.DogOwnerNotFound);
         }
         
         var dogOwner = await ctx.DogOwners
@@ -91,7 +91,7 @@ public class DogOwnerService(GroomingDbContext ctx) : IDogOwnerReaderService, ID
         
         if (dogOwner == null)
         {
-            throw new NotFoundException($"DogOwner with id: {id} not found");
+            throw new NotFoundException(ErrorCodes.DogOwnerNotFound);
         }
 
 

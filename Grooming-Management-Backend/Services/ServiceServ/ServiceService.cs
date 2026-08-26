@@ -38,7 +38,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
 
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException(ErrorCodes.ServiceNotFound);
         }
 
         return service;
@@ -54,7 +54,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
 
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException(ErrorCodes.ServiceNotFound);
         }
 
         if (service.Status == ActiveStatusEnum.Active)
@@ -77,7 +77,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
 
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException(ErrorCodes.ServiceNotFound);
         }
 
         if (service.Status == ActiveStatusEnum.Inactive)
@@ -98,7 +98,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
         var serviceExist = await ctx.Services.AnyAsync(s =>s.Name == newName, ct);
         if (serviceExist)
         {
-            throw new ConflictException("Service already exist");
+            throw new ConflictException(ErrorCodes.ServiceNameTaken);
         }
         
         var newService = new Service
@@ -123,7 +123,7 @@ public class ServiceService(GroomingDbContext ctx) : IServiceReaderService, ISer
 
         if (service == null)
         {
-            throw new NotFoundException("Service not found");
+            throw new NotFoundException(ErrorCodes.ServiceNotFound);
         }
         service.Name = newName;
         await ctx.SaveChangesAsync(ct);

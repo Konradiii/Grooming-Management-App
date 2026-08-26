@@ -158,7 +158,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<GroomingDbContext>();
-    await DbSeeder.SeedAsync(context);
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await DbSeeder.SeedAsync(context, passwordHasher);
 }
 
 app.UseExceptionHandler();

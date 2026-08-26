@@ -1,15 +1,20 @@
 ﻿using Grooming_Management_App.Enums;
 using Grooming_Management_App.Models;
+using Grooming_Management_App.Services.PasswordHasherServ;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.DataInfrastructure;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(GroomingDbContext context)
+    private const string DefaultPassword = "Test1234!";
+
+    public static async Task SeedAsync(GroomingDbContext context, IPasswordHasher passwordHasher)
     {
         if (await context.Salons.AnyAsync())
             return;
+
+        var hashedPassword = passwordHasher.HashPassword(DefaultPassword);
 
         var breeds = new List<Breed>
         {
@@ -20,13 +25,20 @@ public static class DbSeeder
         };
         context.Breeds.AddRange(breeds);
 
-        var salon = new Salon { Name = "Psi Salon Warszawa" };
+        var salon = new Salon
+        {
+            Name = "Psi Salon Warszawa",
+            MinBookingHoursAhead = 0,
+            MaxBookingDaysAhead = 550,
+            SubscriptionStatus = SubscriptionStatusEnum.Trial,
+            SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30)
+        };
         context.Salons.Add(salon);
 
         var owner = new User
         {
             Email = "owner@test.com",
-            PasswordHash = "TEMP_NIE_ZAHASHOWANE",
+            PasswordHash = hashedPassword,
             Role = RoleEnum.Owner,
             ActiveStatus = ActiveStatusEnum.Active,
             RequiresPasswordChange = false,
@@ -39,11 +51,16 @@ public static class DbSeeder
         {
             FirstName = "Anna",
             LastName = "Kowalska",
+            ActiveStatus = ActiveStatusEnum.Active,
+            SettlementType = SettlementTypeEnum.Percentage,
+            SettlementRate = 50m,
+            CanSeeAllVisits = true,
+            CanCreateVisits = true,
             Salon = salon,
             User = new User
             {
                 Email = "anna@test.com",
-                PasswordHash = "TEMP_NIE_ZAHASHOWANE",
+                PasswordHash = hashedPassword,
                 Role = RoleEnum.Groomer,
                 ActiveStatus = ActiveStatusEnum.Active,
                 RequiresPasswordChange = true,
@@ -56,6 +73,11 @@ public static class DbSeeder
         {
             FirstName = "Piotr",
             LastName = "Zieliński",
+            ActiveStatus = ActiveStatusEnum.Active,
+            SettlementType = SettlementTypeEnum.Hourly,
+            SettlementRate = 40m,
+            CanSeeAllVisits = true,
+            CanCreateVisits = true,
             Salon = salon
         };
 
@@ -81,8 +103,18 @@ public static class DbSeeder
         };
         context.Dogs.Add(dog);
 
-        var serviceStrzyzenie = new Service { Name = "Strzyżenie", Salon = salon };
-        var serviceKapiel = new Service { Name = "Kąpiel", Salon = salon };
+        var serviceStrzyzenie = new Service
+        {
+            Name = "Strzyżenie",
+            Status = ActiveStatusEnum.Active,
+            Salon = salon
+        };
+        var serviceKapiel = new Service
+        {
+            Name = "Kąpiel",
+            Status = ActiveStatusEnum.Active,
+            Salon = salon
+        };
         context.Services.AddRange(serviceStrzyzenie, serviceKapiel);
 
         var priceStrzyzenieLabrador = new ServiceBreed
@@ -91,7 +123,8 @@ public static class DbSeeder
             Breed = breeds[2],
             Salon = salon,
             Price = 150m,
-            Duration = 60
+            Duration = 60,
+            Status = ActiveStatusEnum.Active
         };
 
         var priceKapielLabrador = new ServiceBreed
@@ -100,7 +133,8 @@ public static class DbSeeder
             Breed = breeds[2],
             Salon = salon,
             Price = 60m,
-            Duration = 30
+            Duration = 30,
+            Status = ActiveStatusEnum.Active
         };
 
         context.ServiceBreeds.AddRange(priceStrzyzenieLabrador, priceKapielLabrador);
@@ -115,15 +149,12 @@ public static class DbSeeder
             Date = DateTime.UtcNow.AddDays(3),
             EstimatedDuration = priceStrzyzenieLabrador.Duration,
             ProposedPrice = priceStrzyzenieLabrador.Price,
+            SettlementType = groomerWithAccount.SettlementType,
+            SettlementRate = groomerWithAccount.SettlementRate,
             Status = StatusEnum.Scheduled,
             CreatedAt = DateTime.UtcNow
         };
         context.Visits.Add(visit);
-        
-        foreach (var entry in context.ChangeTracker.Entries<Groomer>())
-        {
-            Console.WriteLine($"Groomer tracked: FirstName={entry.Entity.FirstName}, LastName={entry.Entity.LastName ?? "NULL"}");
-        }
 
         await context.SaveChangesAsync();
     }

@@ -86,7 +86,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
         if (visit == null)
         {
-            throw new NotFoundException("Visit not found");
+            throw new NotFoundException(ErrorCodes.VisitNotFound);
         }
         
         return visit;
@@ -100,13 +100,13 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             var me = await GetCurrentGroomerAsync(salonId, ct);
 
             if (me == null || !me.CanCreateVisits)
-                throw new ForbiddenException("Brak uprawnień do dodawania wizyt");
+                throw new ForbiddenException(ErrorCodes.NoPermissionToCreateVisits);
         }
         
         
         if (dto.DurationMinutes is <= 0)
         {
-            throw new ConflictException("Duration must be greater than zero");
+            throw new ConflictException(ErrorCodes.InvalidDuration);
         }
 
         var serviceBreed = await ctx.ServiceBreeds
@@ -116,7 +116,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         
         if (serviceBreed == null)
         {
-            throw new NotFoundException("Service breed not found");
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
         }
         
         var dog = await ctx.Dogs
@@ -126,7 +126,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         
         if (dog == null)
         {
-            throw new NotFoundException("Dog not found");
+            throw new NotFoundException(ErrorCodes.DogNotFound);
         }
         
         var groomer = await ctx.Groomers
@@ -136,12 +136,12 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
         if (groomer == null)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
         if (serviceBreed.BreedId != dog.BreedId)
         {
-            throw new ConflictException("Service Breed doesn't exist for that breed");
+            throw new ConflictException(ErrorCodes.ServiceBreedNotFound);
         }
         
         var duplicateExists = await ctx.Visits
@@ -150,26 +150,26 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                            && v.SalonId == salonId, ct);
         if (duplicateExists)
         {
-            throw new ConflictException("This dog already has a visit scheduled at this exact time");
+            throw new ConflictException(ErrorCodes.DuplicateVisit);
         }
         
         if (dto.AssistantGroomerId != null)
         {
             if (dto.AssistantGroomerId == dto.GroomerId)
-                throw new ConflictException("Assistant must be a different groomer");
+                throw new ConflictException(ErrorCodes.AssistantMustDiffer);
 
             var assistantExists = await ctx.Groomers
                 .AnyAsync(g => g.Id == dto.AssistantGroomerId && g.SalonId == salonId, ct);
 
             if (!assistantExists)
-                throw new NotFoundException("Assistant groomer not found");
+                throw new NotFoundException(ErrorCodes.AssistantNotFound);
         }
 
         var isBlocked = await blacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
         
         if (isBlocked)
         {
-            throw new ConflictException("This client is on Blacklist!");
+            throw new ConflictException(ErrorCodes.ClientBlacklisted);
         }
 
 
@@ -186,7 +186,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                            && endTime > d.Date, ct);
 
         if (visitOverlaps)
-            throw new ConflictException("Groomer already has a visit at this time");
+            throw new ConflictException(ErrorCodes.VisitOverlaps);
         
         
         var timeOffOverlaps = await ctx.GroomerTimeOffs
@@ -196,7 +196,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                            && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
 
         if (timeOffOverlaps)
-            throw new ConflictException("Groomer is unavailable at this time");
+            throw new ConflictException(ErrorCodes.GroomerUnavailable);
 
         var newVisit = new Visit
         {
@@ -232,7 +232,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
         if (visit == null)
         {
-            throw new NotFoundException("Visit not found");
+            throw new NotFoundException(ErrorCodes.VisitNotFound);
         }
 
         var groomerExist = await ctx.Groomers
@@ -241,7 +241,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
         if (!groomerExist)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
         var startTime = dto.Date;
@@ -256,7 +256,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                            && endTime > d.Date, ct);
 
         if (visitOverlaps)
-            throw new ConflictException("Groomer already has a visit at this time");
+            throw new ConflictException(ErrorCodes.VisitOverlaps);
 
         var timeOffOverlaps = await ctx.GroomerTimeOffs
             .Where(t => t.SalonId == salonId)
@@ -265,7 +265,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                            && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
 
         if (timeOffOverlaps)
-            throw new ConflictException("Groomer is unavailable at this time");
+            throw new ConflictException(ErrorCodes.GroomerUnavailable);
 
         visit.Date = dto.Date;
         visit.GroomerId = dto.GroomerId;
@@ -280,7 +280,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             .Where(v => v.SalonId == salonId && v.Id == visitId).FirstOrDefaultAsync(ct);
         if (visit == null)
         {
-            throw new NotFoundException("Visit not found");
+            throw new NotFoundException(ErrorCodes.VisitNotFound);
         }
         visit.Status = status;
         await ctx.SaveChangesAsync(ct);
@@ -293,7 +293,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             .Where(v => v.SalonId == salonId && v.Id == visitId).FirstOrDefaultAsync(ct);
         if (visit == null)
         {
-            throw new NotFoundException("Visit not found");
+            throw new NotFoundException(ErrorCodes.VisitNotFound);
         }
         visit.FinalPrice = finalPrice;
         await ctx.SaveChangesAsync(ct);
@@ -301,11 +301,19 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         
     }
     
-    public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNewDogDto dto, CancellationToken ct)
+public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNewDogDto dto, CancellationToken ct)
 {
+    if (currentUser.Role == RoleEnum.Groomer)
+    {
+        var me = await GetCurrentGroomerAsync(salonId, ct);
+
+        if (me == null || !me.CanCreateVisits)
+            throw new ForbiddenException(ErrorCodes.NoPermissionToCreateVisits);
+    }
+
     if (dto.DurationMinutes is <= 0)
     {
-        throw new ConflictException("Duration must be greater than zero");
+        throw new ConflictException(ErrorCodes.InvalidDuration);
     }
 
     var blacklistedByPhone = await ctx.Blacklists
@@ -314,7 +322,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
     if (blacklistedByPhone)
     {
-        throw new ConflictException("This client is on Blacklist!");
+        throw new ConflictException(ErrorCodes.ClientBlacklisted);
     }
 
     var ownerExists = await ctx.DogOwners
@@ -322,14 +330,14 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
     if (ownerExists)
     {
-        throw new ConflictException("DogOwner with this phone number already exists");
+        throw new ConflictException(ErrorCodes.PhoneTaken);
     }
 
     var breedExists = await ctx.Breeds.AnyAsync(b => b.Id == dto.BreedId, ct);
 
     if (!breedExists)
     {
-        throw new NotFoundException("Breed not found");
+        throw new NotFoundException(ErrorCodes.BreedNotFound);
     }
 
     var serviceBreed = await ctx.ServiceBreeds
@@ -338,22 +346,34 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
     if (serviceBreed == null)
     {
-        throw new NotFoundException("Service breed not found");
+        throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
     }
 
     if (serviceBreed.BreedId != dto.BreedId)
     {
-        throw new ConflictException("Service breed doesn't exist for that breed");
+        throw new ConflictException(ErrorCodes.BreedMismatch);
     }
 
     var groomer = await ctx.Groomers
-        .Where(g => salonId == g.SalonId)
+        .Where(g => g.SalonId == salonId)
         .Where(g => g.Id == dto.GroomerId)
         .FirstOrDefaultAsync(ct);
 
     if (groomer == null)
     {
-        throw new NotFoundException("Groomer not found");
+        throw new NotFoundException(ErrorCodes.GroomerNotFound);
+    }
+
+    if (dto.AssistantGroomerId != null)
+    {
+        if (dto.AssistantGroomerId == dto.GroomerId)
+            throw new ConflictException(ErrorCodes.AssistantMustDiffer);
+
+        var assistantExists = await ctx.Groomers
+            .AnyAsync(g => g.Id == dto.AssistantGroomerId && g.SalonId == salonId, ct);
+
+        if (!assistantExists)
+            throw new NotFoundException(ErrorCodes.AssistantNotFound);
     }
 
     var duration = dto.DurationMinutes ?? serviceBreed.Duration;
@@ -369,7 +389,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
     if (visitOverlaps)
     {
-        throw new ConflictException("Groomer already has a visit at this time");
+        throw new ConflictException(ErrorCodes.VisitOverlaps);
     }
 
     var timeOffOverlaps = await ctx.GroomerTimeOffs
@@ -380,7 +400,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
     if (timeOffOverlaps)
     {
-        throw new ConflictException("Groomer is unavailable at this time");
+        throw new ConflictException(ErrorCodes.GroomerUnavailable);
     }
 
     var owner = new Models.DogOwner
@@ -416,7 +436,8 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         GroomerId = dto.GroomerId,
         ServiceBreedId = dto.ServiceBreedId,
         SettlementType = groomer.SettlementType,
-        SettlementRate = groomer.SettlementRate
+        SettlementRate = groomer.SettlementRate,
+        AssistantGroomerId = dto.AssistantGroomerId
     };
 
     ctx.DogOwners.Add(owner);

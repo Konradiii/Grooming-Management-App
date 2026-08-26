@@ -13,20 +13,7 @@ public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReade
     {
         if (dto.StartDate > dto.EndDate)
         {
-            throw new ConflictException("Start date must be earlier than or equal to end date");
-        }
-
-        if (dto.StartTime >= dto.EndTime)
-        {
-            throw new ConflictException("Start time must be earlier than end time");
-        }
-
-        var groomerExists = await ctx.Groomers
-            .AnyAsync(g => g.Id == dto.GroomerId && g.SalonId == salonId, ct);
-
-        if (!groomerExists)
-        {
-            throw new NotFoundException("Groomer not found");
+            throw new ConflictException(ErrorCodes.GroomerNotFound);
         }
         
         
@@ -42,7 +29,7 @@ public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReade
 
         if (hasConflictingVisits)
         {
-            throw new ConflictException("Cannot create time off: groomer has scheduled visits in this period");
+            throw new ConflictException(ErrorCodes.TimeOffHasVisits);
         }
 
         var newTimeOff = new GroomerTimeOff
@@ -83,7 +70,8 @@ public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReade
 
         if (timeOff == null)
         {
-            throw new NotFoundException("Time off record not found");
+            throw new NotFoundException(ErrorCodes.TimeOffNotFound);
+            
         }
 
         return timeOff;
@@ -119,7 +107,7 @@ public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReade
 
         if (timeOff == null)
         {
-            throw new NotFoundException("Time off record not found");
+            throw new NotFoundException(ErrorCodes.TimeOffNotFound);
         }
 
         ctx.GroomerTimeOffs.Remove(timeOff);

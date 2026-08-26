@@ -13,15 +13,7 @@ public class GroomerScheduleService(GroomingDbContext ctx) : IGroomerScheduleRea
     {
         if (dto.StartTime >= dto.EndTime)
         {
-            throw new ConflictException("Start time must be earlier than end time");
-        }
-        
-        var groomerExists = await ctx.Groomers
-            .AnyAsync(g => g.Id == dto.GroomerId && g.SalonId == salonId, ct);
-
-        if (!groomerExists)
-        {
-            throw new NotFoundException("Groomer not found");
+            throw new ConflictException(ErrorCodes.GroomerNotFound);
         }
 
         var overlaps = await ctx.GroomerSchedules
@@ -35,7 +27,7 @@ public class GroomerScheduleService(GroomingDbContext ctx) : IGroomerScheduleRea
         
         if (overlaps)
         {
-            throw new ConflictException("This time range overlaps with an existing schedule");
+            throw new ConflictException(ErrorCodes.InvalidTimeRange);
         }
 
         
@@ -69,7 +61,7 @@ public class GroomerScheduleService(GroomingDbContext ctx) : IGroomerScheduleRea
 
         if (gettedSchedule == null)
         {
-            throw new NotFoundException("Groomer schedule not found");
+            throw new NotFoundException(ErrorCodes.ScheduleNotFound);
         }
 
         return gettedSchedule;
@@ -106,7 +98,7 @@ public class GroomerScheduleService(GroomingDbContext ctx) : IGroomerScheduleRea
 
         if (schedule == null)
         {
-            throw new NotFoundException("Groomer schedule not found");
+            throw new NotFoundException(ErrorCodes.ScheduleNotFound);
         }
         
         ctx.GroomerSchedules.Remove(schedule);

@@ -17,7 +17,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
 
         if (sbExists == null)
         {
-            throw new NotFoundException("Service on this breed not found");
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
         }
         if (sbExists.Status == ActiveStatusEnum.Active)
         {
@@ -37,7 +37,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
 
         if (sbExists == null)
         {
-            throw new NotFoundException("Service on this breed not found");
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
         }
 
         if (sbExists.Status == ActiveStatusEnum.Inactive)
@@ -86,7 +86,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
         
         if (serviceBreed == null)
         {
-            throw new NotFoundException("Service on this breed not found");
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
             
         }
         return serviceBreed;
@@ -101,7 +101,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
 
         if (!serviceExists)
         {
-            throw new NotFoundException("Service doesnt exists");
+            throw new NotFoundException(ErrorCodes.ServiceNotFound);
         }
         
         var breedExists = await ctx.Breeds
@@ -110,7 +110,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
         
         if (!breedExists)
         {
-            throw new NotFoundException("Breed doesnt exists");
+            throw new NotFoundException(ErrorCodes.BreedNotFound);
         }
         
         var combinationExists = await ctx.ServiceBreeds
@@ -120,7 +120,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
 
         if (combinationExists)
         {
-            throw new ConflictException("This service/breed combination already exists in the pricing");
+            throw new ConflictException(ErrorCodes.ServiceBreedCombinationExists);
         }
         
         var newServiceBreed = new ServiceBreed
@@ -146,7 +146,7 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
             .FirstOrDefaultAsync(ct);
         if (serviceBreed == null)
         {
-            throw new NotFoundException("Service on this breed not found");
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
         }
         serviceBreed.Price = dto.Price;
         serviceBreed.Duration = dto.Duration;
@@ -161,14 +161,14 @@ public class ServiceBreedService(GroomingDbContext ctx) : IServiceBreedWriterSer
 
         if (serviceExists)
         {
-            throw new ConflictException("Service with this name already exists");
+            throw new ConflictException(ErrorCodes.ServiceNotFound);
         }
 
         var breedExists = await ctx.Breeds.AnyAsync(b => b.Id == dto.BreedId, ct);
 
         if (!breedExists)
         {
-            throw new NotFoundException("Breed not found");
+            throw new NotFoundException(ErrorCodes.BreedNotFound);
         }
 
         var service = new Service

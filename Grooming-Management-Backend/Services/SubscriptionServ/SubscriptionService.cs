@@ -17,14 +17,14 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         var salon = await ctx.Salons.Where(s => s.Id == salonId).FirstOrDefaultAsync(ct);
         if (salon == null)
         {
-            throw new NotFoundException("Salon Not Found");
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
         }
         
         var alreadyProcessed = await ctx.Payments.AnyAsync(p=> p.ProviderId == dto.ProviderId, ct);
 
         if (alreadyProcessed)
         {
-            throw new ConflictException("This payment has already been processed");
+            throw new ConflictException(ErrorCodes.PaymentAlreadyProcessed);
         }
         
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -63,13 +63,13 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             var salon = await ctx.Salons.Where(s => s.Id == salonId).FirstOrDefaultAsync(ct);
             if (salon == null)
             {
-                throw new NotFoundException("Salon Not Found");
+                throw new NotFoundException(ErrorCodes.SalonNotFound);
             }
 
             var alreadyProcessed = await ctx.Payments.AnyAsync(p => p.ProviderId == dto.ProviderId, ct);
             if (alreadyProcessed)
             {
-                throw new ConflictException("This payment has already been processed");
+                throw new ConflictException(ErrorCodes.PaymentAlreadyProcessed);
             }
 
             var today = DateOnly.FromDateTime(DateTime.UtcNow);

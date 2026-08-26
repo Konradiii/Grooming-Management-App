@@ -19,18 +19,18 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
             .FirstOrDefaultAsync(ct);
         if (groomer == null)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
         if (groomer.UserId != null)
         {
-            throw new ConflictException("Groomer already has an account");
+            throw new ConflictException(ErrorCodes.GroomerAlreadyHasAccount);
         }
 
         var emailTaken = await ctx.Users.Where(u => u.Email == dto.Email).AnyAsync(ct);
         if (emailTaken)
         {
-            throw new ConflictException("Email already taken");
+            throw new ConflictException(ErrorCodes.EmailTaken);
         }
 
         var randomBytes = RandomNumberGenerator.GetBytes(12);
@@ -64,13 +64,13 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
     {
         if (dto.Password != dto.ConfirmPassword)
         {
-            throw new ConflictException("Passwords don't match");
+            throw new ConflictException(ErrorCodes.PasswordsDoNotMatch);
         }
 
         var emailTaken = await ctx.Users.Where(u => u.Email == dto.Email).AnyAsync(ct);
         if (emailTaken)
         {
-            throw new ConflictException("Email already taken");
+            throw new ConflictException(ErrorCodes.EmailTaken);
         }
 
         var hashedPassword = passwordHasher.HashPassword(dto.Password);
@@ -135,17 +135,17 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         if (user == null)
         {
-            throw new UnauthorizedException("Invalid email or password");
+            throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
         }
 
         if (!passwordHasher.VerifyHashedPassword(dto.Password, user.PasswordHash))
         {
-            throw new UnauthorizedException("Password or Email not found");
+            throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
         }
 
         if (user.ActiveStatus == ActiveStatusEnum.Inactive)
         {
-            throw new UnauthorizedException("User is inactive");
+            throw new UnauthorizedException(ErrorCodes.UserInactive);
         }
 
         var accessToken = tokenService.GenerateAccessToken(
@@ -178,17 +178,17 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
         var refreshExists = await ctx.RefreshTokens.Where(e => hashedRefresh == e.TokenHash).FirstOrDefaultAsync(ct);
         if (refreshExists == null)
         {
-            throw new UnauthorizedException("Refresh token not found");
+            throw new UnauthorizedException(ErrorCodes.RefreshTokenNotFound);
         }
 
         if (refreshExists.RevokedAt != null)
         {
-            throw new UnauthorizedException("Refresh token is already revoked");
+            throw new UnauthorizedException(ErrorCodes.RefreshTokenRevoked);
         }
 
         if (refreshExists.ExpiresAt < DateTime.UtcNow)
         {
-            throw new UnauthorizedException("Refresh token is expired");
+            throw new UnauthorizedException(ErrorCodes.RefreshTokenExpired);
         }
 
         refreshExists.RevokedAt = DateTime.UtcNow;
@@ -201,7 +201,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         if (user == null)
         {
-            throw new NotFoundException("User not found");
+            throw new NotFoundException(ErrorCodes.UserNotFound);
         }
 
         var newRefreshToken = tokenService.GenerateRefreshToken();
@@ -237,15 +237,15 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         if (user == null)
         {
-            throw new NotFoundException("User not found");
+            throw new NotFoundException(ErrorCodes.UserNotFound);
         }
         if (dto.NewPassword != dto.ConfirmNewPassword)
         {
-            throw new ConflictException("Passwords do not match");
+            throw new ConflictException(ErrorCodes.InvalidCredentials);
         }
         if (!passwordHasher.VerifyHashedPassword(dto.CurrentPassword, user.PasswordHash))
         {
-            throw new UnauthorizedException("Invalid password");
+            throw new UnauthorizedException(ErrorCodes.InvalidPassword);
         }
 
         user.PasswordHash = passwordHasher.HashPassword(dto.NewPassword);
@@ -295,7 +295,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         if (token == null)
         {
-            throw new NotFoundException("Refresh token not found");
+            throw new NotFoundException(ErrorCodes.RefreshTokenNotFound);
         }
 
         if (token.RevokedAt != null)

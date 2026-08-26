@@ -13,7 +13,7 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
         var salonInfo = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
         if (salonInfo == null)
         {
-            throw new NotFoundException("Salon not found");
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
         }
 
         return new GetSalonDto
@@ -38,18 +38,18 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
         
         if (dto.MinBookingHoursAhead < 0)
         {
-            throw new ConflictException("Minimum booking notice cannot be negative");
+            throw new ConflictException(ErrorCodes.InvalidBookingSettings);
         }
 
         if (dto.MaxBookingDaysAhead <= 0)
         {
-            throw new ConflictException("Maximum booking window must be greater than zero");
+            throw new ConflictException(ErrorCodes.InvalidBookingSettings);
         }
         var salonInfo = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
         
         if (salonInfo == null)
         {
-            throw new NotFoundException("Salon not found");
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
         }
         
         salonInfo.Name = dto.Name;

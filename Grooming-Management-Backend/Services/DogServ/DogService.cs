@@ -47,7 +47,7 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
 
         if (result == null)
         {
-            throw new NotFoundException("Dog not found");
+            throw new NotFoundException(ErrorCodes.DogNotFound);
         }
         return result;
     }
@@ -60,7 +60,7 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
 
         if (!dogOwnerExists)
         {
-            throw new NotFoundException("DogOwner not found");
+            throw new NotFoundException(ErrorCodes.DogOwnerNotFound);
         }
         
         var newDog = new Dog
@@ -87,7 +87,7 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
         var dogExists = await ctx.Dogs.Where(e=> e.SalonId == salonId && e.Id== dogId).FirstOrDefaultAsync(ct);
         if (dogExists == null)
         {
-            throw new NotFoundException("Dog not found");
+            throw new NotFoundException(ErrorCodes.DogNotFound);
         }
         
         var dogOwnerExists = await ctx.DogOwners
@@ -95,7 +95,7 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
         
         if (!dogOwnerExists)
         {
-            throw new NotFoundException("DogOwner not found");
+            throw new NotFoundException(ErrorCodes.DogOwnerNotFound);
         }
         
         dogExists.Name = dto.Name;
@@ -114,11 +114,11 @@ public class DogService(GroomingDbContext ctx) : IDogWriterService, IDogReaderSe
 
         if (ownerExists)
         {
-            throw new ConflictException("DogOwner with this phone number already exists");
+            throw new ConflictException(ErrorCodes.DogOwnerNotFound);
         }
         
         var breedExists = await ctx.Breeds.AnyAsync(b => b.Id == dto.BreedId, ct);
-        if (!breedExists) throw new NotFoundException("Breed not found");
+        if (!breedExists) throw new NotFoundException(ErrorCodes.BreedNotFound);
         
         
         var owner = new Models.DogOwner

@@ -14,6 +14,8 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
         PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter() }
     };
+    
+    
 
     public async Task<T?> GetAsync<T>(string url)
     {
@@ -74,7 +76,7 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
         {
             var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
             if (!string.IsNullOrWhiteSpace(problem?.Title))
-                return problem.Title;
+                return ErrorMessages.Translate(problem.Title);
         }
         catch
         {
@@ -119,7 +121,8 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
         if (tokens == null)
             return false;
 
-        await tokenStore.SetTokensAsync(tokens.AccessToken, tokens.RefreshToken);
+        await tokenStore.SetTokensAsync(tokens.AccessToken, tokens.RefreshToken, tokens.RequiresPasswordChange);
         return true;
     }
+    
 }

@@ -39,7 +39,7 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
             }).FirstOrDefaultAsync(ct);
         if (record == null)
         {
-            throw new NotFoundException($"No record with id {id} was found.");
+            throw new NotFoundException(ErrorCodes.BlacklistRecordNotFound);
         }
 
         return record;
@@ -53,7 +53,7 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
         
         if (alreadyBlocked)
         {
-            throw new ConflictException("This dog owner is already blacklisted");
+            throw new ConflictException(ErrorCodes.ClientAlreadyBlacklisted);
         }
 
         var newRecord = new Blacklist
@@ -78,7 +78,7 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
 
         if (dog == null)
         {
-            throw new NotFoundException("Dog not found");
+            throw new NotFoundException(ErrorCodes.DogNotFound);
         }
         
         
@@ -87,7 +87,7 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
         
         if (alreadyBlocked)
         {
-            throw new ConflictException("This dog is already blacklisted");
+            throw new ConflictException(ErrorCodes.DogAlreadyBlacklisted);
         }
         
         var newRecord = new Blacklist
@@ -115,7 +115,7 @@ public class BlacklistService(GroomingDbContext ctx) : IBlacklistService, IBlack
             .FirstOrDefaultAsync(ct);
         if (record == null)
         {
-            throw new NotFoundException($"No record with id {id} was found.");
+            throw new NotFoundException(ErrorCodes.BlacklistRecordNotFound);
         }
         ctx.Blacklists.Remove(record);
         await ctx.SaveChangesAsync(ct);

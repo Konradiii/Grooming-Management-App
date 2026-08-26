@@ -18,7 +18,7 @@ public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityReaderSer
             .FirstOrDefaultAsync(ct);
         
         if (serviceBreed == null)
-            throw new NotFoundException("Service breed not found");
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
 
         var duration = serviceBreed.Duration;
 
@@ -27,7 +27,7 @@ public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityReaderSer
             var groomerExists = await ctx.Groomers
                 .AnyAsync(e => e.Id == groomerId && e.SalonId == salonId, ct);
             if (!groomerExists)
-                throw new NotFoundException("Groomer not found");
+                throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
         // 3. ustawienia rezerwacji salonu
@@ -35,7 +35,7 @@ public class AvailabilityService(GroomingDbContext ctx) : IAvailabilityReaderSer
             .Where(s => s.Id == salonId)
             .FirstOrDefaultAsync(ct);
         if (salon == null)
-            throw new NotFoundException("Salon not found");
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
 
         var now = DateTime.UtcNow;
         var minBookingTime = now.AddHours(salon.MinBookingHoursAhead);

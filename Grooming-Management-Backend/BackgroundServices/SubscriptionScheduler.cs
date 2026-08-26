@@ -2,7 +2,9 @@
 
 namespace Grooming_Management_App.BackgroundServices;
 
-public class SubscriptionScheduler(IServiceScopeFactory scopeFactory) : BackgroundService
+public class SubscriptionScheduler(
+    IServiceScopeFactory scopeFactory,
+    ILogger<SubscriptionScheduler> logger) : BackgroundService
 {
     private readonly TimeSpan _interval = TimeSpan.FromHours(24);
 
@@ -18,11 +20,16 @@ public class SubscriptionScheduler(IServiceScopeFactory scopeFactory) : Backgrou
                 var pastDue = await subscriptionService.MarkExpiredSubscriptionsAsPastDueAsync(stoppingToken);
                 var suspended = await subscriptionService.SuspendExpiredSubscriptionsAsync(stoppingToken);
 
-                Console.WriteLine($"[SubscriptionScheduler] PastDue: {pastDue}, Suspended: {suspended}");
+                if (pastDue > 0 || suspended > 0)
+                {
+                    logger.LogInformation(
+                        "Subscription check: {PastDueCount} marked past due, {SuspendedCount} suspended",
+                        pastDue, suspended);
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SubscriptionScheduler] Failed: {ex.Message}");
+                logger.LogError(ex, "Subscription check failed");
             }
 
             await Task.Delay(_interval, stoppingToken);

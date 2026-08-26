@@ -18,7 +18,7 @@ public class WaitlistService(GroomingDbContext ctx) : IWaitlistReaderService, IW
 
         if (recoedExist)
         {
-            throw new ConflictException("This client is already on the waitlist");
+            throw new ConflictException(ErrorCodes.ClientAlreadyOnWaitlist);
         }
         
         var newRecord = new Waitlist
@@ -44,7 +44,7 @@ public class WaitlistService(GroomingDbContext ctx) : IWaitlistReaderService, IW
 
         if (recordExist == null)
         {
-            throw new NotFoundException("Waitlist record not found"); 
+            throw new NotFoundException(ErrorCodes.WaitlistRecordNotFound); 
         }
         
         ctx.Waitlists.Remove(recordExist);

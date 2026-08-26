@@ -23,7 +23,7 @@ public class BreedService(GroomingDbContext ctx) : IBreedReaderService
 
         if (breed == null)
         {
-            throw new NotFoundException($"breed with id:{breedId} not found");
+            throw new NotFoundException(ErrorCodes.BreedNotFound);
         }
         return breed;
     }

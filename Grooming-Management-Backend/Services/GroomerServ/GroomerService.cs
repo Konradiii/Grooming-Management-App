@@ -18,7 +18,7 @@ public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUs
 
         if (groomer == null)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
         if (groomer.ActiveStatus == ActiveStatusEnum.Inactive)
@@ -40,7 +40,7 @@ public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUs
 
         if (groomer == null)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
         if (groomer.ActiveStatus == ActiveStatusEnum.Active)
@@ -72,7 +72,7 @@ public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUs
             }).FirstOrDefaultAsync(ct);
         if (result == null)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
         return result;
         
@@ -116,7 +116,7 @@ public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUs
             .FirstOrDefaultAsync(ct);
         if (edited == null)
         {
-            throw new NotFoundException("Groomer not found");
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
         edited.FirstName = dto.FirstName;
         edited.LastName = dto.LastName;
