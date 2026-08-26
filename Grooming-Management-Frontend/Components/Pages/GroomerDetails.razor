@@ -1,6 +1,6 @@
 @page "/groomerzy/{GroomerId:int}"
 @rendermode InteractiveServer
-@inherits AuthenticatedPage
+@inherits OwnerOnlyPage
 @using Grooming_Management_App.DTOs.GroomerDTO
 @using Grooming_Management_App.DTOs.GroomerScheduleDTO
 @using Grooming_Management_App.DTOs.GroomerTimeOffDTO

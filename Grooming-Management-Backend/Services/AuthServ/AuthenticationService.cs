@@ -108,7 +108,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         var newTokens = new RefreshToken
         {
-            TokenHash = tokenService.HasherSH256(refreshToken),
+            TokenHash = tokenService.HashToken(refreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
@@ -154,7 +154,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         var newTokens = new RefreshToken
         {
-            TokenHash = tokenService.HasherSH256(refreshToken),
+            TokenHash = tokenService.HashToken(refreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
@@ -173,7 +173,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
     public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
-        var hashedRefresh = tokenService.HasherSH256(refreshToken);
+        var hashedRefresh = tokenService.HashToken(refreshToken);
 
         var refreshExists = await ctx.RefreshTokens.Where(e => hashedRefresh == e.TokenHash).FirstOrDefaultAsync(ct);
         if (refreshExists == null)
@@ -210,7 +210,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         var newTokens = new RefreshToken
         {
-            TokenHash = tokenService.HasherSH256(newRefreshToken),
+            TokenHash = tokenService.HashToken(newRefreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
@@ -267,7 +267,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         var newtoken = new RefreshToken
         {
-            TokenHash = tokenService.HasherSH256(newRefreshToken),
+            TokenHash = tokenService.HashToken(newRefreshToken),
             ExpiresAt = DateTime.UtcNow.AddDays(3),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
@@ -287,7 +287,7 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
     public async Task LogoutAsync(string refreshToken, CancellationToken ct)
     {
-        var hashedToken = tokenService.HasherSH256(refreshToken);
+        var hashedToken = tokenService.HashToken(refreshToken);
 
         var token = await ctx.RefreshTokens
             .Where(e => e.TokenHash == hashedToken)
