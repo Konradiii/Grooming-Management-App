@@ -2,6 +2,7 @@
 @using Grooming_Management_App.DTOs.ServiceDTO
 @using Grooming_Management_App.DTOs.Breed
 @using Grooming_Management_Frontend.Services
+@using Grooming_Management_Frontend.Components.Shared
 @inject ApiClient Api
 
 <MudDialog>
@@ -31,11 +32,13 @@
                          SearchFunc="SearchBreeds"
                          ToStringFunc="@(b => b == null ? "" : b.Name)"
                          Variant="Variant.Outlined"
+                         MaxItems="null"
                          Class="mb-3" />
 
         <MudNumericField @bind-Value="price" Label="Cena (zł)" Variant="Variant.Outlined" Min="0" Class="mb-3" />
-        <MudNumericField @bind-Value="duration" Label="Czas trwania (min)" Variant="Variant.Outlined" Min="0" />
-
+        <MudText Typo="Typo.body2" Class="mb-2">Czas trwania</MudText>
+        <DurationPicker @bind-Value="duration" />
+        
         @if (errorMessage != null)
         {
             <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>

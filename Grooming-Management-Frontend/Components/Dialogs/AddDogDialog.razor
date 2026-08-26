@@ -38,6 +38,7 @@
                          SearchFunc="SearchBreeds"
                          ToStringFunc="@(b => b == null ? "" : b.Name)"
                          Variant="Variant.Outlined"
+                         MaxItems="null"
                          Class="mb-3" />
 
         <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="3" />

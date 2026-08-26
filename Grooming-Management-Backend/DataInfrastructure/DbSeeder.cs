@@ -110,7 +110,18 @@ public static class DbSeeder
             Status = ActiveStatusEnum.Active,
             Salon = salon
         };
+
         context.Services.AddRange(serviceStrzyzenie, serviceKapiel);
+
+        foreach (var name in new[] { "Obcinanie pazurów", "Kompleksowa pielęgnacja", "Trymowanie" })
+        {
+            context.Services.Add(new Service
+            {
+                Name = name,
+                Status = ActiveStatusEnum.Active,
+                Salon = salon
+            });
+        }
 
         var priceStrzyzenieLabrador = new ServiceBreed
         {

@@ -32,6 +32,7 @@
                              SearchFunc="SearchBreeds"
                              ToStringFunc="@(b => b == null ? "" : b.Name)"
                              Variant="Variant.Outlined"
+                             MaxItems="null"
                              Class="mb-4" />
         }
         else
@@ -273,7 +274,7 @@
     {
         selectedService = service;
 
-        if (service != null && InitialEnd == null)
+        if (service != null)
             durationMinutes = service.Duration;
     }
 
