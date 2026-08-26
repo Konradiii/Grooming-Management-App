@@ -42,4 +42,24 @@ public static class Validate
         if (!isValid)
             throw new ConflictException(ErrorCodes.InvalidPhone);
     }
+    
+    public static void PolishPostalCode(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;   // pole opcjonalne
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+
+        if (digits.Length != 5)
+            throw new ConflictException(ErrorCodes.InvalidPostalCode);
+    }
+
+    public static string? NormalizePostalCode(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        return $"{digits[..2]}-{digits[2..]}";
+    }
 }

@@ -70,6 +70,8 @@ public static class ErrorMessages
         
         ["SERVICE_REQUIRED"] = "Wybierz usługę z cennika albo podaj usługę i cenę",
         ["PRICE_REQUIRED"] = "Podaj cenę usługi",
+        
+        ["INVALID_POSTAL_CODE"] = "Nieprawidłowy kod pocztowy (format 00-000)"
     };
 
     public static string Translate(string? code)

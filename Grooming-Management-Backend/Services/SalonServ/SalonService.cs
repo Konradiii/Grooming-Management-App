@@ -48,7 +48,7 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
         salonInfo.Street = dto.Street?.Trim();
         salonInfo.BuildingNumber = dto.BuildingNumber?.Trim();
         salonInfo.ApartmentNumber = dto.ApartmentNumber?.Trim();
-        salonInfo.PostalCode = dto.PostalCode?.Trim();
+        salonInfo.PostalCode = Validate.NormalizePostalCode(dto.PostalCode);
         salonInfo.City = dto.City?.Trim();
 
 
