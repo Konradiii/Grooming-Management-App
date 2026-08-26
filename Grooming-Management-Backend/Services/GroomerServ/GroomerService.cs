@@ -131,11 +131,14 @@ public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUs
     
     public async Task<int> CreateGroomerAsync(CreateGroomerDto dto, int salonId, CancellationToken ct)
     {
+        Validate.NotEmpty(dto.FirstName, ErrorCodes.NameRequired);
+        Validate.NotEmpty(dto.LastName, ErrorCodes.NameRequired);
+
         var newGroomer = new Groomer
         {
             SalonId = salonId,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
+            FirstName = dto.FirstName.Trim(),
+            LastName = dto.LastName.Trim(),
             ActiveStatus = ActiveStatusEnum.Active,
             CanSeeAllVisits = true,
             CanCreateVisits = true,
@@ -145,8 +148,6 @@ public class GroomerService(GroomingDbContext ctx, ICurrentUserService currentUs
         await ctx.SaveChangesAsync(ct);
 
         return newGroomer.Id;
-
-        
     }
     
     public async Task<GetGroomerBasicDto?> GetCurrentGroomerAsync(int salonId, CancellationToken ct)

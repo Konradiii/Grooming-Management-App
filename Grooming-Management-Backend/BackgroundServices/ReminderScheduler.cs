@@ -13,43 +13,50 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var windowStart = DateTime.UtcNow.AddHours(24);
-            var windowEnd = windowStart.Add(_interval);
-
-            using var scope = scopeFactory.CreateScope();
-            var ctx = scope.ServiceProvider.GetRequiredService<GroomingDbContext>();
-            var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-
-            var correctVisits = await ctx.Visits
-                .IgnoreQueryFilters()
-                .Where(e => windowStart < e.Date && e.Date <= windowEnd)
-                .Where(e => e.Status == StatusEnum.Scheduled)
-                .ToListAsync(stoppingToken);
-
-            if (correctVisits.Count > 0)
+            try
             {
-                logger.LogInformation(
-                    "Found {Count} visits to remind in window {WindowStart} - {WindowEnd}",
-                    correctVisits.Count, windowStart, windowEnd);
+                var windowStart = DateTime.UtcNow.AddHours(24);
+                var windowEnd = windowStart.Add(_interval);
+
+                using var scope = scopeFactory.CreateScope();
+                var ctx = scope.ServiceProvider.GetRequiredService<GroomingDbContext>();
+                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+
+                var correctVisits = await ctx.Visits
+                    .IgnoreQueryFilters()
+                    .Where(e => windowStart < e.Date && e.Date <= windowEnd)
+                    .Where(e => e.Status == StatusEnum.Scheduled)
+                    .ToListAsync(stoppingToken);
+
+                if (correctVisits.Count > 0)
+                {
+                    logger.LogInformation(
+                        "Found {Count} visits to remind in window {WindowStart} - {WindowEnd}",
+                        correctVisits.Count, windowStart, windowEnd);
+                }
+
+                foreach (var visit in correctVisits)
+                {
+                    try
+                    {
+                        await notificationService.SendVisitReminderAsync(
+                            visit.SalonId,
+                            visit.Id,
+                            stoppingToken);
+
+                        logger.LogInformation("Reminder sent for visit {VisitId}", visit.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex,
+                            "Failed to send reminder for visit {VisitId} in salon {SalonId}",
+                            visit.Id, visit.SalonId);
+                    }
+                }
             }
-
-            foreach (var visit in correctVisits)
+            catch (Exception ex)
             {
-                try
-                {
-                    await notificationService.SendVisitReminderAsync(
-                        visit.SalonId,
-                        visit.Id,
-                        stoppingToken);
-
-                    logger.LogInformation("Reminder sent for visit {VisitId}", visit.Id);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex,
-                        "Failed to send reminder for visit {VisitId} in salon {SalonId}",
-                        visit.Id, visit.SalonId);
-                }
+                logger.LogError(ex, "Reminder cycle failed");
             }
 
             await Task.Delay(_interval, stoppingToken);

@@ -12,11 +12,11 @@ public class SubscriptionScheduler(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            using var scope = scopeFactory.CreateScope();
-            var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
-
             try
             {
+                using var scope = scopeFactory.CreateScope();
+                var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
+
                 var pastDue = await subscriptionService.MarkExpiredSubscriptionsAsPastDueAsync(stoppingToken);
                 var suspended = await subscriptionService.SuspendExpiredSubscriptionsAsync(stoppingToken);
 

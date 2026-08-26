@@ -9,7 +9,7 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
 {
     public async Task<GetSalonDto> GetSalonAsync(int salonId, CancellationToken ct)
     {
-    
+
         var salonInfo = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
         if (salonInfo == null)
         {
@@ -31,37 +31,27 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
 
 
     }
-    
-    
+
+
     public async Task UpdateSalonAsync(UpdateSalonDto dto, int salonId, CancellationToken ct)
     {
         Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
-        
-        if (dto.MinBookingHoursAhead < 0)
-        {
-            throw new ConflictException(ErrorCodes.InvalidBookingSettings);
-        }
 
-        if (dto.MaxBookingDaysAhead <= 0)
-        {
-            throw new ConflictException(ErrorCodes.InvalidBookingSettings);
-        }
         var salonInfo = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
-        
+
         if (salonInfo == null)
         {
             throw new NotFoundException(ErrorCodes.SalonNotFound);
         }
-        
-        salonInfo.Name = dto.Name;
-        salonInfo.Street = dto.Street;
-        salonInfo.BuildingNumber = dto.BuildingNumber;
-        salonInfo.ApartmentNumber = dto.ApartmentNumber;
-        salonInfo.PostalCode = dto.PostalCode;
-        salonInfo.City = dto.City;
-        salonInfo.MinBookingHoursAhead = dto.MinBookingHoursAhead;
-        salonInfo.MaxBookingDaysAhead = dto.MaxBookingDaysAhead;
-        
-        await ctx.SaveChangesAsync(ct);        
+
+        salonInfo.Name = dto.Name.Trim();
+        salonInfo.Street = dto.Street?.Trim();
+        salonInfo.BuildingNumber = dto.BuildingNumber?.Trim();
+        salonInfo.ApartmentNumber = dto.ApartmentNumber?.Trim();
+        salonInfo.PostalCode = dto.PostalCode?.Trim();
+        salonInfo.City = dto.City?.Trim();
+
+
+        await ctx.SaveChangesAsync(ct);
     }
 }
