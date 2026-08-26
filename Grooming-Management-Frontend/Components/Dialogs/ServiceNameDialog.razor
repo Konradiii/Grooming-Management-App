@@ -1,0 +1,44 @@
+﻿@using Grooming_Management_Frontend.Services
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="name" Label="Nazwa usługi"
+                      Variant="Variant.Outlined" Immediate="true" />
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3">@errorMessage</MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">Zapisz</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string? InitialName { get; set; }
+
+    private string name = string.Empty;
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        name = InitialName ?? string.Empty;
+    }
+
+    private void Save()
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            errorMessage = "Podaj nazwę usługi";
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(name.Trim()));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

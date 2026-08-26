@@ -18,7 +18,7 @@ public static class ErrorMessages
         ["TIME_OFF_NOT_FOUND"] = "Nie znaleziono blokady czasu",
         ["BLACKLIST_RECORD_NOT_FOUND"] = "Nie znaleziono wpisu na czarnej liście",
         ["WAITLIST_RECORD_NOT_FOUND"] = "Nie znaleziono wpisu na liście oczekujących",
-        ["REFRESH_TOKEN_NOT_FOUND"] = "Sesja wygasła — zaloguj się ponownie",
+        ["REFRESH_TOKEN_NOT_FOUND"] = "Sesja wygasła - zaloguj się ponownie",
         ["SALON_NOT_FOUND"] = "Nie znaleziono salonu",
         ["REMINDER_ALREADY_SENT"] = "Przypomnienie o tej wizycie zostało już wysłane",
         ["PAYMENT_ALREADY_PROCESSED"] = "Ta płatność została już zaksięgowana",
@@ -40,7 +40,7 @@ public static class ErrorMessages
         ["VISIT_OVERLAPS"] = "Groomer ma już wizytę w tym czasie",
         ["GROOMER_UNAVAILABLE"] = "Groomer jest niedostępny w tym czasie",
         ["SCHEDULE_OVERLAPS"] = "Ten przedział nakłada się na istniejący grafik",
-        ["TIME_OFF_HAS_VISITS"] = "W tym okresie są zaplanowane wizyty — najpierw je odwołaj lub przełóż",
+        ["TIME_OFF_HAS_VISITS"] = "W tym okresie są zaplanowane wizyty - najpierw je odwołaj lub przełóż",
         ["ASSISTANT_MUST_DIFFER"] = "Pomoc musi być inną osobą niż prowadzący",
         ["INVALID_DURATION"] = "Czas trwania musi być większy od zera",
         ["INVALID_TIME_RANGE"] = "Godzina rozpoczęcia musi być wcześniejsza niż zakończenia",
@@ -53,8 +53,8 @@ public static class ErrorMessages
         // Uwierzytelnianie
         ["INVALID_CREDENTIALS"] = "Nieprawidłowy e-mail lub hasło",
         ["USER_INACTIVE"] = "To konto zostało dezaktywowane",
-        ["REFRESH_TOKEN_REVOKED"] = "Sesja wygasła — zaloguj się ponownie",
-        ["REFRESH_TOKEN_EXPIRED"] = "Sesja wygasła — zaloguj się ponownie",
+        ["REFRESH_TOKEN_REVOKED"] = "Sesja wygasła - zaloguj się ponownie",
+        ["REFRESH_TOKEN_EXPIRED"] = "Sesja wygasła - zaloguj się ponownie",
         ["INVALID_PASSWORD"] = "Nieprawidłowe hasło",
 
         // Uprawnienia
@@ -67,6 +67,9 @@ public static class ErrorMessages
         ["REASON_REQUIRED"] = "Podaj powód",
         ["PASSWORD_TOO_SHORT"] = "Hasło musi mieć co najmniej 8 znaków",
         ["INVALID_PRICE"] = "Cena musi być większa od zera",
+        
+        ["SERVICE_REQUIRED"] = "Wybierz usługę z cennika albo podaj usługę i cenę",
+        ["PRICE_REQUIRED"] = "Podaj cenę usługi",
     };
 
     public static string Translate(string? code)

@@ -1,0 +1,177 @@
+﻿@page "/uslugi"
+@rendermode InteractiveServer
+@inherits OwnerOnlyPage
+@using Grooming_Management_App.DTOs.ServiceDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Components.Dialogs
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IDialogService DialogService
+
+<MudText Typo="Typo.h5" Class="mb-1">Usługi</MudText>
+<MudText Typo="Typo.body2" Class="mb-4">
+    Lista usług wykonywanych w salonie. Cennik dla konkretnych ras ustawiasz osobno.
+</MudText>
+
+<div class="d-flex gap-4 mb-4 align-center">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenAddDialog">
+        Dodaj usługę
+    </MudButton>
+
+    <MudSelect T="ActiveStatusEnum?" @bind-Value="statusFilter" Label="Status"
+               Placeholder="Wszystkie" Variant="Variant.Outlined"
+               Clearable="true" Style="max-width: 250px;">
+        <MudSelectItem T="ActiveStatusEnum?" Value="@ActiveStatusEnum.Active">Aktywne</MudSelectItem>
+        <MudSelectItem T="ActiveStatusEnum?" Value="@ActiveStatusEnum.Inactive">Nieaktywne</MudSelectItem>
+    </MudSelect>
+</div>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (!FilteredServices.Any())
+{
+    <MudAlert Severity="Severity.Info">Brak usług do wyświetlenia</MudAlert>
+}
+else
+{
+    <MudTable Items="FilteredServices" Hover="true" Striped="true">
+        <HeaderContent>
+            <MudTh>Nazwa</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh Style="width: 60px;" />
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>
+                <MudChip T="string" Size="Size.Small"
+                         Color="@(context.Status == ActiveStatusEnum.Active ? Color.Success : Color.Default)">
+                    @EnumLabels.ActiveStatus(context.Status)
+                </MudChip>
+            </MudTd>
+            <MudTd>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                    <MudMenuItem OnClick="@(() => OpenEditDialog(context))">Zmień nazwę</MudMenuItem>
+
+                    @if (context.Status == ActiveStatusEnum.Active)
+                    {
+                        <MudMenuItem OnClick="@(() => DeactivateAsync(context.Id))">Dezaktywuj</MudMenuItem>
+                    }
+                    else
+                    {
+                        <MudMenuItem OnClick="@(() => ActivateAsync(context.Id))">Aktywuj</MudMenuItem>
+                    }
+                </MudMenu>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    private List<GetServiceDto> services = new();
+    private ActiveStatusEnum? statusFilter;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private IEnumerable<GetServiceDto> FilteredServices =>
+        services
+            .Where(s => statusFilter == null || s.Status == statusFilter)
+            .OrderBy(s => s.Name);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            services = await Api.GetAsync<List<GetServiceDto>>("api/Service") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ServiceNameDialog>("Nowa usługa", options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string name })
+        {
+            await SaveAsync($"api/Service?newName={Uri.EscapeDataString(name)}");
+        }
+    }
+
+    private async Task OpenEditDialog(GetServiceDto service)
+    {
+        var parameters = new DialogParameters<ServiceNameDialog>
+        {
+            { x => x.InitialName, service.Name }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<ServiceNameDialog>("Zmiana nazwy", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: string name })
+        {
+            await SaveAsync(
+                $"api/Service/{service.Id}/EditServiceName?newName={Uri.EscapeDataString(name)}",
+                isPost: false);
+        }
+    }
+
+    private async Task ActivateAsync(int serviceId)
+        => await SaveAsync($"api/Service/{serviceId}/ActivateService", isPost: false);
+
+    private async Task DeactivateAsync(int serviceId)
+        => await SaveAsync($"api/Service/{serviceId}/DeactivateService", isPost: false);
+
+    private async Task SaveAsync(string url, bool isPost = true)
+    {
+        errorMessage = null;
+
+        try
+        {
+            var response = isPost
+                ? await Api.PostAsync<object?>(url, null)
+                : await Api.PutAsync<object?>(url, null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+    }
+}

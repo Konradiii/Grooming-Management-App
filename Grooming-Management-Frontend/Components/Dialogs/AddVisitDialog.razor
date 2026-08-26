@@ -1,6 +1,7 @@
 @using Grooming_Management_App.DTOs.VisitDTO
 @using Grooming_Management_App.DTOs.DogDTO
 @using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.DTOs.ServiceDTO
 @using Grooming_Management_App.DTOs.ServiceBreedDTO
 @using Grooming_Management_App.DTOs.Breed
 @using Grooming_Management_App.Enums
@@ -46,25 +47,48 @@
                              Class="mb-3" />
         }
 
-        @if (availableServices.Any())
+        <MudRadioGroup T="bool" @bind-Value="fromPriceList" Class="mb-2">
+            <MudRadio T="bool" Value="true" Size="Size.Small">Z cennika</MudRadio>
+            <MudRadio T="bool" Value="false" Size="Size.Small">Wpisz usługę i cenę</MudRadio>
+        </MudRadioGroup>
+
+        @if (fromPriceList)
         {
-            <MudSelect T="GetServiceBreedDto" Value="selectedService" ValueChanged="OnServiceChanged"
+            @if (availableServices.Any())
+            {
+                <MudSelect T="GetServiceBreedDto" Value="selectedService" ValueChanged="OnServiceChanged"
+                           Label="Usługa" Placeholder="Wybierz usługę"
+                           ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} ({s.BreedName}) - {s.Price:0.00} zł")"
+                           Variant="Variant.Outlined" Class="mb-3">
+                    @foreach (var sb in availableServices)
+                    {
+                        <MudSelectItem T="GetServiceBreedDto" Value="sb">
+                            @sb.ServiceName (@sb.BreedName) — @sb.Price.ToString("0.00") zł, @EnumLabels.Duration(sb.Duration)
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else if (HasBreedSelected)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-3">
+                    Brak pozycji cennika dla tej rasy - możesz wpisać usługę i cenę ręcznie
+                </MudAlert>
+            }
+        }
+        else
+        {
+            <MudSelect T="GetServiceDto" @bind-Value="selectedPlainService"
                        Label="Usługa" Placeholder="Wybierz usługę"
-                       ToStringFunc="@(s => s == null ? "" : $"{s.ServiceName} - {s.Price:0.00} zł")"
+                       ToStringFunc="@(s => s == null ? "" : s.Name)"
                        Variant="Variant.Outlined" Class="mb-3">
-                @foreach (var sb in availableServices)
+                @foreach (var s in plainServices)
                 {
-                    <MudSelectItem T="GetServiceBreedDto" Value="sb">
-                        @sb.ServiceName — @sb.Price.ToString("0.00") zł, @EnumLabels.Duration(sb.Duration)
-                    </MudSelectItem>
+                    <MudSelectItem T="GetServiceDto" Value="s">@s.Name</MudSelectItem>
                 }
             </MudSelect>
-        }
-        else if (HasBreedSelected)
-        {
-            <MudAlert Severity="Severity.Warning" Class="mb-3">
-                Brak pozycji cennika dla tej rasy
-            </MudAlert>
+
+            <MudNumericField @bind-Value="manualPrice" Label="Cena (zł)"
+                             Variant="Variant.Outlined" Min="0" Format="0.00" Class="mb-3" />
         }
 
         <MudSelect T="GetGroomerBasicDto" Value="selectedGroomer" ValueChanged="OnGroomerChanged"
@@ -128,6 +152,7 @@
 
     private bool withNewDog;
     private bool withAssistant;
+    private bool fromPriceList = true;
 
     private string firstName = string.Empty;
     private string lastName = string.Empty;
@@ -139,11 +164,14 @@
     private List<GetDogDto> dogs = new();
     private List<GetGroomerBasicDto> groomers = new();
     private List<GetBreedDto> breeds = new();
-    private List<GetServiceBreedDto> allServices = new();
+    private List<GetServiceBreedDto> allPriceList = new();
     private List<GetServiceBreedDto> availableServices = new();
+    private List<GetServiceDto> plainServices = new();
 
     private GetDogDto? selectedDog;
     private GetServiceBreedDto? selectedService;
+    private GetServiceDto? selectedPlainService;
+    private decimal manualPrice;
     private GetGroomerBasicDto? selectedGroomer;
     private GetGroomerBasicDto? selectedAssistant;
     private DateTime? selectedDate = DateTime.Today;
@@ -178,7 +206,12 @@
             .ToList();
 
         breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
-        allServices = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds") ?? new();
+        allPriceList = await Api.GetAsync<List<GetServiceBreedDto>>("api/ServiceBreed/GetAllServiceBreeds") ?? new();
+
+        plainServices = (await Api.GetAsync<List<GetServiceDto>>("api/Service") ?? new())
+            .Where(s => s.Status == ActiveStatusEnum.Active)
+            .OrderBy(s => s.Name)
+            .ToList();
     }
 
     private Task<IEnumerable<GetDogDto>> SearchDogs(string value, CancellationToken ct)
@@ -231,7 +264,7 @@
     {
         availableServices = breedName == null
             ? new()
-            : allServices
+            : allPriceList
                 .Where(s => s.BreedName == breedName && s.Status == ActiveStatusEnum.Active)
                 .ToList();
     }
@@ -280,10 +313,27 @@
             return;
         }
 
-        if (selectedService == null)
+        if (fromPriceList)
         {
-            errorMessage = "Wybierz usługę";
-            return;
+            if (selectedService == null)
+            {
+                errorMessage = "Wybierz usługę z cennika";
+                return;
+            }
+        }
+        else
+        {
+            if (selectedPlainService == null)
+            {
+                errorMessage = "Wybierz usługę";
+                return;
+            }
+
+            if (manualPrice <= 0)
+            {
+                errorMessage = "Podaj cenę usługi";
+                return;
+            }
         }
 
         if (selectedGroomer == null)
@@ -316,6 +366,11 @@
         {
             var visitDate = selectedDate.Value.Date.Add(selectedTime.Value);
             var assistantId = withAssistant ? selectedAssistant?.Id : null;
+
+            int? serviceBreedId = fromPriceList ? selectedService!.Id : null;
+            int? serviceId = fromPriceList ? null : selectedPlainService!.Id;
+            decimal? price = fromPriceList ? null : manualPrice;
+
             HttpResponseMessage response;
 
             if (withNewDog)
@@ -330,7 +385,9 @@
                     BreedId = selectedBreed!.Id,
                     GroomerId = selectedGroomer.Id,
                     AssistantGroomerId = assistantId,
-                    ServiceBreedId = selectedService.Id,
+                    ServiceBreedId = serviceBreedId,
+                    ServiceId = serviceId,
+                    Price = price,
                     Date = visitDate,
                     DurationMinutes = durationMinutes,
                     Notes = notes
@@ -345,7 +402,9 @@
                     DogId = selectedDog!.Id,
                     GroomerId = selectedGroomer.Id,
                     AssistantGroomerId = assistantId,
-                    ServiceBreedId = selectedService.Id,
+                    ServiceBreedId = serviceBreedId,
+                    ServiceId = serviceId,
+                    Price = price,
                     Date = visitDate,
                     DurationMinutes = durationMinutes,
                     Notes = notes

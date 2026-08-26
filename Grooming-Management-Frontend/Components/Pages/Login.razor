@@ -10,18 +10,19 @@
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
     <MudPaper Class="pa-8">
-        <MudText Typo="Typo.h5" Class="mb-6">Logowanie</MudText>
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-1">Grooming Management</MudText>
+        <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-6">Zaloguj się do panelu</MudText>
 
         <MudTextField @bind-Value="email"
                       Label="E-mail"
                       Variant="Variant.Outlined"
-                      Class="mb-4" />
+                      Class="mb-4"/>
 
         <MudTextField @bind-Value="password"
                       Label="Hasło"
                       InputType="InputType.Password"
                       Variant="Variant.Outlined"
-                      Class="mb-4" />
+                      Class="mb-4"/>
 
         @if (errorMessage != null)
         {

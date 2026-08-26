@@ -106,7 +106,7 @@ else
         if (details == null) return;
 
         var message = $"{details.DogOwnerFullName}"
-                      + (details.DogName != null ? $" — {details.DogName}" : "")
+                      + (details.DogName != null ? $" - {details.DogName}" : "")
                       + $"\n\nPowód: {details.Reason}"
                       + $"\nDodano: {details.CreatedAt:dd.MM.yyyy}";
 

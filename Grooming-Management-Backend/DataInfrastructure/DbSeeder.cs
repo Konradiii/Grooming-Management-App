@@ -16,15 +16,10 @@ public static class DbSeeder
 
         var hashedPassword = passwordHasher.HashPassword(DefaultPassword);
 
-        var breeds = new List<Breed>
-        {
-            new() { Name = "Yorkshire Terrier" },
-            new() { Name = "Owczarek Niemiecki" },
-            new() { Name = "Labrador Retriever" },
-            new() { Name = "Cavalier King Charles Spaniel" }
-        };
-        context.Breeds.AddRange(breeds);
 
+        var labrador = await context.Breeds
+            .FirstAsync(b => b.Name == "Labrador Retriever");
+        
         var salon = new Salon
         {
             Name = "Psi Salon Warszawa",
@@ -99,7 +94,7 @@ public static class DbSeeder
             Notes = "Spokojny, lubi wodę",
             Salon = salon,
             DogOwner = dogOwner,
-            Breed = breeds[2]
+            Breed = labrador
         };
         context.Dogs.Add(dog);
 
@@ -120,7 +115,7 @@ public static class DbSeeder
         var priceStrzyzenieLabrador = new ServiceBreed
         {
             Service = serviceStrzyzenie,
-            Breed = breeds[2],
+            Breed = labrador,
             Salon = salon,
             Price = 150m,
             Duration = 60,
@@ -130,7 +125,7 @@ public static class DbSeeder
         var priceKapielLabrador = new ServiceBreed
         {
             Service = serviceKapiel,
-            Breed = breeds[2],
+            Breed = labrador,
             Salon = salon,
             Price = 60m,
             Duration = 30,
