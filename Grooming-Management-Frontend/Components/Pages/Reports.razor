@@ -3,7 +3,6 @@
 @inherits OwnerOnlyPage
 @using Grooming_Management_App.DTOs.EarningDTO
 @using Grooming_Management_Frontend.Services
-@using Radzen.Documents.Spreadsheet
 @inject ApiClient Api
 
 <MudText Typo="Typo.h5" Class="mb-4">Raporty</MudText>
@@ -35,22 +34,29 @@
 else
 {
     <MudGrid Class="mb-4">
-        <MudItem xs="12" sm="4">
+        <MudItem xs="12" sm="3">
             <MudPaper Class="pa-4" Elevation="1">
                 <MudText Typo="Typo.body2">Przychód</MudText>
                 <MudText Typo="Typo.h4">@TotalRevenue.ToString("0.00") zł</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="4">
+        <MudItem xs="12" sm="3">
             <MudPaper Class="pa-4" Elevation="1">
                 <MudText Typo="Typo.body2">Wynagrodzenia</MudText>
                 <MudText Typo="Typo.h4">@TotalSettlement.ToString("0.00") zł</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="4">
+        <MudItem xs="12" sm="3">
             <MudPaper Class="pa-4" Elevation="1">
                 <MudText Typo="Typo.body2">Zostaje</MudText>
                 <MudText Typo="Typo.h4">@((TotalRevenue - TotalSettlement).ToString("0.00")) zł</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="3">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.body2">Średnio za wizytę</MudText>
+                <MudText Typo="Typo.h4">@AveragePerVisit.ToString("0.00") zł</MudText>
+                <MudText Typo="Typo.caption">@TotalVisits wizyt</MudText>
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -81,11 +87,11 @@ else
 
     @if (byDay.Any())
     {
-        <MudText Typo="Typo.h6" Class="mb-3">Przychód dzienny</MudText>
+        <MudText Typo="Typo.h6" Class="mb-3">Przychód dzienny (zł)</MudText>
         <MudPaper Class="pa-4" Elevation="1">
             <MudChart ChartType="ChartType.Bar"
                       ChartSeries="Series"
-                      XAxisLabels="ChartLabels"
+                      ChartLabels="ChartLabels"
                       Width="100%" Height="350px" />
         </MudPaper>
     }
@@ -108,17 +114,22 @@ else
 
     private decimal TotalRevenue => settlements.Sum(s => s.TotalRevenue);
     private decimal TotalSettlement => settlements.Sum(s => s.Settlement);
+    private int TotalVisits => settlements.Sum(s => s.VisitsCount);
+    private decimal AveragePerVisit => TotalVisits == 0 ? 0 : TotalRevenue / TotalVisits;
 
     private List<MudBlazor.ChartSeries<double>> Series => new()
     {
         new MudBlazor.ChartSeries<double>
         {
             Name = "Przychód",
-            Data = byDay.Select(d => (double)d.Earnings).ToArray()
+            Data = byDay.OrderBy(d => d.Day).Select(d => (double)d.Earnings).ToArray()
         }
     };
 
-    private string[] ChartLabels => byDay.Select(d => d.Day.ToString("dd.MM")).ToArray();
+    private string[] ChartLabels => byDay
+        .OrderBy(d => d.Day)
+        .Select(d => d.Day.ToString("dd.MM"))
+        .ToArray();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

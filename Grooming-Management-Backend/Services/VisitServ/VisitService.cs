@@ -226,27 +226,52 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
     
     public async Task EditVisitAsync(int salonId, int visitId, EditVisitDto dto, CancellationToken ct)
     {
-        
         var visit = await ctx.Visits
-            .Where(v => v.SalonId == salonId &&  v.Id == visitId)
+            .Where(v => v.SalonId == salonId && v.Id == visitId)
             .FirstOrDefaultAsync(ct);
 
         if (visit == null)
         {
             throw new NotFoundException("Visit not found");
         }
-        var groomerExist = await ctx.Groomers.Where(g => salonId == g.SalonId && g.Id == dto.GroomerId).AnyAsync(ct);
+
+        var groomerExist = await ctx.Groomers
+            .Where(g => salonId == g.SalonId && g.Id == dto.GroomerId)
+            .AnyAsync(ct);
+
         if (!groomerExist)
         {
             throw new NotFoundException("Groomer not found");
         }
+
+        var startTime = dto.Date;
+        var endTime = dto.Date.AddMinutes(visit.EstimatedDuration);
+
+        var visitOverlaps = await ctx.Visits
+            .Where(d => d.SalonId == salonId)
+            .Where(d => d.GroomerId == dto.GroomerId)
+            .Where(d => d.Id != visitId)
+            .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
+            .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
+                           && endTime > d.Date, ct);
+
+        if (visitOverlaps)
+            throw new ConflictException("Groomer already has a visit at this time");
+
+        var timeOffOverlaps = await ctx.GroomerTimeOffs
+            .Where(t => t.SalonId == salonId)
+            .Where(t => t.GroomerId == dto.GroomerId)
+            .AnyAsync(t => startTime < t.EndDate.ToDateTime(t.EndTime)
+                           && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
+
+        if (timeOffOverlaps)
+            throw new ConflictException("Groomer is unavailable at this time");
+
         visit.Date = dto.Date;
         visit.GroomerId = dto.GroomerId;
         visit.Notes = dto.Notes;
         await ctx.SaveChangesAsync(ct);
-        
     }
-    
   
     
     public async Task ChangeVisitStatusAsync(int salonId, int visitId, StatusEnum status, CancellationToken ct)
