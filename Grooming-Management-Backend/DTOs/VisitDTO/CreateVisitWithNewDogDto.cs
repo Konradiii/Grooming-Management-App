@@ -13,9 +13,15 @@ public class CreateVisitWithNewDogDto
 
     // wizyta
     public int GroomerId { get; set; }
-    public int ServiceBreedId { get; set; }
     public DateTime Date { get; set; }
     public int? DurationMinutes { get; set; }
     public string? Notes { get; set; }
     public int? AssistantGroomerId { get; set; }
+
+    // opcja B — pozycja cennika
+    public int? ServiceBreedId { get; set; }
+
+    // opcja A — sama usługa
+    public int? ServiceId { get; set; }
+    public decimal? Price { get; set; }
 }

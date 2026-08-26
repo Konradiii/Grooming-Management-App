@@ -64,4 +64,7 @@ public static class ErrorCodes
     public const string ReasonRequired = "REASON_REQUIRED";
     public const string PasswordTooShort = "PASSWORD_TOO_SHORT";
     public const string InvalidPrice = "INVALID_PRICE";
+    
+    public const string ServiceRequired = "SERVICE_REQUIRED";
+    public const string PriceRequired = "PRICE_REQUIRED";
 }

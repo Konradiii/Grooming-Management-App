@@ -32,11 +32,13 @@ public class Visit
     public int GroomerId { get; set; }
     public Groomer Groomer { get; set; }
     
-    public int ServiceBreedId { get; set; }
-    public ServiceBreed ServiceBreed { get; set; }
+    // opcja B - pozycja cennika (usługa + rasa + cena)
+    public int? ServiceBreedId { get; set; }
+    public ServiceBreed? ServiceBreed { get; set; }
+    
+    // opcja A - sama usługa, cena wpisywana ręcznie
+    public int? ServiceId { get; set; }
+    public Service? Service { get; set; }
+    
     public List<Notification> Notifications { get; set; } = new();
-
-    
-    
-    
 }

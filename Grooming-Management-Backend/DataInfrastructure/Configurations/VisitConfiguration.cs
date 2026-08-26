@@ -9,7 +9,7 @@ public class VisitConfiguration : IEntityTypeConfiguration<Visit>
     public void Configure(EntityTypeBuilder<Visit> builder)
     {
         builder.HasKey(x => x.Id);
-        
+
         builder.Property(x => x.Date)
             .IsRequired();
 
@@ -31,44 +31,47 @@ public class VisitConfiguration : IEntityTypeConfiguration<Visit>
 
         builder.Property(x => x.CreatedAt)
             .IsRequired();
-        
-        builder.HasOne(x=>x.Salon)
-            .WithMany(x=>x.Visits)
-            .HasForeignKey(x=>x.SalonId)
+
+        builder.HasOne(x => x.Salon)
+            .WithMany(x => x.Visits)
+            .HasForeignKey(x => x.SalonId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        builder.HasOne(x=>x.Dog)
-            .WithMany(x=>x.Visits)
-            .HasForeignKey(x=>x.DogId)
+
+        builder.HasOne(x => x.Dog)
+            .WithMany(x => x.Visits)
+            .HasForeignKey(x => x.DogId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        builder.HasOne(x=>x.DogOwner)
-            .WithMany(x=>x.Visits)
-            .HasForeignKey(x=>x.DogOwnerId)
+
+        builder.HasOne(x => x.DogOwner)
+            .WithMany(x => x.Visits)
+            .HasForeignKey(x => x.DogOwnerId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        builder.HasOne(x=> x.Groomer)
-            .WithMany(x=>x.Visits)
-            .HasForeignKey(x=>x.GroomerId)
+
+        builder.HasOne(x => x.Groomer)
+            .WithMany(x => x.Visits)
+            .HasForeignKey(x => x.GroomerId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-        builder.HasOne(x=> x.ServiceBreed)
-            .WithMany(x=>x.Visits)
-            .HasForeignKey(x=>x.ServiceBreedId)
+
+        // opcja B — pozycja cennika (opcjonalna)
+        builder.HasOne(x => x.ServiceBreed)
+            .WithMany(x => x.Visits)
+            .HasForeignKey(x => x.ServiceBreedId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
-        
+
+        // opcja A — sama usługa (opcjonalna)
+        builder.HasOne(x => x.Service)
+            .WithMany()
+            .HasForeignKey(x => x.ServiceId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(v => v.SettlementRate)
             .HasPrecision(18, 2);
-        
+
         builder.HasOne(v => v.AssistantGroomer)
             .WithMany()
             .HasForeignKey(v => v.AssistantGroomerId)
             .OnDelete(DeleteBehavior.Restrict);
-        
-            
-        
-        
-        
     }
-    
 }

@@ -112,6 +112,25 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
         CreatedAt = DateTime.UtcNow,
         Salon = newSalon
     };
+    
+    var defaultServices = new[]
+    {
+        "Strzyżenie",
+        "Kąpiel",
+        "Obcinanie pazurów",
+        "Kompleksowa pielęgnacja",
+        "Trymowanie"
+    };
+
+    foreach (var name in defaultServices)
+    {
+        newSalon.Services.Add(new Service
+        {
+            Name = name,
+            Status = ActiveStatusEnum.Active
+        });
+    }
+    
     ctx.Users.Add(ownerUser);
     await ctx.SaveChangesAsync(ct);
 

@@ -46,7 +46,9 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 DogName = v.Dog.Name,
                 GroomerId = v.GroomerId,
                 GroomerName = v.Groomer.FirstName + " " + v.Groomer.LastName,
-                ServiceName = v.ServiceBreed.Service.Name,
+                ServiceName = v.ServiceBreed != null
+                    ? v.ServiceBreed.Service.Name
+                    : v.Service!.Name,
                 EstimatedDuration = v.EstimatedDuration,
                 Status = v.Status,
                 BreedName = v.Dog.Breed.Name,
@@ -76,8 +78,10 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 DogName = v.Dog.Name,
                 DogOwnerFullName =  v.DogOwner.FirstName + " " + v.DogOwner.LastName,
                 GroomerFullName =  v.Groomer.FirstName + " " + v.Groomer.LastName,
-                ServiceName = v.ServiceBreed.Service.Name,
-                BreedName =  v.ServiceBreed.Breed.Name,
+                ServiceName = v.ServiceBreed != null
+                    ? v.ServiceBreed.Service.Name
+                    : v.Service!.Name,
+                BreedName = v.Dog.Breed.Name,
                 AssistantGroomerFullName = v.AssistantGroomer != null
                     ? v.AssistantGroomer.FirstName + " " + v.AssistantGroomer.LastName
                     : null,
@@ -102,35 +106,30 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             if (me == null || !me.CanCreateVisits)
                 throw new ForbiddenException(ErrorCodes.NoPermissionToCreateVisits);
         }
-        
-        
+
+        // dokładnie jedno z dwóch źródeł usługi
+        if ((dto.ServiceBreedId == null) == (dto.ServiceId == null))
+        {
+            throw new ConflictException(ErrorCodes.ServiceRequired);
+        }
+
         if (dto.DurationMinutes is <= 0)
         {
             throw new ConflictException(ErrorCodes.InvalidDuration);
         }
 
-        var serviceBreed = await ctx.ServiceBreeds
-            .Where(g => salonId == g.SalonId)
-            .Where(d => d.Id == dto.ServiceBreedId)
-            .FirstOrDefaultAsync(ct);
-        
-        if (serviceBreed == null)
-        {
-            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
-        }
-        
         var dog = await ctx.Dogs
-            .Where(g => salonId == g.SalonId)
+            .Where(d => d.SalonId == salonId)
             .Where(d => d.Id == dto.DogId)
             .FirstOrDefaultAsync(ct);
-        
+
         if (dog == null)
         {
             throw new NotFoundException(ErrorCodes.DogNotFound);
         }
-        
+
         var groomer = await ctx.Groomers
-            .Where(g => salonId == g.SalonId)
+            .Where(g => g.SalonId == salonId)
             .Where(g => g.Id == dto.GroomerId)
             .FirstOrDefaultAsync(ct);
 
@@ -139,89 +138,129 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             throw new NotFoundException(ErrorCodes.GroomerNotFound);
         }
 
-        if (serviceBreed.BreedId != dog.BreedId)
+        decimal price;
+        int duration;
+
+        if (dto.ServiceBreedId != null)
         {
-            throw new ConflictException(ErrorCodes.ServiceBreedNotFound);
+            // opcja B — pozycja cennika
+            var serviceBreed = await ctx.ServiceBreeds
+                .Where(sb => sb.SalonId == salonId)
+                .Where(sb => sb.Id == dto.ServiceBreedId)
+                .FirstOrDefaultAsync(ct);
+
+            if (serviceBreed == null)
+            {
+                throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
+            }
+
+            if (serviceBreed.BreedId != dog.BreedId)
+            {
+                throw new ConflictException(ErrorCodes.BreedMismatch);
+            }
+
+            price = serviceBreed.Price;
+            duration = dto.DurationMinutes ?? serviceBreed.Duration;
         }
-        
-        var duplicateExists = await ctx.Visits
-            .AnyAsync(v => v.DogId == dto.DogId 
-                           && v.Date == dto.Date 
-                           && v.SalonId == salonId, ct);
-        if (duplicateExists)
+        else
         {
-            throw new ConflictException(ErrorCodes.DuplicateVisit);
-        }
-        
-        if (dto.AssistantGroomerId != null)
-        {
-            if (dto.AssistantGroomerId == dto.GroomerId)
-                throw new ConflictException(ErrorCodes.AssistantMustDiffer);
+            // opcja A — sama usługa
+            var serviceExists = await ctx.Services
+                .AnyAsync(s => s.Id == dto.ServiceId && s.SalonId == salonId, ct);
 
-            var assistantExists = await ctx.Groomers
-                .AnyAsync(g => g.Id == dto.AssistantGroomerId && g.SalonId == salonId, ct);
+            if (!serviceExists)
+            {
+                throw new NotFoundException(ErrorCodes.ServiceNotFound);
+            }
 
-            if (!assistantExists)
-                throw new NotFoundException(ErrorCodes.AssistantNotFound);
-        }
+            if (dto.Price == null || dto.Price <= 0)
+            {
+                throw new ConflictException(ErrorCodes.PriceRequired);
+            }
 
-        var isBlocked = await blacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
-        
-        if (isBlocked)
-        {
-            throw new ConflictException(ErrorCodes.ClientBlacklisted);
+            if (dto.DurationMinutes == null)
+            {
+                throw new ConflictException(ErrorCodes.InvalidDuration);
+            }
+
+            price = dto.Price.Value;
+            duration = dto.DurationMinutes.Value;
         }
 
+    var duplicateExists = await ctx.Visits
+        .AnyAsync(v => v.DogId == dto.DogId
+                       && v.Date == dto.Date
+                       && v.SalonId == salonId, ct);
 
-        var duration = dto.DurationMinutes ?? serviceBreed.Duration;
-
-        var startTime = dto.Date;
-        var endTime = dto.Date.AddMinutes(duration);
-        
-        var visitOverlaps = await ctx.Visits
-            .Where(e => e.GroomerId == dto.GroomerId)
-            .Where(d => d.SalonId == salonId)
-            .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
-            .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
-                           && endTime > d.Date, ct);
-
-        if (visitOverlaps)
-            throw new ConflictException(ErrorCodes.VisitOverlaps);
-        
-        
-        var timeOffOverlaps = await ctx.GroomerTimeOffs
-            .Where(t => t.SalonId == salonId)
-            .Where(t => t.GroomerId == dto.GroomerId)
-            .AnyAsync(t => startTime < t.EndDate.ToDateTime(t.EndTime)
-                           && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
-
-        if (timeOffOverlaps)
-            throw new ConflictException(ErrorCodes.GroomerUnavailable);
-
-        var newVisit = new Visit
-        {
-            CreatedAt = DateTime.UtcNow,
-            Date = dto.Date,
-            EstimatedDuration = duration,
-            ProposedPrice = serviceBreed.Price,
-            Status = StatusEnum.Scheduled,
-            Notes = dto.Notes,
-            SalonId = salonId,
-            DogId = dto.DogId,
-            DogOwnerId = dog.DogOwnerId,
-            GroomerId = dto.GroomerId,
-            ServiceBreedId = dto.ServiceBreedId,
-            SettlementType = groomer.SettlementType,
-            SettlementRate = groomer.SettlementRate,
-            AssistantGroomerId = dto.AssistantGroomerId
-        };
-        
-        ctx.Visits.Add(newVisit);
-        await ctx.SaveChangesAsync(ct);
-        return newVisit.Id;
-        
-        
+    if (duplicateExists)
+    {
+        throw new ConflictException(ErrorCodes.DuplicateVisit);
     }
+
+    if (dto.AssistantGroomerId != null)
+    {
+        if (dto.AssistantGroomerId == dto.GroomerId)
+            throw new ConflictException(ErrorCodes.AssistantMustDiffer);
+
+        var assistantExists = await ctx.Groomers
+            .AnyAsync(g => g.Id == dto.AssistantGroomerId && g.SalonId == salonId, ct);
+
+        if (!assistantExists)
+            throw new NotFoundException(ErrorCodes.AssistantNotFound);
+    }
+
+    var isBlocked = await blacklistCheckService.IsBlockedAsync(salonId, dog.DogOwnerId, dto.DogId, ct);
+
+    if (isBlocked)
+    {
+        throw new ConflictException(ErrorCodes.ClientBlacklisted);
+    }
+
+    var startTime = dto.Date;
+    var endTime = dto.Date.AddMinutes(duration);
+
+    var visitOverlaps = await ctx.Visits
+        .Where(v => v.GroomerId == dto.GroomerId)
+        .Where(v => v.SalonId == salonId)
+        .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
+        .AnyAsync(v => startTime < v.Date.AddMinutes(v.EstimatedDuration)
+                       && endTime > v.Date, ct);
+
+    if (visitOverlaps)
+        throw new ConflictException(ErrorCodes.VisitOverlaps);
+
+    var timeOffOverlaps = await ctx.GroomerTimeOffs
+        .Where(t => t.SalonId == salonId)
+        .Where(t => t.GroomerId == dto.GroomerId)
+        .AnyAsync(t => startTime < t.EndDate.ToDateTime(t.EndTime)
+                       && endTime > t.StartDate.ToDateTime(t.StartTime), ct);
+
+    if (timeOffOverlaps)
+        throw new ConflictException(ErrorCodes.GroomerUnavailable);
+
+    var newVisit = new Visit
+    {
+        CreatedAt = DateTime.UtcNow,
+        Date = dto.Date,
+        EstimatedDuration = duration,
+        ProposedPrice = price,
+        Status = StatusEnum.Scheduled,
+        Notes = dto.Notes,
+        SalonId = salonId,
+        DogId = dto.DogId,
+        DogOwnerId = dog.DogOwnerId,
+        GroomerId = dto.GroomerId,
+        ServiceBreedId = dto.ServiceBreedId,
+        ServiceId = dto.ServiceId,
+        SettlementType = groomer.SettlementType,
+        SettlementRate = groomer.SettlementRate,
+        AssistantGroomerId = dto.AssistantGroomerId
+    };
+
+    ctx.Visits.Add(newVisit);
+    await ctx.SaveChangesAsync(ct);
+    return newVisit.Id;
+}
     
     
     public async Task EditVisitAsync(int salonId, int visitId, EditVisitDto dto, CancellationToken ct)
@@ -310,21 +349,27 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
         if (me == null || !me.CanCreateVisits)
             throw new ForbiddenException(ErrorCodes.NoPermissionToCreateVisits);
     }
-    
+
     Validate.NotEmpty(dto.FirstName, ErrorCodes.NameRequired);
     Validate.NotEmpty(dto.LastName, ErrorCodes.NameRequired);
     Validate.NotEmpty(dto.DogName, ErrorCodes.NameRequired);
     Validate.PolishPhone(dto.Phone);
-    
+
+    if ((dto.ServiceBreedId == null) == (dto.ServiceId == null))
+    {
+        throw new ConflictException(ErrorCodes.ServiceRequired);
+    }
 
     if (dto.DurationMinutes is <= 0)
     {
         throw new ConflictException(ErrorCodes.InvalidDuration);
     }
 
+    var trimmedPhone = dto.Phone.Trim();
+
     var blacklistedByPhone = await ctx.Blacklists
         .Where(b => b.SalonId == salonId)
-        .AnyAsync(b => b.DogOwner.Phone == dto.Phone, ct);
+        .AnyAsync(b => b.DogOwner.Phone == trimmedPhone, ct);
 
     if (blacklistedByPhone)
     {
@@ -332,7 +377,7 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
     }
 
     var ownerExists = await ctx.DogOwners
-        .AnyAsync(o => o.Phone == dto.Phone && o.SalonId == salonId, ct);
+        .AnyAsync(o => o.Phone == trimmedPhone && o.SalonId == salonId, ct);
 
     if (ownerExists)
     {
@@ -346,20 +391,6 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
         throw new NotFoundException(ErrorCodes.BreedNotFound);
     }
 
-    var serviceBreed = await ctx.ServiceBreeds
-        .Where(s => s.Id == dto.ServiceBreedId && s.SalonId == salonId)
-        .FirstOrDefaultAsync(ct);
-
-    if (serviceBreed == null)
-    {
-        throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
-    }
-
-    if (serviceBreed.BreedId != dto.BreedId)
-    {
-        throw new ConflictException(ErrorCodes.BreedMismatch);
-    }
-
     var groomer = await ctx.Groomers
         .Where(g => g.SalonId == salonId)
         .Where(g => g.Id == dto.GroomerId)
@@ -368,6 +399,52 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
     if (groomer == null)
     {
         throw new NotFoundException(ErrorCodes.GroomerNotFound);
+    }
+
+    decimal price;
+    int duration;
+
+    if (dto.ServiceBreedId != null)
+    {
+        var serviceBreed = await ctx.ServiceBreeds
+            .Where(s => s.Id == dto.ServiceBreedId && s.SalonId == salonId)
+            .FirstOrDefaultAsync(ct);
+
+        if (serviceBreed == null)
+        {
+            throw new NotFoundException(ErrorCodes.ServiceBreedNotFound);
+        }
+
+        if (serviceBreed.BreedId != dto.BreedId)
+        {
+            throw new ConflictException(ErrorCodes.BreedMismatch);
+        }
+
+        price = serviceBreed.Price;
+        duration = dto.DurationMinutes ?? serviceBreed.Duration;
+    }
+    else
+    {
+        var serviceExists = await ctx.Services
+            .AnyAsync(s => s.Id == dto.ServiceId && s.SalonId == salonId, ct);
+
+        if (!serviceExists)
+        {
+            throw new NotFoundException(ErrorCodes.ServiceNotFound);
+        }
+
+        if (dto.Price == null || dto.Price <= 0)
+        {
+            throw new ConflictException(ErrorCodes.PriceRequired);
+        }
+
+        if (dto.DurationMinutes == null)
+        {
+            throw new ConflictException(ErrorCodes.InvalidDuration);
+        }
+
+        price = dto.Price.Value;
+        duration = dto.DurationMinutes.Value;
     }
 
     if (dto.AssistantGroomerId != null)
@@ -382,7 +459,6 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
             throw new NotFoundException(ErrorCodes.AssistantNotFound);
     }
 
-    var duration = dto.DurationMinutes ?? serviceBreed.Duration;
     var startTime = dto.Date;
     var endTime = dto.Date.AddMinutes(duration);
 
@@ -413,7 +489,7 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
     {
         FirstName = dto.FirstName.Trim(),
         LastName = dto.LastName.Trim(),
-        Phone = dto.Phone.Trim(),
+        Phone = trimmedPhone,
         SalonId = salonId
     };
 
@@ -433,7 +509,7 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
         CreatedAt = DateTime.UtcNow,
         Date = dto.Date,
         EstimatedDuration = duration,
-        ProposedPrice = serviceBreed.Price,
+        ProposedPrice = price,
         Status = StatusEnum.Scheduled,
         Notes = dto.Notes,
         SalonId = salonId,
@@ -441,6 +517,7 @@ public async Task<int> CreateVisitWithNewDogAsync(int salonId, CreateVisitWithNe
         DogOwner = owner,
         GroomerId = dto.GroomerId,
         ServiceBreedId = dto.ServiceBreedId,
+        ServiceId = dto.ServiceId,
         SettlementType = groomer.SettlementType,
         SettlementRate = groomer.SettlementRate,
         AssistantGroomerId = dto.AssistantGroomerId
