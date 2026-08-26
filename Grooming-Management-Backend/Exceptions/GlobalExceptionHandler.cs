@@ -7,9 +7,7 @@ public class GlobalExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception exception, CancellationToken ct)
     {
-        Console.WriteLine($"[EXCEPTION] {exception.GetType().Name}: {exception.Message}");
-        Console.WriteLine(exception.StackTrace);
-
+   
         var (status, title) = exception switch
         {
             NotFoundException => (StatusCodes.Status404NotFound, exception.Message),

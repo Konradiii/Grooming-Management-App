@@ -80,7 +80,7 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
         
         if (alreadySent)
         {
-            throw new ConflictException("Visit remainder notification was already sent for this visit");
+            throw new ConflictException("Visit reminder notification was already sent for this visit");
         }
         
 

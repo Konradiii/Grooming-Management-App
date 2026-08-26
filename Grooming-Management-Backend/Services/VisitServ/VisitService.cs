@@ -141,7 +141,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
         if (serviceBreed.BreedId != dog.BreedId)
         {
-            throw new ConflictException("Service Breed doeasnt exists for that breed");
+            throw new ConflictException("Service Breed doesn't exist for that breed");
         }
         
         var duplicateExists = await ctx.Visits
@@ -485,7 +485,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
 
         if (serviceBreed.BreedId != dog.BreedId)
         {
-            throw new ConflictException("Service Breed doeasnt exists for that breed");
+            throw new ConflictException("Service Breed doesn't exist for that breed");
         }
         
         var duplicateExists = await ctx.Visits
