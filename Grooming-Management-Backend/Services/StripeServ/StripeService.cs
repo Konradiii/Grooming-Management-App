@@ -86,6 +86,10 @@ public class StripeService(
             case "invoice.payment_failed":
                 await HandleInvoiceFailedAsync(stripeEvent, ct);
                 break;
+            
+            case "customer.subscription.deleted":
+                await HandleSubscriptionDeletedAsync(stripeEvent, ct);
+                break;
 
             default:
                 logger.LogInformation("Ignoring Stripe event type {EventType}", stripeEvent.Type);
@@ -243,5 +247,19 @@ public class StripeService(
         var session = await service.CreateAsync(options, cancellationToken: ct);
 
         return session.Url;
+    }
+    
+    private async Task HandleSubscriptionDeletedAsync(Event stripeEvent, CancellationToken ct)
+    {
+        if (stripeEvent.Data.Object is not Subscription subscription)
+        {
+            logger.LogWarning("customer.subscription.deleted without subscription object");
+            return;
+        }
+
+        await subscriptionService.ClearSubscriptionAsync(subscription.CustomerId, ct);
+
+        logger.LogInformation("Subscription {SubscriptionId} cancelled for customer {CustomerId}",
+            subscription.Id, subscription.CustomerId);
     }
 }

@@ -76,6 +76,12 @@ else
                     Abonament wygasł. Masz tydzień na opłacenie, zanim dostęp zostanie wstrzymany.
                 </MudAlert>
             }
+            else if (subscription.Status == SubscriptionStatusEnum.Trial)
+            {
+                <MudAlert Severity="Severity.Info" Class="mb-4">
+                    Korzystasz z bezpłatnego okresu próbnego.
+                </MudAlert>
+            }
 
             <MudGrid Class="mb-4">
                 <MudItem xs="12" sm="6">

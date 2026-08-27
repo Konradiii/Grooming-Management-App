@@ -137,7 +137,7 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
 
     var refreshToken = tokenService.GenerateRefreshToken();
     var accessToken = tokenService.GenerateAccessToken(
-        ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name, ownerUser.Email);
+        ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name, ownerUser.Email, ownerUser.Salon?.SubscriptionStatus);
 
     var newTokens = new RefreshToken
     {
@@ -183,7 +183,8 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
     }
 
     var accessToken = tokenService.GenerateAccessToken(
-        user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email);
+        user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email,
+        user.Salon?.SubscriptionStatus);
     var refreshToken = tokenService.GenerateRefreshToken();
 
     var newTokens = new RefreshToken
@@ -240,8 +241,8 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
 
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var newAccessToken = tokenService.GenerateAccessToken(
-            refreshExists.UserId, user.SalonId, user.Role, ResolveDisplayName(user), user.Email);
-
+            user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email,
+            user.Salon?.SubscriptionStatus);
         var newTokens = new RefreshToken
         {
             TokenHash = tokenService.HashToken(newRefreshToken),
@@ -304,7 +305,8 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
 
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var newAccessToken = tokenService.GenerateAccessToken(
-            user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email);
+            user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email,
+            user.Salon?.SubscriptionStatus);
 
         var newtoken = new RefreshToken
         {

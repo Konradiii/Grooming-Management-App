@@ -213,4 +213,20 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             .FirstOrDefaultAsync(ct);
     }
     
+    public async Task ClearSubscriptionAsync(string? customerId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+            return;
+
+        var salon = await ctx.Salons
+            .FirstOrDefaultAsync(s => s.ProviderCustomerId == customerId, ct);
+
+        if (salon == null)
+            return;
+
+        salon.ProviderSubscriptionId = null;
+
+        await ctx.SaveChangesAsync(ct);
+    }
+    
 }

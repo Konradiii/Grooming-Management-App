@@ -69,4 +69,5 @@ public static class ErrorCodes
     public const string PriceRequired = "PRICE_REQUIRED";
     public const string InvalidPostalCode = "INVALID_POSTAL_CODE";
     public const string NoActiveSubscription = "NO_ACTIVE_SUBSCRIPTION";
+    public const string SubscriptionSuspended = "SUBSCRIPTION_SUSPENDED";
 }

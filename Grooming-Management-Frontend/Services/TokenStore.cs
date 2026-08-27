@@ -8,6 +8,7 @@ public class TokenStore(ILocalStorageService localStorage)
     private const string AccessTokenKey = "accessToken";
     private const string RefreshTokenKey = "refreshToken";
     private const string RequiresPasswordChangeKey = "requiresPasswordChange";
+    
 
     public event Action? OnChange;
 
@@ -19,6 +20,12 @@ public class TokenStore(ILocalStorageService localStorage)
 
     public bool IsLoggedIn => AccessToken != null;
     public bool IsOwner => Role == "Owner";
+    
+    public string? SubscriptionStatus { get; private set; }
+
+    public bool IsSuspended => SubscriptionStatus == "Suspended";
+    public bool IsPastDue => SubscriptionStatus == "PastDue";
+    public bool IsTrial => SubscriptionStatus == "Trial";
 
     public async Task SetTokensAsync(string accessToken, string refreshToken, bool requiresPasswordChange = false)
     {
@@ -50,6 +57,7 @@ public class TokenStore(ILocalStorageService localStorage)
         RefreshToken = null;
         Role = null;
         FullName = null;
+        SubscriptionStatus = null;
         RequiresPasswordChange = false;
 
         await localStorage.RemoveItemAsync(AccessTokenKey);
@@ -74,6 +82,8 @@ public class TokenStore(ILocalStorageService localStorage)
     {
         Role = null;
         FullName = null;
+        SubscriptionStatus = null;
+        
 
         if (AccessToken == null) return;
 
@@ -100,6 +110,12 @@ public class TokenStore(ILocalStorageService localStorage)
                     var value = prop.Value.GetString();
                     FullName = string.IsNullOrWhiteSpace(value) ? null : value;
                 }
+                else if (prop.Name == "subscriptionStatus")
+                {
+                    var value = prop.Value.GetString();
+                    SubscriptionStatus = string.IsNullOrWhiteSpace(value) ? null : value;
+                }
+                
             }
         }
         catch

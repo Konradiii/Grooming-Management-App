@@ -1,6 +1,7 @@
 ﻿using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Middleware;
@@ -51,10 +52,10 @@ public class SubscriptionMiddleware(RequestDelegate next)
         if (status == SubscriptionStatusEnum.Suspended)
         {
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
-            await context.Response.WriteAsJsonAsync(new
+            await context.Response.WriteAsJsonAsync(new ProblemDetails
             {
-                title = "Subscription expired. Please renew to continue.",
-                status = 402
+                Status = StatusCodes.Status402PaymentRequired,
+                Title = ErrorCodes.SubscriptionSuspended
             });
             return;
         }

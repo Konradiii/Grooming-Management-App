@@ -9,7 +9,8 @@ namespace Grooming_Management_App.Services.TokenServ;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string GenerateAccessToken(int userId, int salonId, RoleEnum role, string? fullName = null, string? email = null)
+    public string GenerateAccessToken(int userId, int salonId, RoleEnum role,
+        string? fullName = null, string? email = null, SubscriptionStatusEnum? subscriptionStatus = null)
     {
         var claims = new List<Claim>
         {
@@ -18,6 +19,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new Claim(ClaimTypes.Role, role.ToString()),
             new Claim("fullName", fullName ?? string.Empty),
             new Claim("email", email ?? string.Empty),
+            new Claim("subscriptionStatus", subscriptionStatus?.ToString() ?? string.Empty),
         };
         var secretKey = configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -50,4 +52,5 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var days = configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays");
         return DateTime.UtcNow.AddDays(days);
     }
+    
 }

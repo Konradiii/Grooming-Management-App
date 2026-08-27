@@ -21,6 +21,28 @@
     </MudDrawer>
 
     <MudMainContent>
+        @if (TokenStore.IsSuspended)
+        {
+            <MudAlert Severity="Severity.Error" Square="true" Class="mb-0">
+                Dostęp wstrzymany z powodu braku płatności.
+                <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Opłać abonament</b></MudLink>
+            </MudAlert>
+        }
+        else if (TokenStore.IsPastDue)
+        {
+            <MudAlert Severity="Severity.Warning" Square="true" Class="mb-0">
+                Abonament wygasł. Opłać go, zanim dostęp zostanie wstrzymany.
+                <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Przejdź do ustawień</b></MudLink>
+            </MudAlert>
+        }
+        else if (TokenStore.IsTrial)
+        {
+            <MudAlert Severity="Severity.Info" Square="true" Class="mb-0">
+                Korzystasz z bezpłatnego okresu próbnego.
+                <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Zobacz szczegóły</b></MudLink>
+            </MudAlert>
+        }
+
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4">
             @Body
         </MudContainer>
