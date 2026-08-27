@@ -9,6 +9,9 @@ namespace Grooming_Management_Frontend.Services;
 
 public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
 {
+    
+    public async Task<bool> RefreshTokenAsync() => await TryRefreshAsync();
+    
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,

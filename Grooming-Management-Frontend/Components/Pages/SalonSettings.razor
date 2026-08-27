@@ -188,11 +188,21 @@ else
     {
         await base.OnAfterRenderAsync(firstRender);
 
-        if (firstRender)
+        if (!firstRender) return;
+
+        await LoadDataAsync();
+
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        if (query["platnosc"] == "ok"
+            && subscription?.Status == SubscriptionStatusEnum.Active
+            && TokenStore.SubscriptionStatus != "Active")
         {
-            await LoadDataAsync();
-            StateHasChanged();
+            await Api.RefreshTokenAsync();
         }
+
+        StateHasChanged();
     }
 
     private async Task LoadDataAsync()
