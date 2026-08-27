@@ -39,11 +39,14 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
     {
         Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
         Validate.PolishPostalCode(dto.PostalCode);
+        if (!string.IsNullOrWhiteSpace(dto.Phone))
+            Validate.PolishPhone(dto.Phone);
 
         if (dto.ReminderHoursBefore < 1 || dto.ReminderHoursBefore > 168)
         {
             throw new ConflictException(ErrorCodes.InvalidReminderSettings);
         }
+        
 
         var salonInfo = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
 

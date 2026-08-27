@@ -183,7 +183,4 @@ app.UseMiddleware<SubscriptionMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 
-
-Console.WriteLine($"Aktualny czas UTC: {DateTime.UtcNow}");
-
 app.Run();

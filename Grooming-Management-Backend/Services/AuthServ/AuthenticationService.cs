@@ -68,6 +68,7 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
 {
     Validate.NotEmpty(dto.SalonName, ErrorCodes.NameRequired);
     Validate.Email(dto.Email);
+    Validate.PolishPhone(dto.Phone);
 
     if (dto.Password != dto.ConfirmPassword)
     {
@@ -103,6 +104,7 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
         SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30),
         RemindersEnabled = false,
         ReminderHoursBefore = 24,
+        Phone = dto.Phone.Trim(),
     };
 
     var ownerUser = new User
