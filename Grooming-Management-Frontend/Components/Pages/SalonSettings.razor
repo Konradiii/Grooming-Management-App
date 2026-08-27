@@ -25,6 +25,9 @@ else
         <MudText Typo="Typo.h6" Class="mb-4">Dane salonu</MudText>
 
         <MudTextField @bind-Value="name" Label="Nazwa" Variant="Variant.Outlined" Class="mb-3" />
+        
+        <MudTextField @bind-Value="phone" Label="Telefon kontaktowy"
+                      Variant="Variant.Outlined" Class="mb-3" />
 
         <MudGrid>
             <MudItem xs="12" md="8">
@@ -204,6 +207,7 @@ else
     private string? checkoutError;
 
     private string name = string.Empty;
+    private string? phone;
     private string? street;
     private string? buildingNumber;
     private string? apartmentNumber;
@@ -243,6 +247,7 @@ else
             if (salon != null)
             {
                 name = salon.Name;
+                phone = salon.Phone;
                 street = salon.Street;
                 buildingNumber = salon.BuildingNumber;
                 apartmentNumber = salon.ApartmentNumber;
@@ -292,6 +297,7 @@ else
             var dto = new UpdateSalonDto
             {
                 Name = name,
+                Phone = phone,
                 Street = street,
                 BuildingNumber = buildingNumber,
                 ApartmentNumber = apartmentNumber,

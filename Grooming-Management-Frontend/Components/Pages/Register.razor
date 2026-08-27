@@ -12,6 +12,9 @@
         <MudText Typo="Typo.h5" Class="mb-6">Rejestracja salonu</MudText>
 
         <MudTextField @bind-Value="salonName" Label="Nazwa salonu"
+                      Variant="Variant.Outlined" Class="mb-3" />
+
+        <MudTextField @bind-Value="phone" Label="Telefon kontaktowy"
                       Variant="Variant.Outlined" Class="mb-4" />
 
         <MudText Typo="Typo.subtitle2" Class="mb-2">Adres</MudText>
@@ -74,6 +77,7 @@
     private string email = string.Empty;
     private string password = string.Empty;
     private string confirmPassword = string.Empty;
+    private string phone = string.Empty;
 
     private string? errorMessage;
     private bool isLoading;
@@ -88,6 +92,12 @@
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            errorMessage = "Podaj numer telefonu";
+            return;
+        }
+        
         if (string.IsNullOrWhiteSpace(email))
         {
             errorMessage = "Podaj adres e-mail";
@@ -115,6 +125,7 @@
             var dto = new RegisterNewSalonDto
             {
                 SalonName = salonName,
+                Phone = phone,
                 Street = street,
                 BuildingNumber = buildingNumber,
                 ApartmentNumber = apartmentNumber,
