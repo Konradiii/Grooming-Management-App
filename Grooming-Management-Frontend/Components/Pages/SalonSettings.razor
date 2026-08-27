@@ -2,9 +2,12 @@
 @rendermode InteractiveServer
 @inherits OwnerOnlyPage
 @using Grooming_Management_App.DTOs.SalonDTO
+@using Grooming_Management_App.DTOs.SubscriptionDTO
+@using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
 <MudText Typo="Typo.h5" Class="mb-4">Ustawienia salonu</MudText>
 
@@ -40,26 +43,133 @@ else
                 <MudTextField @bind-Value="city" Label="Miasto" Variant="Variant.Outlined" />
             </MudItem>
         </MudGrid>
+
+        @if (errorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4"
+                   Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz zmiany")
+        </MudButton>
     </MudPaper>
 
-   
+    <MudPaper Class="pa-6">
+        <MudText Typo="Typo.h6" Class="mb-4">Subskrypcja</MudText>
 
-    @if (errorMessage != null)
-    {
-        <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
-    }
+        @if (subscription == null)
+        {
+            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+        }
+        else
+        {
+            @if (subscription.Status == SubscriptionStatusEnum.Suspended)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">
+                    Dostęp został wstrzymany z powodu braku płatności. Opłać abonament, aby odblokować dodawanie wizyt.
+                </MudAlert>
+            }
+            else if (subscription.Status == SubscriptionStatusEnum.PastDue)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-4">
+                    Abonament wygasł. Masz tydzień na opłacenie, zanim dostęp zostanie wstrzymany.
+                </MudAlert>
+            }
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary"
-               Disabled="isSaving" OnClick="SaveAsync">
-        @(isSaving ? "Zapisywanie..." : "Zapisz zmiany")
-    </MudButton>
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body2">Status</MudText>
+                    <MudText Typo="Typo.h6" Class="mt-1">@StatusLabel(subscription.Status)</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body2">
+                        @(subscription.Status == SubscriptionStatusEnum.Trial ? "Okres próbny do" : "Opłacone do")
+                    </MudText>
+                    <MudText Typo="Typo.h6" Class="mt-1">
+                        @(subscription.ValidUntil?.ToString("dd.MM.yyyy") ?? "bezterminowo")
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+
+            @if (checkoutError != null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@checkoutError</MudAlert>
+            }
+
+            @if (subscription.HasActiveSubscription)
+            {
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    Abonament odnawia się automatycznie co miesiąc. W panelu płatności zmienisz kartę,
+                    pobierzesz faktury albo anulujesz subskrypcję.
+                </MudText>
+
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-6"
+                           Disabled="isRedirecting" OnClick="OpenPortalAsync">
+                    @(isRedirecting ? "Przekierowanie..." : "Zarządzaj płatnościami")
+                </MudButton>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Class="mb-3">
+                    Plan miesięczny - 89 zł. Pełny dostęp, bez limitu pracowników i wizyt.
+                    Abonament odnawia się automatycznie, możesz zrezygnować w każdej chwili.
+                </MudText>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mb-6"
+                           Disabled="isRedirecting" OnClick="StartCheckoutAsync">
+                    @(isRedirecting ? "Przekierowanie..." : "Opłać abonament")
+                </MudButton>
+            }
+
+            <MudText Typo="Typo.subtitle2" Class="mb-3">Historia płatności</MudText>
+
+            @if (!subscription.Payments.Any())
+            {
+                <MudAlert Severity="Severity.Info">Brak płatności</MudAlert>
+            }
+            else
+            {
+                <MudTable Items="subscription.Payments" Hover="true" Striped="true" Dense="true">
+                    <HeaderContent>
+                        <MudTh>Data</MudTh>
+                        <MudTh>Kwota</MudTh>
+                        <MudTh>Okres</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="width: 60px;" />
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@EnumLabels.LocalDateTime(context.PaymentDate)</MudTd>
+                        <MudTd>@context.Amount.ToString("0.00") @context.Currency</MudTd>
+                        <MudTd>@context.PeriodStart.ToString("dd.MM.yyyy") – @context.PeriodEnd.ToString("dd.MM.yyyy")</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="@PaymentColor(context.Status)">
+                                @PaymentLabel(context.Status)
+                            </MudChip>
+                        </MudTd>
+                        <MudTd>
+                            @if (context.InvoiceUrl != null)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Receipt" Size="Size.Small"
+                                               Href="@context.InvoiceUrl" Target="_blank" />
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        }
+    </MudPaper>
 }
 
 @code {
     private GetSalonDto? salon;
+    private GetSubscriptionDto? subscription;
+
     private bool isLoading = true;
     private bool isSaving;
+    private bool isRedirecting;
     private string? errorMessage;
+    private string? checkoutError;
 
     private string name = string.Empty;
     private string? street;
@@ -67,8 +177,6 @@ else
     private string? apartmentNumber;
     private string? postalCode;
     private string? city;
-    private int minBookingHoursAhead;
-    private int maxBookingDaysAhead;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -76,12 +184,12 @@ else
 
         if (firstRender)
         {
-            await LoadSalonAsync();
+            await LoadDataAsync();
             StateHasChanged();
         }
     }
 
-    private async Task LoadSalonAsync()
+    private async Task LoadDataAsync()
     {
         try
         {
@@ -95,9 +203,9 @@ else
                 apartmentNumber = salon.ApartmentNumber;
                 postalCode = salon.PostalCode;
                 city = salon.City;
-                minBookingHoursAhead = salon.MinBookingHoursAhead;
-                maxBookingDaysAhead = salon.MaxBookingDaysAhead;
             }
+
+            subscription = await Api.GetAsync<GetSubscriptionDto>("api/Subscription");
         }
         catch (Exception ex)
         {
@@ -119,10 +227,15 @@ else
             return;
         }
 
-        if (maxBookingDaysAhead <= 0)
+        if (!string.IsNullOrWhiteSpace(postalCode))
         {
-            errorMessage = "Maksymalne wyprzedzenie musi być większe od zera";
-            return;
+            var digits = new string(postalCode.Where(char.IsDigit).ToArray());
+
+            if (digits.Length != 5)
+            {
+                errorMessage = "Nieprawidłowy kod pocztowy (format 00-000)";
+                return;
+            }
         }
 
         isSaving = true;
@@ -136,9 +249,7 @@ else
                 BuildingNumber = buildingNumber,
                 ApartmentNumber = apartmentNumber,
                 PostalCode = postalCode,
-                City = city,
-                MinBookingHoursAhead = minBookingHoursAhead,
-                MaxBookingDaysAhead = maxBookingDaysAhead
+                City = city
             };
 
             var response = await Api.PutAsync("api/Salon", dto);
@@ -160,4 +271,67 @@ else
             isSaving = false;
         }
     }
+
+    private async Task StartCheckoutAsync() => await RedirectToStripeAsync("api/Subscription/checkout");
+
+    private async Task OpenPortalAsync() => await RedirectToStripeAsync("api/Subscription/portal");
+
+    private async Task RedirectToStripeAsync(string endpoint)
+    {
+        checkoutError = null;
+        isRedirecting = true;
+
+        try
+        {
+            var response = await Api.PostAsync<object?>(endpoint, null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                checkoutError = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            var url = (await response.Content.ReadAsStringAsync()).Trim('"');
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                checkoutError = "Nie udało się otworzyć strony płatności";
+                return;
+            }
+
+            await JS.InvokeVoidAsync("open", url, "_blank");
+        }
+        catch (Exception ex)
+        {
+            checkoutError = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isRedirecting = false;
+        }
+    }
+
+    private static string StatusLabel(SubscriptionStatusEnum status) => status switch
+    {
+        SubscriptionStatusEnum.Trial => "Okres próbny",
+        SubscriptionStatusEnum.Active => "Aktywna",
+        SubscriptionStatusEnum.PastDue => "Zaległość",
+        SubscriptionStatusEnum.Suspended => "Wstrzymana",
+        _ => status.ToString()
+    };
+
+    private static string PaymentLabel(PaymentStatusEnum status) => status switch
+    {
+        PaymentStatusEnum.Succeeded => "Opłacona",
+        PaymentStatusEnum.Failed => "Nieudana",
+        PaymentStatusEnum.Refunded => "Zwrócona",
+        _ => status.ToString()
+    };
+
+    private static Color PaymentColor(PaymentStatusEnum status) => status switch
+    {
+        PaymentStatusEnum.Succeeded => Color.Success,
+        PaymentStatusEnum.Failed => Color.Error,
+        _ => Color.Default
+    };
 }

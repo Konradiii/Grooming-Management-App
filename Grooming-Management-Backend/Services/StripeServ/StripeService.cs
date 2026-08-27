@@ -227,4 +227,21 @@ public class StripeService(
 
         return salonId;
     }
+    
+    public async Task<string> CreatePortalSessionAsync(string customerId, CancellationToken ct)
+    {
+        var returnUrl = configuration["Stripe:SuccessUrl"]
+                        ?? throw new InvalidOperationException("Stripe SuccessUrl is not configured");
+
+        var options = new Stripe.BillingPortal.SessionCreateOptions
+        {
+            Customer = customerId,
+            ReturnUrl = returnUrl
+        };
+
+        var service = new Stripe.BillingPortal.SessionService();
+        var session = await service.CreateAsync(options, cancellationToken: ct);
+
+        return session.Url;
+    }
 }

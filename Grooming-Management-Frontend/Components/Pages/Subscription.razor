@@ -1,0 +1,208 @@
+﻿@page "/subskrypcja"
+@rendermode InteractiveServer
+@inherits OwnerOnlyPage
+@using Grooming_Management_App.DTOs.SubscriptionDTO
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject IJSRuntime JS
+
+<MudText Typo="Typo.h5" Class="mb-4">Subskrypcja</MudText>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (subscription == null)
+{
+    <MudAlert Severity="Severity.Error">Nie udało się pobrać danych subskrypcji</MudAlert>
+}
+else
+{
+    @if (subscription.Status == SubscriptionStatusEnum.Suspended)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            Dostęp został wstrzymany z powodu braku płatności. Opłać abonament, aby odblokować dodawanie wizyt.
+        </MudAlert>
+    }
+    else if (subscription.Status == SubscriptionStatusEnum.PastDue)
+    {
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            Abonament wygasł. Masz tydzień na opłacenie, zanim dostęp zostanie wstrzymany.
+        </MudAlert>
+    }
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.body2">Status</MudText>
+                <MudText Typo="Typo.h5" Class="mt-1">@StatusLabel(subscription.Status)</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.body2">
+                    @(subscription.Status == SubscriptionStatusEnum.Trial ? "Okres próbny do" : "Opłacone do")
+                </MudText>
+                <MudText Typo="Typo.h5" Class="mt-1">
+                    @(subscription.ValidUntil?.ToString("dd.MM.yyyy") ?? "bezterminowo")
+                </MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudPaper Class="pa-4 mb-6" Elevation="1">
+        <MudText Typo="Typo.subtitle1" Class="mb-1">Plan miesięczny — 89 zł</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Pełny dostęp do systemu, bez limitu pracowników i wizyt.
+        </MudText>
+
+        @if (checkoutError != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@checkoutError</MudAlert>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="isRedirecting" OnClick="StartCheckoutAsync">
+            @(isRedirecting
+                ? "Przekierowanie..."
+                : subscription.HasActiveSubscription ? "Zarządzaj płatnością" : "Opłać abonament")
+        </MudButton>
+    </MudPaper>
+
+    <MudText Typo="Typo.h6" Class="mb-3">Historia płatności</MudText>
+
+    @if (!subscription.Payments.Any())
+    {
+        <MudAlert Severity="Severity.Info">Brak płatności</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="subscription.Payments" Hover="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Data</MudTh>
+                <MudTh>Kwota</MudTh>
+                <MudTh>Okres</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh Style="width: 60px;" />
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@EnumLabels.LocalDateTime(context.PaymentDate)</MudTd>
+                <MudTd>@context.Amount.ToString("0.00") @context.Currency</MudTd>
+                <MudTd>@context.PeriodStart.ToString("dd.MM.yyyy") – @context.PeriodEnd.ToString("dd.MM.yyyy")</MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small" Color="@PaymentColor(context.Status)">
+                        @PaymentLabel(context.Status)
+                    </MudChip>
+                </MudTd>
+                <MudTd>
+                    @if (context.InvoiceUrl != null)
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Receipt" Size="Size.Small"
+                                       Href="@context.InvoiceUrl" Target="_blank" />
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@if (errorMessage != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
+}
+
+@code {
+    private GetSubscriptionDto? subscription;
+    private bool isLoading = true;
+    private bool isRedirecting;
+    private string? errorMessage;
+    private string? checkoutError;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (firstRender)
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            subscription = await Api.GetAsync<GetSubscriptionDto>("api/Subscription");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task StartCheckoutAsync()
+    {
+        checkoutError = null;
+        isRedirecting = true;
+
+        try
+        {
+            var response = await Api.PostAsync<object?>("api/Subscription/checkout", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                checkoutError = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            var url = await response.Content.ReadAsStringAsync();
+            url = url.Trim('"');
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                checkoutError = "Nie udało się rozpocząć płatności";
+                return;
+            }
+
+            await JS.InvokeVoidAsync("open", url, "_self");
+        }
+        catch (Exception ex)
+        {
+            checkoutError = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isRedirecting = false;
+        }
+    }
+
+    private static string StatusLabel(SubscriptionStatusEnum status) => status switch
+    {
+        SubscriptionStatusEnum.Trial => "Okres próbny",
+        SubscriptionStatusEnum.Active => "Aktywna",
+        SubscriptionStatusEnum.PastDue => "Zaległość",
+        SubscriptionStatusEnum.Suspended => "Wstrzymana",
+        _ => status.ToString()
+    };
+
+    private static string PaymentLabel(PaymentStatusEnum status) => status switch
+    {
+        PaymentStatusEnum.Succeeded => "Opłacona",
+        PaymentStatusEnum.Failed => "Nieudana",
+        PaymentStatusEnum.Refunded => "Zwrócona",
+        _ => status.ToString()
+    };
+
+    private static Color PaymentColor(PaymentStatusEnum status) => status switch
+    {
+        PaymentStatusEnum.Succeeded => Color.Success,
+        PaymentStatusEnum.Failed => Color.Error,
+        _ => Color.Default
+    };
+}

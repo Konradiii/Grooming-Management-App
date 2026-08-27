@@ -166,4 +166,51 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             .FirstOrDefaultAsync(ct);
     }
     
+    public async Task<GetSubscriptionDto> GetSubscriptionAsync(int salonId, CancellationToken ct)
+    {
+        var salon = await ctx.Salons
+            .Where(s => s.Id == salonId)
+            .Select(s => new
+            {
+                s.SubscriptionStatus,
+                s.SubscriptionValidUntil,
+                s.ProviderSubscriptionId
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (salon == null)
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
+
+        var payments = await ctx.Payments
+            .Where(p => p.SalonId == salonId)
+            .OrderByDescending(p => p.PaymentDate)
+            .Select(p => new GetPaymentDto
+            {
+                Amount = p.Amount,
+                Currency = p.Currency,
+                PaymentDate = p.PaymentDate,
+                Status = p.Status,
+                PeriodStart = p.PeriodStart,
+                PeriodEnd = p.PeriodEnd,
+                InvoiceUrl = p.InvoiceUrl
+            })
+            .ToListAsync(ct);
+
+        return new GetSubscriptionDto
+        {
+            Status = salon.SubscriptionStatus,
+            ValidUntil = salon.SubscriptionValidUntil,
+            HasActiveSubscription = salon.ProviderSubscriptionId != null,
+            Payments = payments
+        };
+    }
+    
+    public async Task<string?> GetProviderCustomerIdAsync(int salonId, CancellationToken ct)
+    {
+        return await ctx.Salons
+            .Where(s => s.Id == salonId)
+            .Select(s => s.ProviderCustomerId)
+            .FirstOrDefaultAsync(ct);
+    }
+    
 }

@@ -71,7 +71,8 @@ public static class ErrorMessages
         ["SERVICE_REQUIRED"] = "Wybierz usługę z cennika albo podaj usługę i cenę",
         ["PRICE_REQUIRED"] = "Podaj cenę usługi",
         
-        ["INVALID_POSTAL_CODE"] = "Nieprawidłowy kod pocztowy (format 00-000)"
+        ["INVALID_POSTAL_CODE"] = "Nieprawidłowy kod pocztowy (format 00-000)",
+        ["NO_ACTIVE_SUBSCRIPTION"] = "Brak aktywnej subskrypcji",
     };
 
     public static string Translate(string? code)

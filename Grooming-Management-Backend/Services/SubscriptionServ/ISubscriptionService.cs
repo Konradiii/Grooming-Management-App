@@ -15,4 +15,8 @@ public interface ISubscriptionService
     Task LinkProviderIdsAsync(int salonId, string? customerId, string? subscriptionId, CancellationToken ct);
     
     Task<int?> GetSalonIdByCustomerIdAsync(string? customerId, CancellationToken ct);
+    
+    Task<GetSubscriptionDto> GetSubscriptionAsync(int salonId, CancellationToken ct);
+    
+    Task<string?> GetProviderCustomerIdAsync(int salonId, CancellationToken ct);
 }

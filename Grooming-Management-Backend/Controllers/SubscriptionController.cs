@@ -1,4 +1,5 @@
 ﻿using Grooming_Management_App.DTOs.SubscriptionDTO;
+using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.CurrentUserServ;
 using Grooming_Management_App.Services.SalonServ;
 using Grooming_Management_App.Services.StripeServ;
@@ -13,14 +14,6 @@ namespace Grooming_Management_App.Controllers;
 [Authorize(Roles = "Owner")]
 public class SubscriptionController(ISubscriptionService service, ICurrentUserService currentUser, ISalonService salonService, IStripeService stripeService) : ControllerBase
 {
-    [HttpPost("payment")]
-    [EndpointSummary("Rejestruje płatność i przedłuża subskrypcję o miesiąc (tymczasowe - docelowo webhook)")]
-    public async Task<IActionResult> RegisterPayment(RegisterPaymentDto dto, CancellationToken ct)
-    {
-        var salonId = currentUser.SalonId;
-        var validUntil = await service.RegisterPaymentAsync(salonId, dto, ct);
-        return Ok(new { validUntil });
-    }
     
     [HttpPost("checkout")]
     [Authorize(Roles = "Owner")]
@@ -54,5 +47,27 @@ public class SubscriptionController(ISubscriptionService service, ICurrentUserSe
         await stripeService.HandleWebhookAsync(json, signature, ct);
 
         return Ok();
+    }
+    
+    [HttpGet]
+    [EndpointSummary("Zwraca stan subskrypcji i historię płatności")]
+    public async Task<ActionResult<GetSubscriptionDto>> GetSubscription(CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        return await service.GetSubscriptionAsync(salonId, ct);
+    }
+    
+    [HttpPost("portal")]
+    [EndpointSummary("Tworzy sesję portalu klienta Stripe i zwraca adres do przekierowania")]
+    public async Task<ActionResult<string>> CreatePortal(CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var customerId = await service.GetProviderCustomerIdAsync(salonId, ct);
+
+        if (string.IsNullOrEmpty(customerId))
+            throw new ConflictException(ErrorCodes.NoActiveSubscription);
+
+        var url = await stripeService.CreatePortalSessionAsync(customerId, ct);
+        return Ok(url);
     }
 }
