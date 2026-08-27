@@ -55,6 +55,9 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
         builder.Property(s => s.ProviderSubscriptionId)
             .IsRequired(false)
             .HasMaxLength(100);
+        
+        builder.Property(s => s.RemindersEnabled).HasDefaultValue(true);
+        builder.Property(s => s.ReminderHoursBefore).HasDefaultValue(24);
 
         builder.HasIndex(s => s.ProviderCustomerId);
 

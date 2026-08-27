@@ -70,4 +70,5 @@ public static class ErrorCodes
     public const string InvalidPostalCode = "INVALID_POSTAL_CODE";
     public const string NoActiveSubscription = "NO_ACTIVE_SUBSCRIPTION";
     public const string SubscriptionSuspended = "SUBSCRIPTION_SUSPENDED";
+    public const string InvalidReminderSettings = "INVALID_REMINDER_SETTINGS";
 }

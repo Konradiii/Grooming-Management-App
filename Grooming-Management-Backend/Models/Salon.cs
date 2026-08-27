@@ -20,6 +20,9 @@ public class Salon
     public string? ProviderCustomerId { get; set; }
     public string? ProviderSubscriptionId { get; set; }
     
+    public bool RemindersEnabled { get; set; }
+    public int ReminderHoursBefore { get; set; }
+    
     public List<User> Users { get; set; } = new();
     public List<Groomer> Groomers { get; set; } = new();
     public List<DogOwner> DogOwners { get; set; } = new();

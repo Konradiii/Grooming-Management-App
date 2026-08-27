@@ -13,4 +13,7 @@ public class GetSalonDto
     
     public int MinBookingHoursAhead { get; set; }
     public int MaxBookingDaysAhead { get; set; }
+    
+    public bool RemindersEnabled { get; set; }
+    public int ReminderHoursBefore { get; set; }
 }

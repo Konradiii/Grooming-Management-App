@@ -26,7 +26,9 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
             PostalCode = salonInfo.PostalCode,
             City = salonInfo.City,
             MinBookingHoursAhead = salonInfo.MinBookingHoursAhead,
-            MaxBookingDaysAhead = salonInfo.MaxBookingDaysAhead
+            MaxBookingDaysAhead = salonInfo.MaxBookingDaysAhead,
+            RemindersEnabled = salonInfo.RemindersEnabled,
+            ReminderHoursBefore = salonInfo.ReminderHoursBefore
         };
 
 
@@ -36,6 +38,12 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
     public async Task UpdateSalonAsync(UpdateSalonDto dto, int salonId, CancellationToken ct)
     {
         Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
+        Validate.PolishPostalCode(dto.PostalCode);
+
+        if (dto.ReminderHoursBefore < 1 || dto.ReminderHoursBefore > 168)
+        {
+            throw new ConflictException(ErrorCodes.InvalidReminderSettings);
+        }
 
         var salonInfo = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
 
@@ -50,7 +58,8 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
         salonInfo.ApartmentNumber = dto.ApartmentNumber?.Trim();
         salonInfo.PostalCode = Validate.NormalizePostalCode(dto.PostalCode);
         salonInfo.City = dto.City?.Trim();
-
+        salonInfo.RemindersEnabled = dto.RemindersEnabled;
+        salonInfo.ReminderHoursBefore = dto.ReminderHoursBefore;
 
         await ctx.SaveChangesAsync(ct);
     }

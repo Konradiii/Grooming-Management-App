@@ -17,4 +17,11 @@ public class NotificationController(INotificationService service, ICurrentUserSe
         await service.SendReadyForPickupNotificationAsync(salonId, visitId, timeToPickUpDogInMin, ct);
         return Ok();
     }
+    [HttpPost("test-reminder")]
+    [EndpointSummary("TYMCZASOWY - do usunięcia")]
+    public async Task<IActionResult> TestReminder(int visitId, CancellationToken ct)
+    {
+        await service.SendVisitReminderAsync(currentUser.SalonId, visitId, ct);
+        return Ok();
+    }
 }

@@ -100,7 +100,9 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
         MinBookingHoursAhead = 0,
         MaxBookingDaysAhead = 550,
         SubscriptionStatus = SubscriptionStatusEnum.Trial,
-        SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30)
+        SubscriptionValidUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(30),
+        RemindersEnabled = false,
+        ReminderHoursBefore = 24,
     };
 
     var ownerUser = new User

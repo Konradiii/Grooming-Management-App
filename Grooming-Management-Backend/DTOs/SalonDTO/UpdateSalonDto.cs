@@ -10,4 +10,6 @@ public class UpdateSalonDto
     public string? City { get; set; }
     public int MinBookingHoursAhead { get; set; }
     public int MaxBookingDaysAhead { get; set; }
+    public bool RemindersEnabled { get; set; }
+    public int ReminderHoursBefore { get; set; }
 }
