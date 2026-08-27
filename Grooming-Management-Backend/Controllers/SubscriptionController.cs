@@ -40,4 +40,19 @@ public class SubscriptionController(ISubscriptionService service, ICurrentUserSe
 
         return Ok(url);
     }
+   
+    [HttpPost("webhook")]
+    [AllowAnonymous]
+    [EndpointSummary("Odbiera zdarzenia ze Stripe")]
+    public async Task<IActionResult> Webhook(CancellationToken ct)
+    {
+        using var reader = new StreamReader(HttpContext.Request.Body);
+        var json = await reader.ReadToEndAsync(ct);
+
+        var signature = Request.Headers["Stripe-Signature"].ToString();
+
+        await stripeService.HandleWebhookAsync(json, signature, ct);
+
+        return Ok();
+    }
 }

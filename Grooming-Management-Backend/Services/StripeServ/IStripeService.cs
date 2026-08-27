@@ -3,4 +3,5 @@
 public interface IStripeService
 {
     Task<string> CreateCheckoutSessionAsync(int salonId, string salonName, string email, CancellationToken ct);
+    Task HandleWebhookAsync(string json, string signature, CancellationToken ct);
 }

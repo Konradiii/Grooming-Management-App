@@ -11,4 +11,8 @@ public interface ISubscriptionService
     Task<int> SuspendExpiredSubscriptionsAsync(CancellationToken ct);
     
     Task<int> MarkExpiredSubscriptionsAsPastDueAsync(CancellationToken ct);
+    
+    Task LinkProviderIdsAsync(int salonId, string? customerId, string? subscriptionId, CancellationToken ct);
+    
+    Task<int?> GetSalonIdByCustomerIdAsync(string? customerId, CancellationToken ct);
 }

@@ -141,4 +141,29 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         return expired.Count;
     }
     
+    public async Task LinkProviderIdsAsync(int salonId, string? customerId, string? subscriptionId, CancellationToken ct)
+    {
+        var salon = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
+
+        if (salon == null)
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
+
+        salon.ProviderCustomerId = customerId;
+        salon.ProviderSubscriptionId = subscriptionId;
+
+        await ctx.SaveChangesAsync(ct);
+    }
+
+    
+    public async Task<int?> GetSalonIdByCustomerIdAsync(string? customerId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+            return null;
+
+        return await ctx.Salons
+            .Where(s => s.ProviderCustomerId == customerId)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefaultAsync(ct);
+    }
+    
 }
