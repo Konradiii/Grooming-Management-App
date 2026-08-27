@@ -9,5 +9,7 @@ public class CurrentUserService(IHttpContextAccessor acs) : ICurrentUserService
     public int SalonId => int.Parse(acs.HttpContext.User.FindFirst("salonId").Value);
     public int UserId => int.Parse(acs.HttpContext.User.FindFirst("userId").Value);
     public RoleEnum Role => Enum.Parse<RoleEnum>(acs.HttpContext.User.FindFirst(ClaimTypes.Role).Value);
-    
+    public string Email =>
+        acs.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+
 }

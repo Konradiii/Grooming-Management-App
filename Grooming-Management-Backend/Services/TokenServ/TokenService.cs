@@ -9,7 +9,7 @@ namespace Grooming_Management_App.Services.TokenServ;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string GenerateAccessToken(int userId, int salonId, RoleEnum role, string? fullName = null)
+    public string GenerateAccessToken(int userId, int salonId, RoleEnum role, string? fullName = null, string? email = null)
     {
         var claims = new List<Claim>
         {
@@ -17,6 +17,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new Claim("salonId", salonId.ToString()),
             new Claim(ClaimTypes.Role, role.ToString()),
             new Claim("fullName", fullName ?? string.Empty),
+            new Claim("email", email ?? string.Empty),
         };
         var secretKey = configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

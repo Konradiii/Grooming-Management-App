@@ -8,4 +8,5 @@ public interface ICurrentUserService
     int SalonId { get; }
     int UserId { get; }
     RoleEnum Role { get; }
+    string Email { get; }
 }

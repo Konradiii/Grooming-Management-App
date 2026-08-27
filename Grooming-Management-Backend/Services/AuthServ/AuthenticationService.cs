@@ -41,9 +41,10 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
 
         var hashedPassword = passwordHasher.HashPassword(temporaryPassword);
 
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
         var newRegisteredUser = new User
         {
-            Email = dto.Email,
+            Email = normalizedEmail,
             PasswordHash = hashedPassword,
             Role = RoleEnum.Groomer,
             ActiveStatus = ActiveStatusEnum.Active,
@@ -136,7 +137,7 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
 
     var refreshToken = tokenService.GenerateRefreshToken();
     var accessToken = tokenService.GenerateAccessToken(
-        ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name);
+        ownerUser.Id, ownerUser.SalonId, ownerUser.Role, newSalon.Name, ownerUser.Email);
 
     var newTokens = new RefreshToken
     {
@@ -182,7 +183,7 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
     }
 
     var accessToken = tokenService.GenerateAccessToken(
-        user.Id, user.SalonId, user.Role, ResolveDisplayName(user));
+        user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email);
     var refreshToken = tokenService.GenerateRefreshToken();
 
     var newTokens = new RefreshToken
@@ -239,12 +240,12 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
 
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var newAccessToken = tokenService.GenerateAccessToken(
-            refreshExists.UserId, user.SalonId, user.Role, ResolveDisplayName(user));
+            refreshExists.UserId, user.SalonId, user.Role, ResolveDisplayName(user), user.Email);
 
         var newTokens = new RefreshToken
         {
             TokenHash = tokenService.HashToken(newRefreshToken),
-            ExpiresAt = DateTime.UtcNow.AddDays(3),
+            ExpiresAt = tokenService.GetRefreshTokenExpiration(),
             CreatedAt = DateTime.UtcNow,
             RevokedAt = null,
             User = user
@@ -303,7 +304,7 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
 
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var newAccessToken = tokenService.GenerateAccessToken(
-            user.Id, user.SalonId, user.Role, ResolveDisplayName(user));
+            user.Id, user.SalonId, user.Role, ResolveDisplayName(user), user.Email);
 
         var newtoken = new RefreshToken
         {

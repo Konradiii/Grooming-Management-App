@@ -19,6 +19,7 @@ using Grooming_Management_App.Services.PasswordHasherServ;
 using Grooming_Management_App.Services.SalonServ;
 using Grooming_Management_App.Services.ServiceBreedServ;
 using Grooming_Management_App.Services.ServiceServ;
+using Grooming_Management_App.Services.StripeServ;
 using Grooming_Management_App.Services.SubscriptionServ;
 using Grooming_Management_App.Services.TokenServ;
 using Grooming_Management_App.Services.VisitServ;
@@ -28,6 +29,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
+using Stripe;
+using SubscriptionService = Grooming_Management_App.Services.SubscriptionServ.SubscriptionService;
+using TokenService = Grooming_Management_App.Services.TokenServ.TokenService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -153,6 +157,11 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddDbContext<GroomingDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"]
+                             ?? throw new InvalidOperationException("Stripe SecretKey is not configured");
+
+builder.Services.AddScoped<IStripeService, StripeService>();
 
 var app = builder.Build();
 
