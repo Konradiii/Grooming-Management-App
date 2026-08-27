@@ -74,6 +74,7 @@ public static class ErrorMessages
         ["INVALID_POSTAL_CODE"] = "Nieprawidłowy kod pocztowy (format 00-000)",
         ["NO_ACTIVE_SUBSCRIPTION"] = "Brak aktywnej subskrypcji",
         ["SUBSCRIPTION_SUSPENDED"] = "Dostęp wstrzymany — opłać abonament w ustawieniach salonu",
+        ["INVALID_REMINDER_SETTINGS"] = "Nieprawidłowe ustawienia przypomnień",
     };
 
     public static string Translate(string? code)

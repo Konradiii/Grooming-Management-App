@@ -44,16 +44,42 @@ else
             </MudItem>
         </MudGrid>
 
-        @if (errorMessage != null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
-        }
-
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4"
                    Disabled="isSaving" OnClick="SaveAsync">
             @(isSaving ? "Zapisywanie..." : "Zapisz zmiany")
         </MudButton>
     </MudPaper>
+
+    <MudPaper Class="pa-6 mb-4" Style="opacity: 0.6;">
+        <div class="d-flex align-center gap-3 mb-1">
+            <MudText Typo="Typo.h6">Przypomnienia SMS</MudText>
+            <MudChip T="string" Size="Size.Small" Color="Color.Default">Wkrótce</MudChip>
+        </div>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Automatyczna wiadomość wysyłana klientowi przed umówioną wizytą.
+            Funkcja będzie dostępna po uruchomieniu wysyłki SMS.
+        </MudText>
+
+        <MudSwitch T="bool" @bind-Value="remindersEnabled" Color="Color.Primary"
+                   Disabled="true" Class="mb-3">
+            Wysyłaj przypomnienia o wizytach
+        </MudSwitch>
+
+        <MudSelect T="int" @bind-Value="reminderHoursBefore"
+                   Label="Wyprzedzenie" Variant="Variant.Outlined"
+                   Disabled="true" Class="mb-3" Style="max-width: 400px;">
+            <MudSelectItem T="int" Value="2">2 godziny przed wizytą</MudSelectItem>
+            <MudSelectItem T="int" Value="6">6 godzin przed wizytą</MudSelectItem>
+            <MudSelectItem T="int" Value="12">12 godzin przed wizytą</MudSelectItem>
+            <MudSelectItem T="int" Value="24">Dzień przed wizytą</MudSelectItem>
+            <MudSelectItem T="int" Value="48">Dwa dni przed wizytą</MudSelectItem>
+        </MudSelect>
+    </MudPaper>
+
+    @if (errorMessage != null)
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+    }
 
     <MudPaper Class="pa-6">
         <MudText Typo="Typo.h6" Class="mb-4">Subskrypcja</MudText>
@@ -184,6 +210,9 @@ else
     private string? postalCode;
     private string? city;
 
+    private bool remindersEnabled;
+    private int reminderHoursBefore = 24;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
@@ -219,6 +248,8 @@ else
                 apartmentNumber = salon.ApartmentNumber;
                 postalCode = salon.PostalCode;
                 city = salon.City;
+                remindersEnabled = salon.RemindersEnabled;
+                reminderHoursBefore = salon.ReminderHoursBefore;
             }
 
             subscription = await Api.GetAsync<GetSubscriptionDto>("api/Subscription");
@@ -265,7 +296,9 @@ else
                 BuildingNumber = buildingNumber,
                 ApartmentNumber = apartmentNumber,
                 PostalCode = postalCode,
-                City = city
+                City = city,
+                RemindersEnabled = remindersEnabled,
+                ReminderHoursBefore = reminderHoursBefore
             };
 
             var response = await Api.PutAsync("api/Salon", dto);
