@@ -13,7 +13,7 @@ public class WaitlistConfiguration : IEntityTypeConfiguration<Waitlist>
         builder.Property(e=>e.CreatedAt)
             .IsRequired();
         
-        builder.ToTable(t => t.HasCheckConstraint("CK_Waitlist_Priority_Range", "[Priority] >= 1 AND [Priority] <= 3"));
+        builder.ToTable(t => t.HasCheckConstraint("CK_Waitlist_Priority_Range",  "\"Priority\" >= 1 AND \"Priority\" <= 3"));
         
         builder.HasOne(b => b.Salon)
             .WithMany(b => b.Waitlists)

@@ -59,7 +59,14 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
                 logger.LogError(ex, "Reminder cycle failed");
             }
 
-            await Task.Delay(_interval, stoppingToken);
+            try
+            {
+                await Task.Delay(_interval, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
     }
 }

@@ -32,6 +32,7 @@ using Microsoft.OpenApi.Models;
 using Stripe;
 using SubscriptionService = Grooming_Management_App.Services.SubscriptionServ.SubscriptionService;
 using TokenService = Grooming_Management_App.Services.TokenServ.TokenService;
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -156,7 +157,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddDbContext<GroomingDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"]
                              ?? throw new InvalidOperationException("Stripe SecretKey is not configured");
