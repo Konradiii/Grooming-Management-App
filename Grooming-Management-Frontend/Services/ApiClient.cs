@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Grooming_Management_App.DTOs.AuthDTO;
+using Grooming_Management_App.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Grooming_Management_Frontend.Services;
@@ -29,8 +30,14 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
             return client.GetAsync(url);
         });
         
-        if (!response.IsSuccessStatusCode)
+        if (response.StatusCode == HttpStatusCode.NotFound)
             return default;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var message = await ReadErrorAsync(response);
+            throw new ApiException(response.StatusCode, message);
+        }
 
         if (response.StatusCode == HttpStatusCode.NoContent)
             return default;

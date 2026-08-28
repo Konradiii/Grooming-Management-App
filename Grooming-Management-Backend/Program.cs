@@ -1,7 +1,9 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Grooming_Management_App.BackgroundServices;
 using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Exceptions;
+using Grooming_Management_App.Extensions;
 using Grooming_Management_App.Middleware;
 using Grooming_Management_App.Services.AuthServ;
 using Grooming_Management_App.Services.AvailabilityServ;
@@ -26,17 +28,18 @@ using Grooming_Management_App.Services.VisitServ;
 using Grooming_Management_App.Services.WaitlistServ;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Stripe;
 using SubscriptionService = Grooming_Management_App.Services.SubscriptionServ.SubscriptionService;
 using TokenService = Grooming_Management_App.Services.TokenServ.TokenService;
+
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-//JWT
+// ---------- JWT ----------
 var secretKey = builder.Configuration["JwtSettings:SecretKey"]
                 ?? throw new InvalidOperationException("JWT SecretKey is not configured");
 
@@ -54,10 +57,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ---------- MVC + JSON ----------
 builder.Services.AddControllers()
-    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 builder.Services.AddEndpointsApiExplorer();
 
+// ---------- Swagger ----------
 builder.Services.AddSwaggerGen(opt =>
 {
     opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -86,92 +92,76 @@ builder.Services.AddSwaggerGen(opt =>
     });
 });
 
-builder.Services.AddScoped<IBreedReaderService, BreedService>();
-
-builder.Services.AddScoped<ISalonService, SalonService>();
-
-builder.Services.AddScoped<IGroomerReaderService, GroomerService>();
-builder.Services.AddScoped<IGroomerWriterService, GroomerService>();
-
-
-builder.Services.AddScoped<IDogOwnerWriterService, DogOwnerService>();
-builder.Services.AddScoped<IDogOwnerReaderService, DogOwnerService>();
-
-
-builder.Services.AddScoped<IDogWriterService, DogService>();
-builder.Services.AddScoped<IDogReaderService, DogService>();
-
-builder.Services.AddScoped<IServiceReaderService, ServiceService>();
-builder.Services.AddScoped<IServiceWriterService, ServiceService>();
-
-
-builder.Services.AddScoped<IServiceBreedWriterService, ServiceBreedService>();
-builder.Services.AddScoped<IServiceBreedReaderService, ServiceBreedService>();
-
-
-builder.Services.AddScoped<IVisitReaderService, VisitService>();
-builder.Services.AddScoped<IVisitWriterService, VisitService>();
-
-
-builder.Services.AddScoped<IEarningsReaderService, EarningsService>();
-
-builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-
-builder.Services.AddScoped<ITokenService, TokenService>();
-
-builder.Services.AddScoped<ILoginService, AuthenticationService>();
-builder.Services.AddScoped<IPasswordService, AuthenticationService>();
-builder.Services.AddScoped<IRegistrationService, AuthenticationService>();
-builder.Services.AddScoped<ITokenSessionService, AuthenticationService>();
-
-builder.Services.AddHttpContextAccessor();
-
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-
-builder.Services.AddScoped<BlacklistService>();
-builder.Services.AddScoped<IBlacklistService>(sp => sp.GetRequiredService<BlacklistService>());
-builder.Services.AddScoped<IBlacklistCheckService>(sp => sp.GetRequiredService<BlacklistService>());
-
-builder.Services.AddScoped<ISmsService, MockSmsService>();
-
-builder.Services.AddScoped<INotificationService, NotificationService>();
-
-builder.Services.AddHostedService<ReminderScheduler>();
-builder.Services.AddHostedService<SubscriptionScheduler>();
-
-builder.Services.AddScoped<IGroomerScheduleReaderService, GroomerScheduleService>();
-builder.Services.AddScoped<IGroomerScheduleWriterService, GroomerScheduleService>();
-
-
-builder.Services.AddScoped<IGroomerTimeOffWriterService, GroomerTimeOffService>();
-builder.Services.AddScoped<IGroomerTimeOffReaderService, GroomerTimeOffService>();
-
-builder.Services.AddScoped<IAvailabilityReaderService, AvailabilityService>();
-
-builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
-
-builder.Services.AddScoped<IWaitlistReaderService, WaitlistService>();
-builder.Services.AddScoped<IWaitlistWriterService, WaitlistService>();
-
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
-
-builder.Services.AddHostedService<TokenCleanupScheduler>();
-
-builder.Services.AddDbContext<GroomingDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"]
-                             ?? throw new InvalidOperationException("Stripe SecretKey is not configured");
-
-builder.Services.AddScoped<IStripeService, StripeService>();
-
+// ---------- Baza ----------
 // Notification celowo bez query filtra (czytany z ReminderScheduler bez HttpContext).
 // Nigdy nie sięgamy z Notification do DogOwner przez nawigację, więc ostrzeżenie nieistotne.
 builder.Services.AddDbContext<GroomingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
         .ConfigureWarnings(w => w.Ignore(
-            Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning)));
+            CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning)));
+
+// ---------- Serwisy domenowe ----------
+builder.Services.AddScoped<IBreedReaderService, BreedService>();
+builder.Services.AddScoped<ISalonService, SalonService>();
+builder.Services.AddScoped<IEarningsReaderService, EarningsService>();
+builder.Services.AddScoped<IAvailabilityReaderService, AvailabilityService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddScopedWithInterfaces<GroomerService>(
+    typeof(IGroomerReaderService), typeof(IGroomerWriterService));
+
+builder.Services.AddScopedWithInterfaces<DogOwnerService>(
+    typeof(IDogOwnerReaderService), typeof(IDogOwnerWriterService));
+
+builder.Services.AddScopedWithInterfaces<DogService>(
+    typeof(IDogReaderService), typeof(IDogWriterService));
+
+builder.Services.AddScopedWithInterfaces<ServiceService>(
+    typeof(IServiceReaderService), typeof(IServiceWriterService));
+
+builder.Services.AddScopedWithInterfaces<ServiceBreedService>(
+    typeof(IServiceBreedReaderService), typeof(IServiceBreedWriterService));
+
+builder.Services.AddScopedWithInterfaces<VisitService>(
+    typeof(IVisitReaderService), typeof(IVisitWriterService));
+
+builder.Services.AddScopedWithInterfaces<GroomerScheduleService>(
+    typeof(IGroomerScheduleReaderService), typeof(IGroomerScheduleWriterService));
+
+builder.Services.AddScopedWithInterfaces<GroomerTimeOffService>(
+    typeof(IGroomerTimeOffReaderService), typeof(IGroomerTimeOffWriterService));
+
+builder.Services.AddScopedWithInterfaces<WaitlistService>(
+    typeof(IWaitlistReaderService), typeof(IWaitlistWriterService));
+
+builder.Services.AddScopedWithInterfaces<BlacklistService>(
+    typeof(IBlacklistService), typeof(IBlacklistCheckService));
+
+builder.Services.AddScopedWithInterfaces<AuthenticationService>(
+    typeof(ILoginService), typeof(IPasswordService),
+    typeof(IRegistrationService), typeof(ITokenSessionService));
+
+// ---------- Serwisy infrastrukturalne ----------
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ISmsService, MockSmsService>();
+builder.Services.AddScoped<IStripeService, StripeService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// ---------- Zadania w tle ----------
+builder.Services.AddHostedService<ReminderScheduler>();
+builder.Services.AddHostedService<SubscriptionScheduler>();
+builder.Services.AddHostedService<TokenCleanupScheduler>();
+
+// ---------- Obsługa błędów ----------
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+// ---------- Stripe ----------
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"]
+                             ?? throw new InvalidOperationException("Stripe SecretKey is not configured");
 
 var app = builder.Build();
 
@@ -179,6 +169,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<GroomingDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
