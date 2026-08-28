@@ -21,4 +21,6 @@ public interface ISubscriptionService
     Task<string?> GetProviderCustomerIdAsync(int salonId, CancellationToken ct);
     
     Task ClearSubscriptionAsync(string? customerId, CancellationToken ct);
+    
+    Task SetCancelAtPeriodEndAsync(string? customerId, bool value, CancellationToken ct);
 }

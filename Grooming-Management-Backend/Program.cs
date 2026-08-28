@@ -156,6 +156,8 @@ builder.Services.AddScoped<IWaitlistWriterService, WaitlistService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+builder.Services.AddHostedService<TokenCleanupScheduler>();
+
 builder.Services.AddDbContext<GroomingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -163,6 +165,13 @@ StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"]
                              ?? throw new InvalidOperationException("Stripe SecretKey is not configured");
 
 builder.Services.AddScoped<IStripeService, StripeService>();
+
+// Notification celowo bez query filtra (czytany z ReminderScheduler bez HttpContext).
+// Nigdy nie sięgamy z Notification do DogOwner przez nawigację, więc ostrzeżenie nieistotne.
+builder.Services.AddDbContext<GroomingDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .ConfigureWarnings(w => w.Ignore(
+            Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.PossibleIncorrectRequiredNavigationWithQueryFilterInteractionWarning)));
 
 var app = builder.Build();
 

@@ -18,6 +18,7 @@ public class Salon
     
     public DateOnly? SubscriptionValidUntil { get; set; }
     public SubscriptionStatusEnum SubscriptionStatus { get; set; }
+    public bool SubscriptionCancelAtPeriodEnd { get; set; }
     
     public string? ProviderCustomerId { get; set; }
     public string? ProviderSubscriptionId { get; set; }

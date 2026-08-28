@@ -8,4 +8,5 @@ public class GetSubscriptionDto
     public DateOnly? ValidUntil { get; set; }
     public bool HasActiveSubscription { get; set; }
     public List<GetPaymentDto> Payments { get; set; } = new();
+    public bool CancelAtPeriodEnd { get; set; }
 }

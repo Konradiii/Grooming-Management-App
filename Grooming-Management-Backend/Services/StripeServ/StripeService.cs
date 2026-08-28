@@ -52,6 +52,8 @@ public class StripeService(
 
         return session.Url;
     }
+    
+    
 
     public async Task HandleWebhookAsync(string json, string signature, CancellationToken ct)
     {
@@ -89,6 +91,10 @@ public class StripeService(
             
             case "customer.subscription.deleted":
                 await HandleSubscriptionDeletedAsync(stripeEvent, ct);
+                break;
+            
+            case "customer.subscription.updated":
+                await HandleSubscriptionUpdatedAsync(stripeEvent, ct);
                 break;
 
             default:
@@ -262,4 +268,17 @@ public class StripeService(
         logger.LogInformation("Subscription {SubscriptionId} cancelled for customer {CustomerId}",
             subscription.Id, subscription.CustomerId);
     }
+    
+    private async Task HandleSubscriptionUpdatedAsync(Event stripeEvent, CancellationToken ct)
+    {
+        if (stripeEvent.Data.Object is not Stripe.Subscription subscription)
+            return;
+
+        await subscriptionService.SetCancelAtPeriodEndAsync(
+            subscription.CustomerId, subscription.CancelAtPeriodEnd, ct);
+
+        logger.LogInformation("Subscription {SubscriptionId} cancel_at_period_end = {Value}",
+            subscription.Id, subscription.CancelAtPeriodEnd);
+    }
+    
 }

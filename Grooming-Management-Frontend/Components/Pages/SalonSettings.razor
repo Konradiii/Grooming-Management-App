@@ -132,7 +132,7 @@ else
                 <MudAlert Severity="Severity.Error" Class="mb-4">@checkoutError</MudAlert>
             }
 
-            @if (subscription.HasActiveSubscription)
+            @if (subscription.Status == SubscriptionStatusEnum.Active)
             {
                 <MudText Typo="Typo.body2" Class="mb-3">
                     Abonament odnawia się automatycznie co miesiąc. W panelu płatności zmienisz kartę,
@@ -156,7 +156,6 @@ else
                     @(isRedirecting ? "Przekierowanie..." : "Opłać abonament")
                 </MudButton>
             }
-
             <MudText Typo="Typo.subtitle2" Class="mb-3">Historia płatności</MudText>
 
             @if (!subscription.Payments.Any())

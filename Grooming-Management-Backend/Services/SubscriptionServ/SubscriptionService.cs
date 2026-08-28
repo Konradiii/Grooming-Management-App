@@ -174,7 +174,8 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             {
                 s.SubscriptionStatus,
                 s.SubscriptionValidUntil,
-                s.ProviderSubscriptionId
+                s.ProviderSubscriptionId,
+                s.SubscriptionCancelAtPeriodEnd
             })
             .FirstOrDefaultAsync(ct);
 
@@ -201,6 +202,7 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             Status = salon.SubscriptionStatus,
             ValidUntil = salon.SubscriptionValidUntil,
             HasActiveSubscription = salon.ProviderSubscriptionId != null,
+            CancelAtPeriodEnd = salon.SubscriptionCancelAtPeriodEnd,
             Payments = payments
         };
     }
@@ -226,6 +228,21 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 
         salon.ProviderSubscriptionId = null;
 
+        await ctx.SaveChangesAsync(ct);
+    }
+    
+    public async Task SetCancelAtPeriodEndAsync(string? customerId, bool value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+            return;
+
+        var salon = await ctx.Salons
+            .FirstOrDefaultAsync(s => s.ProviderCustomerId == customerId, ct);
+
+        if (salon == null)
+            return;
+
+        salon.SubscriptionCancelAtPeriodEnd = value;
         await ctx.SaveChangesAsync(ct);
     }
     
