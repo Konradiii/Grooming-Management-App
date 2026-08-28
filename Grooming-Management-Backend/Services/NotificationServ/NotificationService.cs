@@ -8,6 +8,11 @@ namespace Grooming_Management_App.Services.NotificationServ;
 
 public class NotificationService(GroomingDbContext ctx, ISmsService smsService) : INotificationService
 {
+    // Baza trzyma UTC. Konwersja tylko tutaj, bo treść SMS trafia bezpośrednio
+    // do klienta z pominięciem frontendu.
+    private static readonly TimeZoneInfo PolishTime =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
+
     public async Task SendReadyForPickupNotificationAsync(int salonId, int visitId, int timeToPickUpDogInMin, CancellationToken ct)
     {
         var alreadySent = await ctx.Notifications
@@ -98,8 +103,11 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
             throw new ConflictException(ErrorCodes.CannotNotifyCancelledVisit);
         }
 
+        var localVisitTime = TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(visit.Date, DateTimeKind.Utc), PolishTime);
+
         var msg = $"Przypominamy o jutrzejszej wizycie Państwa pupila {visit.Dog.Name} " +
-                  $"o godzinie {visit.Date:HH:mm} w salonie {visit.Salon.Name}. Do zobaczenia!";
+                  $"o godzinie {localVisitTime:HH:mm} w salonie {visit.Salon.Name}. Do zobaczenia!";
 
         var phoneNumber = visit.DogOwner.Phone;
 

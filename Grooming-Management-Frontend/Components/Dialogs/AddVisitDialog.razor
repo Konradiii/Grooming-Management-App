@@ -365,9 +365,10 @@
 
         try
         {
-            var visitDate = selectedDate.Value.Date.Add(selectedTime.Value);
+            var visitDate = Dates.ToUtc(selectedDate.Value.Date.Add(selectedTime.Value));
             var assistantId = withAssistant ? selectedAssistant?.Id : null;
 
+            
             int? serviceBreedId = fromPriceList ? selectedService!.Id : null;
             int? serviceId = fromPriceList ? null : selectedPlainService!.Id;
             decimal? price = fromPriceList ? null : manualPrice;

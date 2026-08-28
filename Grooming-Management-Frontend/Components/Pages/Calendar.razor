@@ -121,8 +121,8 @@ else
             .Select(v => new VisitAppointment
             {
                 VisitId = v.Id,
-                Start = v.Date,
-                End = v.Date.AddMinutes(v.EstimatedDuration),
+                Start = Dates.ToLocal(v.Date),
+                End = Dates.ToLocal(v.Date).AddMinutes(v.EstimatedDuration),
                 Text = $"{v.DogName} - {v.GroomerName}",
                 DogName = v.DogName,
                 BreedName = v.BreedName,

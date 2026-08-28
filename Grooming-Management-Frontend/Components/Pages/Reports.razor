@@ -160,9 +160,9 @@ else
 
         try
         {
-            var from = dateFrom.Value.Date.ToString("yyyy-MM-ddTHH:mm:ss");
-            var to = dateTo.Value.Date.AddDays(1).AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ss");
-
+            var from = Dates.ToUtc(dateFrom.Value.Date).ToString("yyyy-MM-ddTHH:mm:ss");
+            var to = Dates.ToUtc(dateTo.Value.Date.AddDays(1).AddSeconds(-1)).ToString("yyyy-MM-ddTHH:mm:ss");
+            
             settlements = await Api.GetAsync<List<GetGroomerSettlementDto>>(
                 $"api/Earnings/GetGroomerSettlements?dateFrom={from}&dateTo={to}") ?? new();
 

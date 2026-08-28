@@ -35,7 +35,6 @@ using Stripe;
 using SubscriptionService = Grooming_Management_App.Services.SubscriptionServ.SubscriptionService;
 using TokenService = Grooming_Management_App.Services.TokenServ.TokenService;
 
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 

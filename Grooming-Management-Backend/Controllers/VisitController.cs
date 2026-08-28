@@ -1,5 +1,6 @@
 ﻿using Grooming_Management_App.DTOs.VisitDTO;
 using Grooming_Management_App.Enums;
+using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.CurrentUserServ;
 using Grooming_Management_App.Services.VisitServ;
 using Microsoft.AspNetCore.Authorization;
@@ -17,9 +18,11 @@ public class VisitController(IVisitReaderService readerService,IVisitWriterServi
     [EndpointSummary("Zwraca listę wizyt, z filtrami po statusie, groomerze i zakresie dat")]
     public async Task<List<GetAllVisitsDto>> GetAllVisits([FromQuery] VisitFilterDto filter, CancellationToken ct)
     {
+        filter.DateFrom = filter.DateFrom.AsUtc();
+        filter.DateTo = filter.DateTo.AsUtc();
+
         var salonId = userService.SalonId;
-        var visits = await readerService.GetAllVisitsAsync(salonId, filter, ct);
-        return visits;
+        return await readerService.GetAllVisitsAsync(salonId, filter, ct);
     }
 
     [HttpGet("{visitId:int}")]

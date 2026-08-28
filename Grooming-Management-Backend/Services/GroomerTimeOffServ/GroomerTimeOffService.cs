@@ -9,23 +9,40 @@ namespace Grooming_Management_App.Services.GroomerTimeOffServ;
 
 public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReaderService, IGroomerTimeOffWriterService
 {
+    // Grafik i blokady opisują czas lokalny salonu (DateOnly + TimeOnly),
+    // a Visit.Date jest w UTC. Konwersja potrzebna przy porównywaniu.
+    private static readonly TimeZoneInfo PolishTime =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
+
     public async Task<int> CreateGroomerTimeOffAsync(int salonId, CreateGroomerTimeOffDto dto, CancellationToken ct)
     {
         if (dto.StartDate > dto.EndDate)
         {
-            throw new ConflictException(ErrorCodes.GroomerNotFound);
+            throw new ConflictException(ErrorCodes.InvalidDateRange);
         }
-        
-        
-        var startDateTime = dto.StartDate.ToDateTime(dto.StartTime);
-        var endDateTime = dto.EndDate.ToDateTime(dto.EndTime);
+
+        if (dto.StartTime >= dto.EndTime)
+        {
+            throw new ConflictException(ErrorCodes.InvalidTimeRange);
+        }
+
+        var groomerExists = await ctx.Groomers
+            .AnyAsync(g => g.Id == dto.GroomerId && g.SalonId == salonId, ct);
+
+        if (!groomerExists)
+        {
+            throw new NotFoundException(ErrorCodes.GroomerNotFound);
+        }
+
+        var startUtc = TimeZoneInfo.ConvertTimeToUtc(dto.StartDate.ToDateTime(dto.StartTime), PolishTime);
+        var endUtc = TimeZoneInfo.ConvertTimeToUtc(dto.EndDate.ToDateTime(dto.EndTime), PolishTime);
 
         var hasConflictingVisits = await ctx.Visits
             .Where(v => v.SalonId == salonId)
             .Where(v => v.GroomerId == dto.GroomerId)
             .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
-            .AnyAsync(v => v.Date < endDateTime
-                           && v.Date.AddMinutes(v.EstimatedDuration) > startDateTime, ct);
+            .AnyAsync(v => v.Date < endUtc
+                           && v.Date.AddMinutes(v.EstimatedDuration) > startUtc, ct);
 
         if (hasConflictingVisits)
         {
@@ -71,7 +88,6 @@ public class GroomerTimeOffService(GroomingDbContext ctx) : IGroomerTimeOffReade
         if (timeOff == null)
         {
             throw new NotFoundException(ErrorCodes.TimeOffNotFound);
-            
         }
 
         return timeOff;

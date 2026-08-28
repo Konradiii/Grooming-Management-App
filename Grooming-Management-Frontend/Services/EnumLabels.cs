@@ -41,7 +41,7 @@ public static class EnumLabels
         SubscriptionStatusEnum.Suspended => "Zawieszona",
         _ => status.ToString()
     };
-    
+
     public static Color StatusColor(StatusEnum status) => status switch
     {
         StatusEnum.Completed => Color.Success,
@@ -49,7 +49,7 @@ public static class EnumLabels
         StatusEnum.NoShow => Color.Error,
         _ => Color.Primary
     };
-    
+
     public static string Duration(int minutes)
     {
         if (minutes < 60)
@@ -60,7 +60,7 @@ public static class EnumLabels
 
         return rest == 0 ? $"{hours} h" : $"{hours} h {rest} min";
     }
+
+    public static string LocalDateTime(DateTime utc) => Dates.Format(utc);
     
-    public static string LocalDateTime(DateTime utc)
-        => DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime().ToString("dd.MM.yyyy HH:mm");
 }

@@ -80,7 +80,7 @@ else
                 <MudTh>Status</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd>@context.Date.ToString("dd.MM.yyyy HH:mm")</MudTd>
+                <MudTd>@EnumLabels.LocalDateTime(context.Date)</MudTd>
                 <MudTd>@context.ServiceName</MudTd>
                 <MudTd>@context.GroomerName</MudTd>
                 <MudTd>

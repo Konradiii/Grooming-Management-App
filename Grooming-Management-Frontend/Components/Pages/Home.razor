@@ -73,7 +73,7 @@ else
                 <MudTh>Status</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd>@context.Date.ToString("HH:mm")</MudTd>
+                <MudTd>@Dates.Format(context.Date, "HH:mm")</MudTd>
                 <MudTd>@context.DogName</MudTd>
                 <MudTd>@context.BreedName</MudTd>
                 <MudTd>@context.ServiceName</MudTd>
