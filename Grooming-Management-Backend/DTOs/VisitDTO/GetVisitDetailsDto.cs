@@ -18,4 +18,7 @@ public class GetVisitDetailsDto
     public string ServiceName { get; set; }
     public string BreedName { get; set; }
     public string? AssistantGroomerFullName { get; set; }
+    public int GroomerId { get; set; }
+    public int? ServiceBreedId { get; set; }
+    public int BreedId { get; set; }
 }

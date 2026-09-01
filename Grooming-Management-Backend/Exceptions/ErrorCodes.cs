@@ -40,7 +40,6 @@ public static class ErrorCodes
     public const string ScheduleOverlaps = "SCHEDULE_OVERLAPS";
     public const string TimeOffHasVisits = "TIME_OFF_HAS_VISITS";
     public const string AssistantMustDiffer = "ASSISTANT_MUST_DIFFER";
-    public const string InvalidDuration = "INVALID_DURATION";
     public const string InvalidTimeRange = "INVALID_TIME_RANGE";
     public const string InvalidDateRange = "INVALID_DATE_RANGE";
     public const string PasswordsDoNotMatch = "PASSWORDS_DO_NOT_MATCH";
@@ -63,7 +62,6 @@ public static class ErrorCodes
     public const string NameRequired = "NAME_REQUIRED";
     public const string ReasonRequired = "REASON_REQUIRED";
     public const string PasswordTooShort = "PASSWORD_TOO_SHORT";
-    public const string InvalidPrice = "INVALID_PRICE";
     
     public const string ServiceRequired = "SERVICE_REQUIRED";
     public const string PriceRequired = "PRICE_REQUIRED";
@@ -71,4 +69,8 @@ public static class ErrorCodes
     public const string NoActiveSubscription = "NO_ACTIVE_SUBSCRIPTION";
     public const string SubscriptionSuspended = "SUBSCRIPTION_SUSPENDED";
     public const string InvalidReminderSettings = "INVALID_REMINDER_SETTINGS";
+    
+    public const string InvalidDuration = "INVALID_DURATION";
+    public const string InvalidPrice = "INVALID_PRICE";
+    public const string ServiceBreedMismatch = "SERVICE_BREED_MISMATCH";
 }

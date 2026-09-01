@@ -86,6 +86,9 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 AssistantGroomerFullName = v.AssistantGroomer != null
                     ? v.AssistantGroomer.FirstName + " " + v.AssistantGroomer.LastName
                     : null,
+                GroomerId = v.GroomerId,
+                ServiceBreedId = v.ServiceBreedId,
+                BreedId = v.Dog.BreedId,
             }).FirstOrDefaultAsync(ct);
 
         if (visit == null)
@@ -269,60 +272,91 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         return newVisit.Id;
     }
 
-    public async Task EditVisitAsync(int salonId, int visitId, EditVisitDto dto, CancellationToken ct)
+  public async Task EditVisitAsync(int salonId, int visitId, EditVisitDto dto, CancellationToken ct)
+{
+    if (dto.DurationMinutes <= 0)
     {
-        var visit = await ctx.Visits
-            .Where(v => v.SalonId == salonId && v.Id == visitId)
-            .FirstOrDefaultAsync(ct);
-
-        if (visit == null)
-        {
-            throw new NotFoundException(ErrorCodes.VisitNotFound);
-        }
-
-        var groomerExist = await ctx.Groomers
-            .Where(g => salonId == g.SalonId && g.Id == dto.GroomerId)
-            .AnyAsync(ct);
-
-        if (!groomerExist)
-        {
-            throw new NotFoundException(ErrorCodes.GroomerNotFound);
-        }
-
-        var startTime = dto.Date;
-        var endTime = dto.Date.AddMinutes(visit.EstimatedDuration);
-
-        if (!dto.IgnoreOverlap)
-        {
-            var visitOverlaps = await ctx.Visits
-                .Where(d => d.SalonId == salonId)
-                .Where(d => d.GroomerId == dto.GroomerId)
-                .Where(d => d.Id != visitId)
-                .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
-                .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
-                               && endTime > d.Date, ct);
-
-            if (visitOverlaps)
-                throw new ConflictException(ErrorCodes.VisitOverlaps);
-        }
-
-        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(startTime, PolishTime);
-        var endLocal = TimeZoneInfo.ConvertTimeFromUtc(endTime, PolishTime);
-
-        var timeOffOverlaps = await ctx.GroomerTimeOffs
-            .Where(t => t.SalonId == salonId)
-            .Where(t => t.GroomerId == dto.GroomerId)
-            .AnyAsync(t => startLocal < t.EndDate.ToDateTime(t.EndTime)
-                           && endLocal > t.StartDate.ToDateTime(t.StartTime), ct);
-
-        if (timeOffOverlaps)
-            throw new ConflictException(ErrorCodes.GroomerUnavailable);
-
-        visit.Date = dto.Date;
-        visit.GroomerId = dto.GroomerId;
-        visit.Notes = dto.Notes;
-        await ctx.SaveChangesAsync(ct);
+        throw new ConflictException(ErrorCodes.InvalidDuration);
     }
+
+    if (dto.ProposedPrice < 0)
+    {
+        throw new ConflictException(ErrorCodes.InvalidPrice);
+    }
+
+    var visit = await ctx.Visits
+        .Include(v => v.Dog)
+        .Where(v => v.SalonId == salonId && v.Id == visitId)
+        .FirstOrDefaultAsync(ct);
+
+    if (visit == null)
+    {
+        throw new NotFoundException(ErrorCodes.VisitNotFound);
+    }
+
+    var groomerExist = await ctx.Groomers
+        .Where(g => salonId == g.SalonId && g.Id == dto.GroomerId)
+        .AnyAsync(ct);
+
+    if (!groomerExist)
+    {
+        throw new NotFoundException(ErrorCodes.GroomerNotFound);
+    }
+
+    if (dto.ServiceBreedId != null)
+    {
+        var matchesBreed = await ctx.ServiceBreeds
+            .Where(sb => sb.SalonId == salonId && sb.Id == dto.ServiceBreedId)
+            .AnyAsync(sb => sb.BreedId == visit.Dog.BreedId, ct);
+
+        if (!matchesBreed)
+        {
+            throw new ConflictException(ErrorCodes.ServiceBreedMismatch);
+        }
+    }
+
+    var startTime = dto.Date;
+    var endTime = dto.Date.AddMinutes(dto.DurationMinutes);
+
+    if (!dto.IgnoreOverlap)
+    {
+        var visitOverlaps = await ctx.Visits
+            .Where(d => d.SalonId == salonId)
+            .Where(d => d.GroomerId == dto.GroomerId)
+            .Where(d => d.Id != visitId)
+            .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
+            .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
+                           && endTime > d.Date, ct);
+
+        if (visitOverlaps)
+        {
+            throw new ConflictException(ErrorCodes.VisitOverlaps);
+        }
+    }
+
+    var startLocal = TimeZoneInfo.ConvertTimeFromUtc(startTime, PolishTime);
+    var endLocal = TimeZoneInfo.ConvertTimeFromUtc(endTime, PolishTime);
+
+    var timeOffOverlaps = await ctx.GroomerTimeOffs
+        .Where(t => t.SalonId == salonId)
+        .Where(t => t.GroomerId == dto.GroomerId)
+        .AnyAsync(t => startLocal < t.EndDate.ToDateTime(t.EndTime)
+                       && endLocal > t.StartDate.ToDateTime(t.StartTime), ct);
+
+    if (timeOffOverlaps)
+    {
+        throw new ConflictException(ErrorCodes.GroomerUnavailable);
+    }
+
+    visit.Date = dto.Date;
+    visit.GroomerId = dto.GroomerId;
+    visit.EstimatedDuration = dto.DurationMinutes;
+    visit.ServiceBreedId = dto.ServiceBreedId;
+    visit.ProposedPrice = dto.ProposedPrice;
+    visit.Notes = dto.Notes;
+
+    await ctx.SaveChangesAsync(ct);
+}
 
     public async Task ChangeVisitStatusAsync(int salonId, int visitId, StatusEnum status, CancellationToken ct)
     {

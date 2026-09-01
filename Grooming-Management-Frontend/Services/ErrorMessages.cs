@@ -75,6 +75,11 @@ public static class ErrorMessages
         ["NO_ACTIVE_SUBSCRIPTION"] = "Brak aktywnej subskrypcji",
         ["SUBSCRIPTION_SUSPENDED"] = "Dostęp wstrzymany — opłać abonament w ustawieniach salonu",
         ["INVALID_REMINDER_SETTINGS"] = "Nieprawidłowe ustawienia przypomnień",
+        
+        
+        ["INVALID_DURATION"] = "Czas trwania musi być większy od zera",
+        ["INVALID_PRICE"] = "Cena nie może być ujemna",
+        ["SERVICE_BREED_MISMATCH"] = "Wybrana usługa nie dotyczy rasy tego psa",
     };
 
     public static string Translate(string? code)

@@ -1,4 +1,6 @@
 @using Grooming_Management_App.DTOs.VisitDTO
+@using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.DTOs.ServiceBreedDTO
 @using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
@@ -18,45 +20,106 @@
             <MudText Typo="Typo.h6">@visit.DogName</MudText>
             <MudText Typo="Typo.body2" Class="mb-4">@visit.BreedName</MudText>
 
-            <MudSimpleTable Dense="true" Elevation="0" Class="mb-4">
-                <tbody>
-                    <tr>
-                        <td><MudText Typo="Typo.body2">Właściciel</MudText></td>
-                        <td>@visit.DogOwnerFullName</td>
-                    </tr>
-                    <tr>
-                        <td><MudText Typo="Typo.body2">Termin</MudText></td>
-                        <td>@EnumLabels.LocalDateTime(visit.Date)</td>
-                    </tr>
-                    <tr>
-                        <td><MudText Typo="Typo.body2">Czas trwania</MudText></td>
-                        <td>@EnumLabels.Duration(visit.EstimatedDuration)</td>
-                    </tr>
-                <tr>
-                    <td><MudText Typo="Typo.body2">Groomer</MudText></td>
-                    <td>@visit.GroomerFullName</td>
-                </tr>
-                @if (visit.AssistantGroomerFullName != null)
-                         {
-                             <tr>
-                                 <td><MudText Typo="Typo.body2">Pomoc</MudText></td>
-                                 <td>@visit.AssistantGroomerFullName</td>
-                             </tr>
-                         }
-                    <tr>
-                        <td><MudText Typo="Typo.body2">Usługa</MudText></td>
-                        <td>@visit.ServiceName</td>
-                    </tr>
-                    <tr>
-                        <td><MudText Typo="Typo.body2">Sugerowana cena</MudText></td>
-                        <td>@visit.ProposedPrice.ToString("0.00") zł</td>
-                    </tr>
-                </tbody>
-            </MudSimpleTable>
-
-            @if (!string.IsNullOrWhiteSpace(visit.Notes))
+            @if (!isEditing)
             {
-                <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">@visit.Notes</MudAlert>
+                <MudSimpleTable Dense="true" Elevation="0" Class="mb-2">
+                    <tbody>
+                        <tr>
+                            <td><MudText Typo="Typo.body2">Właściciel</MudText></td>
+                            <td>@visit.DogOwnerFullName</td>
+                        </tr>
+                        <tr>
+                            <td><MudText Typo="Typo.body2">Termin</MudText></td>
+                            <td>@EnumLabels.LocalDateTime(visit.Date)</td>
+                        </tr>
+                        <tr>
+                            <td><MudText Typo="Typo.body2">Czas trwania</MudText></td>
+                            <td>@EnumLabels.Duration(visit.EstimatedDuration)</td>
+                        </tr>
+                        <tr>
+                            <td><MudText Typo="Typo.body2">Groomer</MudText></td>
+                            <td>@visit.GroomerFullName</td>
+                        </tr>
+                        @if (visit.AssistantGroomerFullName != null)
+                        {
+                            <tr>
+                                <td><MudText Typo="Typo.body2">Pomoc</MudText></td>
+                                <td>@visit.AssistantGroomerFullName</td>
+                            </tr>
+                        }
+                        <tr>
+                            <td><MudText Typo="Typo.body2">Usługa</MudText></td>
+                            <td>@visit.ServiceName</td>
+                        </tr>
+                        <tr>
+                            <td><MudText Typo="Typo.body2">Sugerowana cena</MudText></td>
+                            <td>@visit.ProposedPrice.ToString("0.00") zł</td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+
+                @if (!string.IsNullOrWhiteSpace(visit.Notes))
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">@visit.Notes</MudAlert>
+                }
+
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="BeginEditAsync"
+                           Class="mb-4">
+                    Edytuj wizytę
+                </MudButton>
+            }
+            else
+            {
+                <MudGrid Spacing="2" Class="mb-3">
+                    <MudItem xs="7">
+                        <MudDatePicker @bind-Date="editDate" Label="Data"
+                                       Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="5">
+                        <MudTimePicker @bind-Time="editTime" Label="Godzina"
+                                       Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+
+                <MudSelect T="int" @bind-Value="editGroomerId" Label="Groomer"
+                           Variant="Variant.Outlined" Class="mb-3">
+                    @foreach (var g in groomers)
+                    {
+                        <MudSelectItem T="int" Value="@g.Id">@g.FirstName @g.LastName</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudText Typo="Typo.caption" Class="mud-input-label">Czas trwania</MudText>
+                <div class="mb-3">
+                    <DurationPicker @bind-Value="editDuration" />
+                </div>
+
+                <MudAutocomplete T="GetServiceBreedDto"
+                                 @bind-Value="editServiceBreed"
+                                 Label="Usługa"
+                                 Placeholder="Wpisz nazwę usługi"
+                                 SearchFunc="SearchServiceBreeds"
+                                 ToStringFunc="@(sb => sb == null ? "" : sb.ServiceName)"
+                                 Clearable="true"
+                                 Variant="Variant.Outlined"
+                                 Class="mb-3" />
+
+                <MudNumericField @bind-Value="editProposedPrice" Label="Sugerowana cena (zł)"
+                                 Variant="Variant.Outlined" Min="0" Class="mb-3" />
+
+                <MudTextField @bind-Value="editNotes" Label="Notatki"
+                              Variant="Variant.Outlined" Lines="2" Class="mb-3" />
+
+                <MudCheckBox @bind-Value="ignoreOverlap"
+                             Label="Pozwól na nakładanie się wizyt"
+                             Dense="true" Class="mb-3" />
+
+                <MudButton Variant="Variant.Text" OnClick="CancelEdit" Class="mb-4">
+                    Anuluj edycję
+                </MudButton>
             }
 
             <MudSelect T="StatusEnum" @bind-Value="status" Label="Status"
@@ -92,9 +155,25 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public int VisitId { get; set; }
 
+    private static readonly TimeZoneInfo PolishTime =
+        TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw");
+
     private GetVisitDetailsDto? visit;
     private StatusEnum status;
     private decimal finalPrice;
+
+    private bool isEditing;
+    private DateTime? editDate;
+    private TimeSpan? editTime;
+    private int editGroomerId;
+    private int editDuration;
+    private GetServiceBreedDto? editServiceBreed;
+    private decimal editProposedPrice;
+    private string? editNotes;
+    private bool ignoreOverlap;
+
+    private List<GetGroomerDto> groomers = new();
+    private List<GetServiceBreedDto> serviceBreeds = new();
 
     private bool isLoading = true;
     private bool isSaving;
@@ -122,6 +201,58 @@
         }
     }
 
+    private async Task BeginEditAsync()
+    {
+        if (visit == null) return;
+
+        errorMessage = null;
+
+        try
+        {
+            groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Groomerzy: {ex.Message}";
+            return;
+        }
+
+        
+            serviceBreeds = await Api.GetAsync<List<GetServiceBreedDto>>(
+                $"api/ServiceBreed/GetAllServiceBreeds?breedId={visit.BreedId}&status={(int)ActiveStatusEnum.Active}") ?? new();
+   
+
+        var local = TimeZoneInfo.ConvertTimeFromUtc(visit.Date, PolishTime);
+
+        editDate = local.Date;
+        editTime = local.TimeOfDay;
+        editGroomerId = visit.GroomerId;
+        editDuration = visit.EstimatedDuration;
+        editProposedPrice = visit.ProposedPrice;
+        editNotes = visit.Notes;
+        editServiceBreed = serviceBreeds.FirstOrDefault(sb => sb.Id == visit.ServiceBreedId);
+        ignoreOverlap = false;
+
+        isEditing = true;
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        errorMessage = null;
+    }
+
+    private Task<IEnumerable<GetServiceBreedDto>> SearchServiceBreeds(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetServiceBreedDto>>(serviceBreeds);
+
+        var filtered = serviceBreeds.Where(sb =>
+            sb.ServiceName.Contains(value, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(filtered);
+    }
+
     private async Task SaveAsync()
     {
         if (visit == null) return;
@@ -131,6 +262,44 @@
 
         try
         {
+            if (isEditing)
+            {
+                if (editDate == null || editTime == null)
+                {
+                    errorMessage = "Podaj datę i godzinę";
+                    return;
+                }
+
+                if (editDuration <= 0)
+                {
+                    errorMessage = "Czas trwania musi być większy od zera";
+                    return;
+                }
+
+                var local = editDate.Value.Date + editTime.Value;
+                var utc = TimeZoneInfo.ConvertTimeToUtc(
+                    DateTime.SpecifyKind(local, DateTimeKind.Unspecified), PolishTime);
+
+                var dto = new EditVisitDto
+                {
+                    Date = utc,
+                    GroomerId = editGroomerId,
+                    DurationMinutes = editDuration,
+                    ServiceBreedId = editServiceBreed?.Id,
+                    ProposedPrice = editProposedPrice,
+                    Notes = editNotes,
+                    IgnoreOverlap = ignoreOverlap
+                };
+
+                var editResponse = await Api.PutAsync($"api/Visit/{VisitId}", dto);
+
+                if (!editResponse.IsSuccessStatusCode)
+                {
+                    errorMessage = await ApiClient.ReadErrorAsync(editResponse);
+                    return;
+                }
+            }
+
             if (status != visit.Status)
             {
                 var response = await Api.PutAsync<object?>(
