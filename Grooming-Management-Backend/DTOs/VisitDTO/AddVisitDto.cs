@@ -8,6 +8,7 @@ public class AddVisitDto
     public string? Notes { get; set; }
     public int? DurationMinutes { get; set; }
     public int? AssistantGroomerId { get; set; }
+    public bool IgnoreOverlap { get; set; }
 
     public int? ServiceBreedId { get; set; }
 

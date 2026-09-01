@@ -1,0 +1,53 @@
+﻿<MudGrid Spacing="2">
+    <MudItem xs="6">
+        <MudNumericField T="int"
+                         Value="_years"
+                         ValueChanged="OnYearsChangedAsync"
+                         Label="@YearsLabel"
+                         Min="0"
+                         Max="30"
+                         Variant="Variant.Outlined" />
+    </MudItem>
+    <MudItem xs="6">
+        <MudNumericField T="int"
+                         Value="_months"
+                         ValueChanged="OnMonthsChangedAsync"
+                         Label="@MonthsLabel"
+                         Min="0"
+                         Max="11"
+                         Variant="Variant.Outlined" />
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public EventCallback<int> ValueChanged { get; set; }
+
+    [Parameter] public string YearsLabel { get; set; } = "Lata";
+    [Parameter] public string MonthsLabel { get; set; } = "Miesiące";
+
+    private int _years;
+    private int _months;
+
+    protected override void OnParametersSet()
+    {
+        if (_years * 12 + _months == Value) return;
+
+        _years = Value / 12;
+        _months = Value % 12;
+    }
+
+    private async Task OnYearsChangedAsync(int years)
+    {
+        _years = years < 0 ? 0 : years;
+        await NotifyAsync();
+    }
+
+    private async Task OnMonthsChangedAsync(int months)
+    {
+        _months = Math.Clamp(months, 0, 11);
+        await NotifyAsync();
+    }
+
+    private Task NotifyAsync() => ValueChanged.InvokeAsync(_years * 12 + _months);
+}

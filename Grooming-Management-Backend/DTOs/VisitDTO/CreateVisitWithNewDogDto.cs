@@ -10,6 +10,8 @@ public class CreateVisitWithNewDogDto
     public int AgeInMonths { get; set; }
     public int BreedId { get; set; }
     public string? DogNotes { get; set; }
+    
+    public bool IgnoreOverlap { get; set; }
 
     // wizyta
     public int GroomerId { get; set; }

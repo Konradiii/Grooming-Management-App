@@ -7,8 +7,6 @@
 @inject ApiClient Api
 @inject IDialogService DialogService
 
-
-
 <MudText Typo="Typo.h5" Class="mb-4">Właściciele</MudText>
 
 @if (isLoading)
@@ -26,10 +24,21 @@ else
                OnClick="OpenAddDialog" Class="mb-4">
         Dodaj właściciela
     </MudButton>
-    
+
     <MudTable Items="owners" Hover="true" Striped="true"
               T="GetDogOwnerDto"
+              Filter="FilterOwner"
               OnRowClick="@((TableRowClickEventArgs<GetDogOwnerDto> args) => Navigation.NavigateTo($"/wlasciciele/{args.Item!.Id}"))">
+        <ToolBarContent>
+            <MudTextField @bind-Value="searchText"
+                          Placeholder="Szukaj po nazwisku lub telefonie"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Medium"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="mt-0" />
+        </ToolBarContent>
         <HeaderContent>
             <MudTh>Imię</MudTh>
             <MudTh>Nazwisko</MudTh>
@@ -42,24 +51,24 @@ else
             <MudTd>@context.Phone</MudTd>
             <MudTd>@context.DogsCount</MudTd>
         </RowTemplate>
+        <NoRecordsContent>
+            <MudText>Brak właścicieli spełniających kryteria</MudText>
+        </NoRecordsContent>
     </MudTable>
 }
 
 @code {
     private List<GetDogOwnerDto> owners = new();
+    private string searchText = string.Empty;
     private bool isLoading = true;
     private string? errorMessage;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        
-        
 
         if (firstRender)
         {
-            Console.WriteLine($"Token: {TokenStore.AccessToken ?? "BRAK"}");
-            
             await LoadOwnersAsync();
             StateHasChanged();
         }
@@ -81,7 +90,19 @@ else
             isLoading = false;
         }
     }
-    
+
+    private bool FilterOwner(GetDogOwnerDto owner)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return true;
+
+        var digits = new string(searchText.Where(char.IsDigit).ToArray());
+
+        return owner.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || owner.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || (digits.Length > 0 && owner.Phone.Contains(digits));
+    }
+
     private async Task OpenAddDialog()
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };

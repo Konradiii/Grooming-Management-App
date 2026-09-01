@@ -5,4 +5,6 @@ public class EditVisitDto
     public DateTime Date { get; set; }
     public int GroomerId { get; set; }
     public string? Notes { get; set; }
+    
+    public bool IgnoreOverlap { get; set; }
 }

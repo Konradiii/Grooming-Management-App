@@ -135,4 +135,21 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
         return true;
     }
     
+    public static async Task<(string Code, string Message)> ReadErrorWithCodeAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+            if (!string.IsNullOrWhiteSpace(problem?.Title))
+                return (problem.Title, ErrorMessages.Translate(problem.Title));
+        }
+        catch
+        {
+            // odpowiedź nie jest ProblemDetails
+        }
+
+        return (string.Empty, "Wystąpił błąd. Spróbuj ponownie.");
+    }
+    
 }

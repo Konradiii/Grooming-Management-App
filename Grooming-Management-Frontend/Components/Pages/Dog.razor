@@ -6,14 +6,14 @@
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject IDialogService DialogService
-<MudButton Variant="Variant.Filled" Color="Color.Primary" 
-           StartIcon="@Icons.Material.Filled.Add" 
+
+<MudText Typo="Typo.h5" Class="mb-4">Psy</MudText>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary"
+           StartIcon="@Icons.Material.Filled.Add"
            OnClick="OpenAddDialog" Class="mb-4">
     Dodaj psa
 </MudButton>
-
-
-<MudText Typo="Typo.h5" Class="mb-4">Psy</MudText>
 
 @if (isLoading)
 {
@@ -27,7 +27,18 @@ else
 {
     <MudTable Items="dogs" Hover="true" Striped="true"
               T="GetDogDto"
+              Filter="FilterDog"
               OnRowClick="@((TableRowClickEventArgs<GetDogDto> args) => OpenDetails(args.Item!.Id))">
+        <ToolBarContent>
+            <MudTextField @bind-Value="searchText"
+                          Placeholder="Szukaj po imieniu, rasie lub właścicielu"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          IconSize="Size.Medium"
+                          Immediate="true"
+                          Clearable="true"
+                          Class="mt-0" />
+        </ToolBarContent>
         <HeaderContent>
             <MudTh>Imię</MudTh>
             <MudTh>Rasa</MudTh>
@@ -37,17 +48,17 @@ else
             <MudTd>@context.Name</MudTd>
             <MudTd>@context.BreedName</MudTd>
             <MudTd>@context.DogOwnerFullName</MudTd>
-            
         </RowTemplate>
-        
-        
+        <NoRecordsContent>
+            <MudText>Brak psów spełniających kryteria</MudText>
+        </NoRecordsContent>
     </MudTable>
 }
 
 @code
 {
-
     private List<GetDogDto> dogs = new();
+    private string searchText = string.Empty;
     private bool isLoading = true;
     private string? errorMessage;
 
@@ -61,6 +72,7 @@ else
             StateHasChanged();
         }
     }
+
     private async Task LoadDogsAsync()
     {
         try
@@ -77,7 +89,17 @@ else
             isLoading = false;
         }
     }
-    
+
+    private bool FilterDog(GetDogDto dog)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+            return true;
+
+        return dog.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || dog.BreedName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || dog.DogOwnerFullName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+    }
+
     private async Task OpenAddDialog()
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
@@ -90,10 +112,9 @@ else
             StateHasChanged();
         }
     }
-    
+
     private void OpenDetails(int dogId)
     {
         Navigation.NavigateTo($"/psy/{dogId}");
     }
-
 }

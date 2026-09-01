@@ -105,6 +105,8 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
             if (me == null || !me.CanCreateVisits)
                 throw new ForbiddenException(ErrorCodes.NoPermissionToCreateVisits);
         }
+        
+        Console.WriteLine($"BACKEND ODEBRAŁ: {dto.Date:O} Kind={dto.Date.Kind}");
 
         // dokładnie jedno z dwóch źródeł usługi
         if ((dto.ServiceBreedId == null) == (dto.ServiceId == null))
@@ -218,15 +220,18 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         var startTime = dto.Date;
         var endTime = dto.Date.AddMinutes(duration);
 
-        var visitOverlaps = await ctx.Visits
-            .Where(v => v.GroomerId == dto.GroomerId)
-            .Where(v => v.SalonId == salonId)
-            .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
-            .AnyAsync(v => startTime < v.Date.AddMinutes(v.EstimatedDuration)
-                           && endTime > v.Date, ct);
+        if (!dto.IgnoreOverlap)
+        {
+            var visitOverlaps = await ctx.Visits
+                .Where(v => v.GroomerId == dto.GroomerId)
+                .Where(v => v.SalonId == salonId)
+                .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
+                .AnyAsync(v => startTime < v.Date.AddMinutes(v.EstimatedDuration)
+                               && endTime > v.Date, ct);
 
-        if (visitOverlaps)
-            throw new ConflictException(ErrorCodes.VisitOverlaps);
+            if (visitOverlaps)
+                throw new ConflictException(ErrorCodes.VisitOverlaps);
+        }
 
         var startLocal = TimeZoneInfo.ConvertTimeFromUtc(startTime, PolishTime);
         var endLocal = TimeZoneInfo.ConvertTimeFromUtc(endTime, PolishTime);
@@ -287,16 +292,19 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         var startTime = dto.Date;
         var endTime = dto.Date.AddMinutes(visit.EstimatedDuration);
 
-        var visitOverlaps = await ctx.Visits
-            .Where(d => d.SalonId == salonId)
-            .Where(d => d.GroomerId == dto.GroomerId)
-            .Where(d => d.Id != visitId)
-            .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
-            .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
-                           && endTime > d.Date, ct);
+        if (!dto.IgnoreOverlap)
+        {
+            var visitOverlaps = await ctx.Visits
+                .Where(d => d.SalonId == salonId)
+                .Where(d => d.GroomerId == dto.GroomerId)
+                .Where(d => d.Id != visitId)
+                .Where(d => d.Status != StatusEnum.Cancelled && d.Status != StatusEnum.NoShow)
+                .AnyAsync(d => startTime < d.Date.AddMinutes(d.EstimatedDuration)
+                               && endTime > d.Date, ct);
 
-        if (visitOverlaps)
-            throw new ConflictException(ErrorCodes.VisitOverlaps);
+            if (visitOverlaps)
+                throw new ConflictException(ErrorCodes.VisitOverlaps);
+        }
 
         var startLocal = TimeZoneInfo.ConvertTimeFromUtc(startTime, PolishTime);
         var endLocal = TimeZoneInfo.ConvertTimeFromUtc(endTime, PolishTime);
@@ -468,16 +476,19 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         var startTime = dto.Date;
         var endTime = dto.Date.AddMinutes(duration);
 
-        var visitOverlaps = await ctx.Visits
-            .Where(v => v.GroomerId == dto.GroomerId)
-            .Where(v => v.SalonId == salonId)
-            .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
-            .AnyAsync(v => startTime < v.Date.AddMinutes(v.EstimatedDuration)
-                        && endTime > v.Date, ct);
-
-        if (visitOverlaps)
+        if (!dto.IgnoreOverlap)
         {
-            throw new ConflictException(ErrorCodes.VisitOverlaps);
+            var visitOverlaps = await ctx.Visits
+                .Where(v => v.GroomerId == dto.GroomerId)
+                .Where(v => v.SalonId == salonId)
+                .Where(v => v.Status != StatusEnum.Cancelled && v.Status != StatusEnum.NoShow)
+                .AnyAsync(v => startTime < v.Date.AddMinutes(v.EstimatedDuration)
+                               && endTime > v.Date, ct);
+
+            if (visitOverlaps)
+            {
+                throw new ConflictException(ErrorCodes.VisitOverlaps);
+            }
         }
 
         var startLocal = TimeZoneInfo.ConvertTimeFromUtc(startTime, PolishTime);

@@ -8,6 +8,7 @@
 @using Grooming_Management_Frontend.Services
 @using Grooming_Management_Frontend.Components.Shared
 @inject ApiClient Api
+@inject IDialogService DialogService
 
 <MudDialog>
     <DialogContent>
@@ -22,7 +23,10 @@
 
             <MudText Typo="Typo.subtitle2" Class="mb-2">Pies</MudText>
             <MudTextField @bind-Value="dogName" Label="Imię psa" Variant="Variant.Outlined" Class="mb-3" />
-            <MudNumericField @bind-Value="ageInMonths" Label="Wiek (miesiące)" Variant="Variant.Outlined" Min="0" Class="mb-3" />
+            <MudText Typo="Typo.caption" Class="mud-input-label">Wiek</MudText>
+            <div class="mb-3">
+                <AgePicker @bind-Value="ageInMonths" />
+            </div>
 
             <MudAutocomplete T="GetBreedDto"
                              Value="selectedBreed"
@@ -154,6 +158,8 @@
     private bool withNewDog;
     private bool withAssistant;
     private bool fromPriceList = true;
+    
+    private bool ignoreOverlap;
 
     private string firstName = string.Empty;
     private string lastName = string.Empty;
@@ -277,6 +283,21 @@
         if (service != null)
             durationMinutes = service.Duration;
     }
+    
+    private async Task<bool> ConfirmOverlapAsync()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, "Ten groomer ma już wizytę w tym czasie. Czy mimo to dodać?" },
+            { x => x.ConfirmText, "Dodaj mimo to" }
+        };
+
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Nakładające się wizyty", parameters, options);
+        var result = await dialog.Result;
+
+        return result is { Canceled: false };
+    }
 
     private async Task SaveAsync()
     {
@@ -392,7 +413,8 @@
                     Price = price,
                     Date = visitDate,
                     DurationMinutes = durationMinutes,
-                    Notes = notes
+                    Notes = notes,
+                    IgnoreOverlap = ignoreOverlap
                 };
 
                 response = await Api.PostAsync("api/Visit/with-new-dog", dto);
@@ -409,7 +431,8 @@
                     Price = price,
                     Date = visitDate,
                     DurationMinutes = durationMinutes,
-                    Notes = notes
+                    Notes = notes,
+                    IgnoreOverlap = ignoreOverlap
                 };
 
                 response = await Api.PostAsync("api/Visit", dto);
@@ -417,7 +440,22 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                errorMessage = await ApiClient.ReadErrorAsync(response);
+                var (code, message) = await ApiClient.ReadErrorWithCodeAsync(response);
+
+                if (code == "VISIT_OVERLAPS" && !ignoreOverlap)
+                {
+                    isSaving = false;
+
+                    var confirmed = await ConfirmOverlapAsync();
+
+                    if (!confirmed) return;
+
+                    ignoreOverlap = true;
+                    await SaveAsync();
+                    return;
+                }
+
+                errorMessage = message;
                 return;
             }
 
@@ -432,6 +470,8 @@
             isSaving = false;
         }
     }
+    
+    
 
     private void Cancel() => MudDialog.Cancel();
 }
