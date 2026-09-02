@@ -4,6 +4,7 @@ using Grooming_Management_Frontend.Services;
 using MudBlazor.Services;
 using Radzen;
 using System.Globalization;
+using MudBlazor;
 
 var culture = new CultureInfo("pl-PL");
 CultureInfo.DefaultThreadCurrentCulture = culture;
@@ -16,11 +17,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddMudServices();
 builder.Services.AddScoped<TokenStore>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<ApiClient>();
 builder.Services.AddRadzenComponents();
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopCenter;
+});
 
 builder.Services.AddHttpClient("Api", client =>
 {

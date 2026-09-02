@@ -24,6 +24,9 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var secretKey = configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var expirationMinutes = configuration.GetValue<int>("JwtSettings:ExpirationMinutes");
+        if (expirationMinutes <= 0)
+            throw new InvalidOperationException("JwtSettings:ExpirationMinutes is not configured");
+        
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(

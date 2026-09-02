@@ -5,6 +5,7 @@
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -156,11 +157,6 @@
                                  Variant="Variant.Outlined" Min="0" />
             }
         }
-
-        @if (errorMessage != null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
-        }
     </DialogContent>
 
     <DialogActions>
@@ -198,7 +194,6 @@
     private bool isLoading = true;
     private bool isSaving;
     private bool isSendingSms;
-    private string? errorMessage;
 
     private bool CanSendPickup =>
         visit != null
@@ -220,7 +215,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+            Snackbar.Add($"Nie udało się pobrać danych: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -245,7 +240,6 @@
 
         if (result is not { Canceled: false, Data: int minutes }) return;
 
-        errorMessage = null;
         isSendingSms = true;
 
         try
@@ -255,15 +249,16 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                errorMessage = await ApiClient.ReadErrorAsync(response);
+                Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
                 return;
             }
 
             visit.PickupNotificationSent = true;
+            Snackbar.Add("SMS został wysłany", Severity.Success);
         }
         catch (Exception ex)
         {
-            errorMessage = $"Błąd: {ex.Message}";
+            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -275,8 +270,6 @@
     {
         if (visit == null) return;
 
-        errorMessage = null;
-
         try
         {
             groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
@@ -286,7 +279,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+            Snackbar.Add($"Nie udało się pobrać danych: {ex.Message}", Severity.Error);
             return;
         }
 
@@ -307,7 +300,6 @@
     private void CancelEdit()
     {
         isEditing = false;
-        errorMessage = null;
     }
 
     private Task<IEnumerable<GetServiceBreedDto>> SearchServiceBreeds(string value, CancellationToken ct)
@@ -325,7 +317,6 @@
     {
         if (visit == null) return;
 
-        errorMessage = null;
         isSaving = true;
 
         try
@@ -334,13 +325,13 @@
             {
                 if (editDate == null || editTime == null)
                 {
-                    errorMessage = "Podaj datę i godzinę";
+                    Snackbar.Add("Podaj datę i godzinę", Severity.Warning);
                     return;
                 }
 
                 if (editDuration <= 0)
                 {
-                    errorMessage = "Czas trwania musi być większy od zera";
+                    Snackbar.Add("Czas trwania musi być większy od zera", Severity.Warning);
                     return;
                 }
 
@@ -363,7 +354,7 @@
 
                 if (!editResponse.IsSuccessStatusCode)
                 {
-                    errorMessage = await ApiClient.ReadErrorAsync(editResponse);
+                    Snackbar.Add(await ApiClient.ReadErrorAsync(editResponse), Severity.Error);
                     return;
                 }
             }
@@ -375,7 +366,7 @@
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = await ApiClient.ReadErrorAsync(response);
+                    Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
                     return;
                 }
             }
@@ -389,7 +380,7 @@
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    errorMessage = await ApiClient.ReadErrorAsync(response);
+                    Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
                     return;
                 }
             }
@@ -398,11 +389,10 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Błąd: {ex.Message}";
+            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
         }
         finally
         {
-            isSendingSms = false;
             isSaving = false;
         }
     }

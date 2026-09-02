@@ -10,6 +10,7 @@ namespace Grooming_Management_Frontend.Services;
 
 public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
 {
+    private static readonly SemaphoreSlim RefreshLock = new(1, 1);
     
     public async Task<bool> RefreshTokenAsync() => await TryRefreshAsync();
     
@@ -115,24 +116,42 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
         if (tokenStore.RefreshToken == null)
             return false;
 
-        var client = factory.CreateClient("Api");
+        var tokenBeforeWait = tokenStore.AccessToken;
 
-        var response = await client.PostAsJsonAsync(
-            $"api/Auth/RefreshToken?refreshToken={Uri.EscapeDataString(tokenStore.RefreshToken)}",
-            new { });
+        await RefreshLock.WaitAsync();
 
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            await tokenStore.ClearAsync();
-            return false;
+            // ktoś inny odświeżył, gdy czekaliśmy — nie rób tego drugi raz
+            if (tokenStore.AccessToken != tokenBeforeWait)
+                return true;
+
+            if (tokenStore.RefreshToken == null)
+                return false;
+
+            var client = factory.CreateClient("Api");
+
+            var response = await client.PostAsJsonAsync(
+                $"api/Auth/RefreshToken?refreshToken={Uri.EscapeDataString(tokenStore.RefreshToken)}",
+                new { });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await tokenStore.ClearAsync();
+                return false;
+            }
+
+            var tokens = await response.Content.ReadFromJsonAsync<LoginResponseDto>(JsonOptions);
+            if (tokens == null)
+                return false;
+
+            await tokenStore.SetTokensAsync(tokens.AccessToken, tokens.RefreshToken, tokens.RequiresPasswordChange);
+            return true;
         }
-
-        var tokens = await response.Content.ReadFromJsonAsync<LoginResponseDto>(JsonOptions);
-        if (tokens == null)
-            return false;
-
-        await tokenStore.SetTokensAsync(tokens.AccessToken, tokens.RefreshToken, tokens.RequiresPasswordChange);
-        return true;
+        finally
+        {
+            RefreshLock.Release();
+        }
     }
     
     public static async Task<(string Code, string Message)> ReadErrorWithCodeAsync(HttpResponseMessage response)
