@@ -2,6 +2,7 @@
 @using Grooming_Management_App.DTOs.Breed
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -22,11 +23,6 @@
                          Class="mb-3" />
 
         <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="3" />
-
-        @if (errorMessage != null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
-        }
     </DialogContent>
 
     <DialogActions>
@@ -47,13 +43,12 @@
     private string? notes;
 
     private List<GetBreedDto> breeds = new();
-    private string? errorMessage;
     private bool isSaving;
 
     protected override async Task OnInitializedAsync()
     {
         dogName = Dog.Name;
-        ageInMonths = Dog.AgeInMonths ?? 0;;
+        ageInMonths = Dog.AgeInMonths ?? 0;
         notes = Dog.Notes;
 
         breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
@@ -73,17 +68,15 @@
 
     private async Task SaveAsync()
     {
-        errorMessage = null;
-
         if (string.IsNullOrWhiteSpace(dogName))
         {
-            errorMessage = "Podaj imię psa";
+            Snackbar.Add("Podaj imię psa", Severity.Warning);
             return;
         }
 
         if (selectedBreed == null)
         {
-            errorMessage = "Wybierz rasę";
+            Snackbar.Add("Wybierz rasę", Severity.Warning);
             return;
         }
 
@@ -104,7 +97,7 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                errorMessage = await ApiClient.ReadErrorAsync(response);
+                Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
                 return;
             }
 
@@ -112,7 +105,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Błąd: {ex.Message}";
+            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
         }
         finally
         {

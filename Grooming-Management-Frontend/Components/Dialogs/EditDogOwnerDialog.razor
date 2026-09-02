@@ -2,17 +2,13 @@
 @using Grooming_Management_App.DTOs.DogOwnerDTO
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
         <MudTextField @bind-Value="firstName" Label="Imię" Variant="Variant.Outlined" Class="mb-3" />
         <MudTextField @bind-Value="lastName" Label="Nazwisko" Variant="Variant.Outlined" Class="mb-3" />
         <MudTextField @bind-Value="phone" Label="Telefon" Variant="Variant.Outlined" />
-
-        @if (errorMessage != null)
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-4">@errorMessage</MudAlert>
-        }
     </DialogContent>
 
     <DialogActions>
@@ -31,7 +27,6 @@
     private string lastName = string.Empty;
     private string phone = string.Empty;
 
-    private string? errorMessage;
     private bool isSaving;
 
     protected override void OnInitialized()
@@ -43,17 +38,15 @@
 
     private async Task SaveAsync()
     {
-        errorMessage = null;
-
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
         {
-            errorMessage = "Podaj imię i nazwisko";
+            Snackbar.Add("Podaj imię i nazwisko", Severity.Warning);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(phone))
         {
-            errorMessage = "Podaj numer telefonu";
+            Snackbar.Add("Podaj numer telefonu", Severity.Warning);
             return;
         }
 
@@ -72,7 +65,7 @@
 
             if (!response.IsSuccessStatusCode)
             {
-                errorMessage = await ApiClient.ReadErrorAsync(response);
+                Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
                 return;
             }
 
@@ -80,7 +73,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Błąd: {ex.Message}";
+            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
         }
         finally
         {
