@@ -144,7 +144,16 @@ builder.Services.AddScopedWithInterfaces<AuthenticationService>(
 // ---------- Serwisy infrastrukturalne ----------
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<ISmsService, MockSmsService>();
+
+ if (builder.Environment.IsDevelopment())
+ {
+     builder.Services.AddScoped<ISmsService, MockSmsService>();
+ }
+else
+    {
+    builder.Services.AddHttpClient<ISmsService, SmsApiService>();
+    }
+
 builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
