@@ -4,6 +4,7 @@
 @using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
+@inject IDialogService DialogService
 
 <MudDialog>
     <DialogContent>
@@ -63,13 +64,32 @@
                     <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">@visit.Notes</MudAlert>
                 }
 
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Edit"
-                           OnClick="BeginEditAsync"
-                           Class="mb-4">
-                    Edytuj wizytę
-                </MudButton>
+                <div class="mb-4">
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="BeginEditAsync">
+                        Edytuj wizytę
+                    </MudButton>
+
+                    @if (CanSendPickup)
+                    {
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.Sms"
+                                   Disabled="isSendingSms"
+                                   OnClick="SendPickupSmsAsync"
+                                   Class="ml-2">
+                            @(isSendingSms ? "Wysyłanie..." : "Powiadom o odbiorze")
+                        </MudButton>
+                    }
+                    else if (visit.PickupNotificationSent)
+                    {
+                        <MudText Typo="Typo.caption" Class="ml-2">
+                            SMS o odbiorze został wysłany
+                        </MudText>
+                    }
+                </div>
             }
             else
             {
@@ -177,7 +197,14 @@
 
     private bool isLoading = true;
     private bool isSaving;
+    private bool isSendingSms;
     private string? errorMessage;
+
+    private bool CanSendPickup =>
+        visit != null
+        && !visit.PickupNotificationSent
+        && visit.Status != StatusEnum.Cancelled
+        && visit.Status != StatusEnum.NoShow;
 
     protected override async Task OnInitializedAsync()
     {
@@ -201,6 +228,49 @@
         }
     }
 
+    private async Task SendPickupSmsAsync()
+    {
+        if (visit == null) return;
+
+        var parameters = new DialogParameters
+        {
+            ["OwnerName"] = visit.DogOwnerFullName
+        };
+
+        var confirmOptions = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<PickupNotificationDialog>(
+            "Powiadomienie o odbiorze", parameters, confirmOptions);
+
+        var result = await dialog.Result;
+
+        if (result is not { Canceled: false, Data: int minutes }) return;
+
+        errorMessage = null;
+        isSendingSms = true;
+
+        try
+        {
+            var response = await Api.PostAsync<object?>(
+                $"api/Notification/ready-for-pickup?visitId={VisitId}&timeToPickUpDogInMin={minutes}", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await ApiClient.ReadErrorAsync(response);
+                return;
+            }
+
+            visit.PickupNotificationSent = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Błąd: {ex.Message}";
+        }
+        finally
+        {
+            isSendingSms = false;
+        }
+    }
+
     private async Task BeginEditAsync()
     {
         if (visit == null) return;
@@ -210,17 +280,15 @@
         try
         {
             groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+
+            serviceBreeds = await Api.GetAsync<List<GetServiceBreedDto>>(
+                $"api/ServiceBreed/GetAllServiceBreeds?breedId={visit.BreedId}&status={(int)ActiveStatusEnum.Active}") ?? new();
         }
         catch (Exception ex)
         {
-            errorMessage = $"Groomerzy: {ex.Message}";
+            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
             return;
         }
-
-        
-            serviceBreeds = await Api.GetAsync<List<GetServiceBreedDto>>(
-                $"api/ServiceBreed/GetAllServiceBreeds?breedId={visit.BreedId}&status={(int)ActiveStatusEnum.Active}") ?? new();
-   
 
         var local = TimeZoneInfo.ConvertTimeFromUtc(visit.Date, PolishTime);
 
@@ -334,6 +402,7 @@
         }
         finally
         {
+            isSendingSms = false;
             isSaving = false;
         }
     }

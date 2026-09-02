@@ -1,0 +1,36 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            SMS do: @OwnerName
+        </MudText>
+
+        <MudNumericField @bind-Value="minutes"
+                         Label="Zapraszamy za (minut)"
+                         Variant="Variant.Outlined"
+                         Min="5"
+                         Max="480"
+                         Step="15" />
+
+        <MudText Typo="Typo.caption" Class="mt-3">
+            W wiadomości: „Zapraszamy za @minutes min."
+        </MudText>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Anuluj</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Confirm">
+            Wyślij
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string OwnerName { get; set; } = string.Empty;
+
+    private int minutes = 30;
+
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(minutes));
+
+    private void Cancel() => MudDialog.Cancel();
+}

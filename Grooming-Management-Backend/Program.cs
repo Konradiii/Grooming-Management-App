@@ -145,12 +145,12 @@ builder.Services.AddScopedWithInterfaces<AuthenticationService>(
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
- if (builder.Environment.IsDevelopment())
+if (builder.Environment.IsDevelopment())
  {
      builder.Services.AddScoped<ISmsService, MockSmsService>();
  }
 else
-    {
+    { 
     builder.Services.AddHttpClient<ISmsService, SmsApiService>();
     }
 

@@ -89,6 +89,12 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 GroomerId = v.GroomerId,
                 ServiceBreedId = v.ServiceBreedId,
                 BreedId = v.Dog.BreedId,
+                PickupNotificationSent = ctx.Notifications
+                    .IgnoreQueryFilters()
+                    .Any(n => n.VisitId == v.Id
+                              && n.SalonId == salonId
+                              && n.Status == NotificationStatusEnum.Sent
+                              && n.Type == NotificationTypeEnum.ManualReady),
             }).FirstOrDefaultAsync(ct);
 
         if (visit == null)
