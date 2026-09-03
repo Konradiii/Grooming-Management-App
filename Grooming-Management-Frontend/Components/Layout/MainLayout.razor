@@ -44,9 +44,10 @@
             </MudAlert>
         }
         
-        @if (TokenStore.IsSmsEmpty)
+        @if (TokenStore.IsSmsEmpty && !TokenStore.SmsWarningDismissed)
         {
-            <MudAlert Severity="Severity.Error" Square="true" Class="mb-0">
+            <MudAlert Severity="Severity.Error" Square="true" Class="mb-0"
+                      ShowCloseIcon="true" CloseIconClicked="TokenStore.DismissSmsWarning">
                 Wyczerpano limit SMS-ów. Powiadomienia nie będą wysyłane.
                 @if (TokenStore.IsOwner)
                 {
@@ -54,9 +55,10 @@
                 }
             </MudAlert>
         }
-        else if (TokenStore.IsSmsLow)
+        else if (TokenStore.IsSmsLow && !TokenStore.SmsWarningDismissed)
         {
-            <MudAlert Severity="Severity.Warning" Square="true" Class="mb-0">
+            <MudAlert Severity="Severity.Warning" Square="true" Class="mb-0"
+                      ShowCloseIcon="true" CloseIconClicked="TokenStore.DismissSmsWarning">
                 Zostało @TokenStore.SmsRemaining SMS-ów.
                 @if (TokenStore.IsOwner)
                 {

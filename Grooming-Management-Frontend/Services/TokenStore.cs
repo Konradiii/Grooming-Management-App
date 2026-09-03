@@ -31,6 +31,17 @@ public class TokenStore(ILocalStorageService localStorage)
     public bool IsSmsLow => SmsRemaining is > 0 and <= 20;
     public bool IsSmsEmpty => SmsRemaining == 0;
 
+    
+    private int? _dismissedAt;
+
+    public bool SmsWarningDismissed => _dismissedAt == SmsRemaining;
+
+    public void DismissSmsWarning()
+    {
+        _dismissedAt = SmsRemaining;
+        NotifyChanged();
+    }
+    
     public void SetSmsRemaining(int remaining)
     {
         if (SmsRemaining == remaining) return;
@@ -72,6 +83,7 @@ public class TokenStore(ILocalStorageService localStorage)
         SubscriptionStatus = null;
         RequiresPasswordChange = false;
         SmsRemaining = null;
+        _dismissedAt = null;
         
         await localStorage.RemoveItemAsync(AccessTokenKey);
         await localStorage.RemoveItemAsync(RefreshTokenKey);
