@@ -73,4 +73,5 @@ public static class ErrorCodes
     public const string InvalidDuration = "INVALID_DURATION";
     public const string InvalidPrice = "INVALID_PRICE";
     public const string ServiceBreedMismatch = "SERVICE_BREED_MISMATCH";
+    public const string InvalidPickupTime = "INVALID_PICKUP_TIME";
 }

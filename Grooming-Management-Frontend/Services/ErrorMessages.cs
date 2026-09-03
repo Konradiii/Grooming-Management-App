@@ -80,6 +80,7 @@ public static class ErrorMessages
         ["INVALID_DURATION"] = "Czas trwania musi być większy od zera",
         ["INVALID_PRICE"] = "Cena nie może być ujemna",
         ["SERVICE_BREED_MISMATCH"] = "Wybrana usługa nie dotyczy rasy tego psa",
+        ["INVALID_PICKUP_TIME"] = "Podaj, za ile minut zapraszasz po psa",
     };
 
     public static string Translate(string? code)

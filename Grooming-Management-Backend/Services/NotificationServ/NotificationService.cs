@@ -15,6 +15,11 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
 
     public async Task SendReadyForPickupNotificationAsync(int salonId, int visitId, int timeToPickUpDogInMin, CancellationToken ct)
     {
+        if (timeToPickUpDogInMin <= 0)
+        {
+            throw new ConflictException(ErrorCodes.InvalidPickupTime);
+        }
+        
         var alreadySent = await ctx.Notifications
             .AnyAsync(n => n.VisitId == visitId
                            && n.SalonId == salonId
