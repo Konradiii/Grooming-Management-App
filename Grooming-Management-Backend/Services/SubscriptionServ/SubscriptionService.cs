@@ -10,6 +10,7 @@ namespace Grooming_Management_App.Services.SubscriptionServ;
 public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 {
     private const int GracePeriodDays = 7;
+    public const int MonthlySmsPackage = 100;
     
     public async Task<DateOnly> RegisterPaymentAsync(int salonId, RegisterPaymentDto dto, CancellationToken ct)
     {

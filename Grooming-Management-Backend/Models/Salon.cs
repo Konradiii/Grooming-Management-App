@@ -16,6 +16,11 @@ public class Salon
     public int MinBookingHoursAhead { get; set; }
     public int MaxBookingDaysAhead { get; set; }
     
+    //SMS
+    public int SmsIncluded { get; set; }        // z pakietu, resetowane co miesiąc
+    public int SmsPurchased { get; set; }       // dokupione, nie przepadają
+    public DateOnly SmsResetDate { get; set; }
+    
     public DateOnly? SubscriptionValidUntil { get; set; }
     public SubscriptionStatusEnum SubscriptionStatus { get; set; }
     public bool SubscriptionCancelAtPeriodEnd { get; set; }

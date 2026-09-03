@@ -62,6 +62,9 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
         builder.Property(s => s.ReminderHoursBefore).HasDefaultValue(24);
 
         builder.HasIndex(s => s.ProviderCustomerId);
+        
+        builder.Property(s => s.SmsIncluded).HasDefaultValue(100);
+        builder.Property(s => s.SmsPurchased).HasDefaultValue(0);
 
     }
     

@@ -105,6 +105,9 @@ public async Task<LoginResponseDto> RegisterSalonAsync(RegisterNewSalonDto dto, 
         RemindersEnabled = false,
         ReminderHoursBefore = 24,
         Phone = dto.Phone.Trim(),
+        SmsIncluded = 100,
+        SmsPurchased = 0,
+        SmsResetDate = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1),
     };
 
     var ownerUser = new User
