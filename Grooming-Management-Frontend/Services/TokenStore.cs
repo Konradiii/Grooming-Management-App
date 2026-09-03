@@ -26,6 +26,18 @@ public class TokenStore(ILocalStorageService localStorage)
     public bool IsSuspended => SubscriptionStatus == "Suspended";
     public bool IsPastDue => SubscriptionStatus == "PastDue";
     public bool IsTrial => SubscriptionStatus == "Trial";
+    public int? SmsRemaining { get; private set; }
+
+    public bool IsSmsLow => SmsRemaining is > 0 and <= 20;
+    public bool IsSmsEmpty => SmsRemaining == 0;
+
+    public void SetSmsRemaining(int remaining)
+    {
+        if (SmsRemaining == remaining) return;
+
+        SmsRemaining = remaining;
+        NotifyChanged();
+    }
 
     public async Task SetTokensAsync(string accessToken, string refreshToken, bool requiresPasswordChange = false)
     {
@@ -59,7 +71,8 @@ public class TokenStore(ILocalStorageService localStorage)
         FullName = null;
         SubscriptionStatus = null;
         RequiresPasswordChange = false;
-
+        SmsRemaining = null;
+        
         await localStorage.RemoveItemAsync(AccessTokenKey);
         await localStorage.RemoveItemAsync(RefreshTokenKey);
         await localStorage.RemoveItemAsync(RequiresPasswordChangeKey);

@@ -43,6 +43,27 @@
                 <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Zobacz szczegóły</b></MudLink>
             </MudAlert>
         }
+        
+        @if (TokenStore.IsSmsEmpty)
+        {
+            <MudAlert Severity="Severity.Error" Square="true" Class="mb-0">
+                Wyczerpano limit SMS-ów. Powiadomienia nie będą wysyłane.
+                @if (TokenStore.IsOwner)
+                {
+                    <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Doładuj pakiet</b></MudLink>
+                }
+            </MudAlert>
+        }
+        else if (TokenStore.IsSmsLow)
+        {
+            <MudAlert Severity="Severity.Warning" Square="true" Class="mb-0">
+                Zostało @TokenStore.SmsRemaining SMS-ów.
+                @if (TokenStore.IsOwner)
+                {
+                    <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Doładuj pakiet</b></MudLink>
+                }
+            </MudAlert>
+        }
 
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4">
             @Body

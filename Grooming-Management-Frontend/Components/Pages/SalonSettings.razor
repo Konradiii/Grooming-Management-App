@@ -53,14 +53,53 @@ else
         </MudButton>
     </MudPaper>
 
-    <MudPaper Class="pa-6 mb-4" Style="opacity: 0.6;">
+        <MudPaper Class="pa-6 mb-4">
+        <MudText Typo="Typo.h6" Class="mb-4">Wiadomości SMS</MudText>
+
+        @if (smsBalance == null)
+        {
+            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+        }
+        else
+        {
+            @if (smsBalance.Remaining == 0)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">
+                    Wyczerpano limit. Powiadomienia SMS nie będą wysyłane, dopóki nie doładujesz pakietu.
+                </MudAlert>
+            }
+            else if (smsBalance.Remaining <= 20)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-4">
+                    Zostało niewiele wiadomości. Warto doładować pakiet.
+                </MudAlert>
+            }
+
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body2">Pozostało wiadomości</MudText>
+                    <MudText Typo="Typo.h6" Class="mt-1">@smsBalance.Remaining</MudText>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudText Typo="Typo.body2">Pakiet odnawia się</MudText>
+                    <MudText Typo="Typo.h6" Class="mt-1">@smsBalance.ResetDate.ToString("dd.MM.yyyy")</MudText>
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.body2" Class="mb-3">
+                W abonamencie masz 100 wiadomości miesięcznie. Niewykorzystane nie przechodzą
+                na kolejny miesiąc. Dokupione pakiety nie wygasają.
+            </MudText>
+        }
+
+        <MudDivider Class="my-4" />
+
         <div class="d-flex align-center gap-3 mb-1">
-            <MudText Typo="Typo.h6">Przypomnienia SMS</MudText>
+            <MudText Typo="Typo.subtitle1">Automatyczne przypomnienia</MudText>
             <MudChip T="string" Size="Size.Small" Color="Color.Default">Wkrótce</MudChip>
         </div>
         <MudText Typo="Typo.body2" Class="mb-4">
-            Automatyczna wiadomość wysyłana klientowi przed umówioną wizytą.
-            Funkcja będzie dostępna po uruchomieniu wysyłki SMS.
+            Wiadomość wysyłana klientowi przed umówioną wizytą.
         </MudText>
 
         <MudSwitch T="bool" @bind-Value="remindersEnabled" Color="Color.Primary"
@@ -215,6 +254,8 @@ else
 
     private bool remindersEnabled;
     private int reminderHoursBefore = 24;
+    
+    private GetSmsBalanceDto? smsBalance;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -254,6 +295,7 @@ else
                 city = salon.City;
                 remindersEnabled = salon.RemindersEnabled;
                 reminderHoursBefore = salon.ReminderHoursBefore;
+                smsBalance = await Api.GetAsync<GetSmsBalanceDto>("api/Salon/sms-balance");
             }
 
             subscription = await Api.GetAsync<GetSubscriptionDto>("api/Subscription");
