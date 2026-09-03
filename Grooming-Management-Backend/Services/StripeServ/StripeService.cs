@@ -96,34 +96,13 @@ public class StripeService(
             case "customer.subscription.updated":
                 await HandleSubscriptionUpdatedAsync(stripeEvent, ct);
                 break;
+            
 
             default:
                 logger.LogInformation("Ignoring Stripe event type {EventType}", stripeEvent.Type);
                 break;
         }
     }
-
-    private async Task HandleCheckoutCompletedAsync(Event stripeEvent, CancellationToken ct)
-    {
-        if (stripeEvent.Data.Object is not Session session)
-        {
-            logger.LogWarning("checkout.session.completed without session object");
-            return;
-        }
-
-        if (!TryGetSalonId(session.Metadata, session.ClientReferenceId, out var salonId))
-        {
-            logger.LogWarning("checkout.session.completed without salonId, session {SessionId}", session.Id);
-            return;
-        }
-
-        await subscriptionService.LinkProviderIdsAsync(
-            salonId, session.CustomerId, session.SubscriptionId, ct);
-
-        logger.LogInformation("Salon {SalonId} linked to Stripe customer {CustomerId}",
-            salonId, session.CustomerId);
-    }
-
     private async Task HandleInvoicePaidAsync(Event stripeEvent, CancellationToken ct)
     {
         if (stripeEvent.Data.Object is not Invoice invoice)
@@ -163,6 +142,65 @@ public class StripeService(
         catch (ConflictException)
         {
             logger.LogInformation("Invoice {InvoiceId} already processed, ignoring", invoice.Id);
+        }
+    }
+
+       private async Task HandleCheckoutCompletedAsync(Event stripeEvent, CancellationToken ct)
+    {
+        if (stripeEvent.Data.Object is not Session session)
+        {
+            logger.LogWarning("checkout.session.completed without session object");
+            return;
+        }
+
+        if (!TryGetSalonId(session.Metadata, session.ClientReferenceId, out var salonId))
+        {
+            logger.LogWarning("checkout.session.completed without salonId, session {SessionId}", session.Id);
+            return;
+        }
+
+        if (session.Metadata != null
+            && session.Metadata.TryGetValue("type", out var type)
+            && type == "sms_topup")
+        {
+            await HandleSmsTopUpAsync(session, salonId, ct);
+            return;
+        }
+
+        await subscriptionService.LinkProviderIdsAsync(
+            salonId, session.CustomerId, session.SubscriptionId, ct);
+
+        logger.LogInformation("Salon {SalonId} linked to Stripe customer {CustomerId}",
+            salonId, session.CustomerId);
+    }
+
+    private async Task HandleSmsTopUpAsync(Session session, int salonId, CancellationToken ct)
+    {
+        if (session.Metadata == null
+            || !session.Metadata.TryGetValue("smsCount", out var raw)
+            || !int.TryParse(raw, out var smsCount))
+        {
+            logger.LogWarning("SMS top-up session {SessionId} without smsCount", session.Id);
+            return;
+        }
+
+        var dto = new RegisterPaymentDto
+        {
+            Amount = (session.AmountTotal ?? 0) / 100m,
+            Currency = session.Currency?.ToUpperInvariant() ?? "PLN",
+            ProviderId = session.Id,
+            InvoiceUrl = null
+        };
+
+        try
+        {
+            await subscriptionService.AddPurchasedSmsAsync(salonId, smsCount, dto, ct);
+
+            logger.LogInformation("Added {SmsCount} SMS to salon {SalonId}", smsCount, salonId);
+        }
+        catch (ConflictException)
+        {
+            logger.LogInformation("SMS top-up session {SessionId} already processed, ignoring", session.Id);
         }
     }
 
@@ -280,5 +318,40 @@ public class StripeService(
         logger.LogInformation("Subscription {SubscriptionId} cancel_at_period_end = {Value}",
             subscription.Id, subscription.CancelAtPeriodEnd);
     }
+    
+    public async Task<string> CreateSmsTopUpSessionAsync(int salonId, string email, int packageSize, CancellationToken ct)
+    {
+        var priceId = configuration[$"Stripe:SmsPackages:{packageSize}"];
+
+        if (string.IsNullOrWhiteSpace(priceId))
+        {
+            throw new ConflictException(ErrorCodes.InvalidSmsPackage);
+        }
+
+        var options = new SessionCreateOptions
+        {
+            Mode = "payment",
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new() { Price = priceId, Quantity = 1 }
+            },
+            CustomerEmail = email,
+            ClientReferenceId = salonId.ToString(),
+            Metadata = new Dictionary<string, string>
+            {
+                ["salonId"] = salonId.ToString(),
+                ["type"] = "sms_topup",
+                ["smsCount"] = packageSize.ToString()
+            },
+            SuccessUrl = configuration["Stripe:SuccessUrl"],
+            CancelUrl = configuration["Stripe:CancelUrl"]
+        };
+
+        var service = new SessionService();
+        var session = await service.CreateAsync(options, cancellationToken: ct);
+
+        return session.Url;
+    }
+    
     
 }

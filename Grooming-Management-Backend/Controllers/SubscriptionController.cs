@@ -70,4 +70,17 @@ public class SubscriptionController(ISubscriptionService service, ICurrentUserSe
         var url = await stripeService.CreatePortalSessionAsync(customerId, ct);
         return Ok(url);
     }
+    
+    [HttpPost("sms-topup")]
+    [Authorize(Roles = "Owner")]
+    [EndpointSummary("Tworzy sesję płatności za pakiet wiadomości SMS")]
+    public async Task<IActionResult> CreateSmsTopUp(int packageSize, CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var email = currentUser.Email;
+
+        var url = await stripeService.CreateSmsTopUpSessionAsync(salonId, email, packageSize, ct);
+
+        return Ok(url);
+    }
 }

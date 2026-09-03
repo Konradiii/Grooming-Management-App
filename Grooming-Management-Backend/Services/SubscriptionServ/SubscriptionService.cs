@@ -10,7 +10,7 @@ namespace Grooming_Management_App.Services.SubscriptionServ;
 public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 {
     private const int GracePeriodDays = 7;
-    public const int MonthlySmsPackage = 100;
+    public const int MonthlySmsPackage = 200;
     
     public async Task<DateOnly> RegisterPaymentAsync(int salonId, RegisterPaymentDto dto, CancellationToken ct)
     {
@@ -265,6 +265,44 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         await ctx.SaveChangesAsync(ct);
 
         return salons.Count;
+    }
+    
+    public async Task AddPurchasedSmsAsync(int salonId, int smsCount, RegisterPaymentDto dto, CancellationToken ct)
+    {
+        var salon = await ctx.Salons.Where(s => s.Id == salonId).FirstOrDefaultAsync(ct);
+
+        if (salon == null)
+        {
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
+        }
+
+        var alreadyProcessed = await ctx.Payments.AnyAsync(p => p.ProviderId == dto.ProviderId, ct);
+
+        if (alreadyProcessed)
+        {
+            throw new ConflictException(ErrorCodes.PaymentAlreadyProcessed);
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Doładowanie nie dotyczy okresu rozliczeniowego — obie daty to dzień zakupu.
+        var payment = new Payment
+        {
+            Amount = dto.Amount,
+            Currency = dto.Currency,
+            PaymentDate = DateTime.UtcNow,
+            ProviderId = dto.ProviderId,
+            Status = PaymentStatusEnum.Succeeded,
+            PeriodStart = today,
+            PeriodEnd = today,
+            InvoiceUrl = dto.InvoiceUrl,
+            SalonId = salonId
+        };
+
+        salon.SmsPurchased += smsCount;
+
+        ctx.Payments.Add(payment);
+        await ctx.SaveChangesAsync(ct);
     }
     
 }

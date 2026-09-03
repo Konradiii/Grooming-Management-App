@@ -75,4 +75,5 @@ public static class ErrorCodes
     public const string ServiceBreedMismatch = "SERVICE_BREED_MISMATCH";
     public const string InvalidPickupTime = "INVALID_PICKUP_TIME";
     public const string SmsLimitExceeded = "SMS_LIMIT_EXCEEDED";
+    public const string InvalidSmsPackage = "INVALID_SMS_PACKAGE";
 }

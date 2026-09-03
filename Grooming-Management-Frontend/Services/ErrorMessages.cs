@@ -82,6 +82,7 @@ public static class ErrorMessages
         ["SERVICE_BREED_MISMATCH"] = "Wybrana usługa nie dotyczy rasy tego psa",
         ["INVALID_PICKUP_TIME"] = "Podaj, za ile minut zapraszasz po psa",
         ["SMS_LIMIT_EXCEEDED"] = "Wyczerpano limit SMS-ów. Doładuj pakiet w ustawieniach",
+        ["INVALID_SMS_PACKAGE"] = "Nieprawidłowy pakiet SMS",
     };
 
     public static string Translate(string? code)
