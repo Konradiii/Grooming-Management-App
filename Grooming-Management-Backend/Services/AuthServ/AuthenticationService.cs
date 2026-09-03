@@ -236,6 +236,7 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
         refreshExists.RevokedAt = DateTime.UtcNow;
 
         var user = await ctx.Users
+            .IgnoreQueryFilters()
             .Include(u => u.Groomer)
             .Include(u => u.Salon)
             .Where(e => e.Id == refreshExists.UserId)
