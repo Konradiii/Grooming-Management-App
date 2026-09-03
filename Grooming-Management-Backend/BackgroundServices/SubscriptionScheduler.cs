@@ -19,7 +19,20 @@ public class SubscriptionScheduler(
 
                 var pastDue = await subscriptionService.MarkExpiredSubscriptionsAsPastDueAsync(stoppingToken);
                 var suspended = await subscriptionService.SuspendExpiredSubscriptionsAsync(stoppingToken);
+                var smsReset = await subscriptionService.ResetMonthlySmsPackagesAsync(stoppingToken);
 
+                if (pastDue > 0 || suspended > 0)
+                {
+                    logger.LogInformation(
+                        "Subscription check: {PastDueCount} marked past due, {SuspendedCount} suspended",
+                        pastDue, suspended);
+                }
+
+                if (smsReset > 0)
+                {
+                    logger.LogInformation("Reset SMS package for {Count} salons", smsReset);
+                }
+                
                 if (pastDue > 0 || suspended > 0)
                 {
                     logger.LogInformation(

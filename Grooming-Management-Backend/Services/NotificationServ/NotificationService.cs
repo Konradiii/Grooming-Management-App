@@ -19,7 +19,7 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
         {
             throw new ConflictException(ErrorCodes.InvalidPickupTime);
         }
-        
+
         var alreadySent = await ctx.Notifications
             .AnyAsync(n => n.VisitId == visitId
                            && n.SalonId == salonId
@@ -50,12 +50,22 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
             throw new ConflictException(ErrorCodes.CannotNotifyCancelledVisit);
         }
 
+        if (!HasSmsAvailable(visit.Salon))
+        {
+            throw new ConflictException(ErrorCodes.SmsLimitExceeded);
+        }
+
         var msg = $"Państwa pies {visit.Dog.Name} jest gotowy do odbioru. " +
                   $"Zapraszamy za {timeToPickUpDogInMin} min. Salon groomerski {visit.Salon.Name}";
 
         var phoneNumber = visit.DogOwner.Phone;
 
         var response = await smsService.SendSmsAsync(phoneNumber, msg, ct);
+
+        if (response.Success)
+        {
+            DeductSms(visit.Salon);
+        }
 
         var notification = new Notification
         {
@@ -108,6 +118,11 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
             throw new ConflictException(ErrorCodes.CannotNotifyCancelledVisit);
         }
 
+        if (!HasSmsAvailable(visit.Salon))
+        {
+            throw new ConflictException(ErrorCodes.SmsLimitExceeded);
+        }
+
         var localVisitTime = TimeZoneInfo.ConvertTimeFromUtc(
             DateTime.SpecifyKind(visit.Date, DateTimeKind.Utc), PolishTime);
 
@@ -117,6 +132,11 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
         var phoneNumber = visit.DogOwner.Phone;
 
         var response = await smsService.SendSmsAsync(phoneNumber, msg, ct);
+
+        if (response.Success)
+        {
+            DeductSms(visit.Salon);
+        }
 
         var notification = new Notification
         {
@@ -135,5 +155,21 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
 
         ctx.Notifications.Add(notification);
         await ctx.SaveChangesAsync(ct);
+    }
+
+    private static bool HasSmsAvailable(Salon salon)
+        => salon.SmsIncluded + salon.SmsPurchased > 0;
+
+    // Najpierw pakiet miesięczny, potem dokupione — dokupione nie przepadają,
+    // więc zużywamy je jako ostatnie.
+    private static void DeductSms(Salon salon)
+    {
+        if (salon.SmsIncluded > 0)
+        {
+            salon.SmsIncluded--;
+            return;
+        }
+
+        salon.SmsPurchased--;
     }
 }

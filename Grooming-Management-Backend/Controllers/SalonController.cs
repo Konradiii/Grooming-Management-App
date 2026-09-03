@@ -29,4 +29,12 @@ public class SalonController(ISalonService service, ICurrentUserService currentU
         return NoContent();
     }
     
+    [HttpGet("sms-balance")]
+    [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Zwraca pozostały limit SMS-ów salonu")]
+    public async Task<GetSmsBalanceDto> GetSmsBalance(CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        return await service.GetSmsBalanceAsync(salonId, ct);
+    }
 }

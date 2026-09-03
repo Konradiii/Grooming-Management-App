@@ -23,4 +23,5 @@ public interface ISubscriptionService
     Task ClearSubscriptionAsync(string? customerId, CancellationToken ct);
     
     Task SetCancelAtPeriodEndAsync(string? customerId, bool value, CancellationToken ct);
+    Task<int> ResetMonthlySmsPackagesAsync(CancellationToken ct);
 }

@@ -247,4 +247,24 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         await ctx.SaveChangesAsync(ct);
     }
     
+    public async Task<int> ResetMonthlySmsPackagesAsync(CancellationToken ct)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var salons = await ctx.Salons
+            .Where(s => s.SmsResetDate <= today)
+            .Where(s => s.SubscriptionStatus != SubscriptionStatusEnum.Suspended)
+            .ToListAsync(ct);
+
+        foreach (var salon in salons)
+        {
+            salon.SmsIncluded = MonthlySmsPackage;
+            salon.SmsResetDate = today.AddMonths(1);
+        }
+
+        await ctx.SaveChangesAsync(ct);
+
+        return salons.Count;
+    }
+    
 }

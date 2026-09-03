@@ -17,4 +17,8 @@ public class GetSalonDto
     
     public bool RemindersEnabled { get; set; }
     public int ReminderHoursBefore { get; set; }
+    
+    public int SmsIncluded { get; set; }
+    public int SmsPurchased { get; set; }
+    public DateOnly SmsResetDate { get; set; }
 }

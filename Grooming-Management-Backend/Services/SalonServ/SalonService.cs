@@ -28,7 +28,10 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
             MinBookingHoursAhead = salonInfo.MinBookingHoursAhead,
             MaxBookingDaysAhead = salonInfo.MaxBookingDaysAhead,
             RemindersEnabled = salonInfo.RemindersEnabled,
-            ReminderHoursBefore = salonInfo.ReminderHoursBefore
+            ReminderHoursBefore = salonInfo.ReminderHoursBefore,
+            SmsIncluded = salonInfo.SmsIncluded,
+            SmsPurchased = salonInfo.SmsPurchased,
+            SmsResetDate = salonInfo.SmsResetDate,
         };
 
 
@@ -65,5 +68,24 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
         salonInfo.ReminderHoursBefore = dto.ReminderHoursBefore;
 
         await ctx.SaveChangesAsync(ct);
+    }
+    
+    public async Task<GetSmsBalanceDto> GetSmsBalanceAsync(int salonId, CancellationToken ct)
+    {
+        var balance = await ctx.Salons
+            .Where(s => s.Id == salonId)
+            .Select(s => new GetSmsBalanceDto
+            {
+                Remaining = s.SmsIncluded + s.SmsPurchased,
+                ResetDate = s.SmsResetDate
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (balance == null)
+        {
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
+        }
+
+        return balance;
     }
 }

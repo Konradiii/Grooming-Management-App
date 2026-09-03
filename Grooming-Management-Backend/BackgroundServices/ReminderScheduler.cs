@@ -1,5 +1,6 @@
 ﻿using Grooming_Management_App.DataInfrastructure;
 using Grooming_Management_App.Enums;
+using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.NotificationServ;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,7 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
                         "Found {Count} visits to remind in window {WindowStart} - {WindowEnd}",
                         correctVisits.Count, windowStart, windowEnd);
                 }
+                
 
                 foreach (var visit in correctVisits)
                 {
@@ -45,6 +47,12 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
                             stoppingToken);
 
                         logger.LogInformation("Reminder sent for visit {VisitId}", visit.Id);
+                    }
+                    catch (ConflictException ex) when (ex.Message == ErrorCodes.SmsLimitExceeded)
+                    {
+                        logger.LogInformation(
+                            "Skipping reminder for visit {VisitId} - salon {SalonId} has no SMS left",
+                            visit.Id, visit.SalonId);
                     }
                     catch (Exception ex)
                     {

@@ -7,4 +7,6 @@ public interface ISalonService
     Task<GetSalonDto> GetSalonAsync(int salonId, CancellationToken ct);
     Task UpdateSalonAsync(UpdateSalonDto dto, int salonId, CancellationToken ct);
     
+    Task<GetSmsBalanceDto> GetSmsBalanceAsync(int salonId, CancellationToken ct);
+    
 }
