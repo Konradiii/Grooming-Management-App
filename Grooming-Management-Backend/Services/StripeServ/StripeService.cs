@@ -110,6 +110,12 @@ public class StripeService(
             logger.LogWarning("invoice.paid without invoice object");
             return;
         }
+        
+        if (invoice.Parent?.SubscriptionDetails?.SubscriptionId == null)
+        {
+            logger.LogInformation("Invoice {InvoiceId} is not subscription-related, ignoring", invoice.Id);
+            return;
+        }
 
         var salonId = await subscriptionService.GetSalonIdByCustomerIdAsync(invoice.CustomerId, ct);
 
@@ -209,6 +215,12 @@ public class StripeService(
         if (stripeEvent.Data.Object is not Invoice invoice)
         {
             logger.LogWarning("invoice.payment_failed without invoice object");
+            return;
+        }
+        
+        if (invoice.Parent?.SubscriptionDetails?.SubscriptionId == null)
+        {
+            logger.LogInformation("Invoice {InvoiceId} is not subscription-related, ignoring", invoice.Id);
             return;
         }
 
