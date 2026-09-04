@@ -490,7 +490,7 @@ namespace Grooming_Management_App.Migrations
                     b.Property<int>("SmsIncluded")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasDefaultValue(100);
+                        .HasDefaultValue(200);
 
                     b.Property<int>("SmsPurchased")
                         .ValueGeneratedOnAdd()
