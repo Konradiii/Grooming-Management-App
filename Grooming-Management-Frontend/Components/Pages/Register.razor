@@ -7,39 +7,21 @@
 @inject TokenStore TokenStore
 @inject NavigationManager Navigation
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8 mb-8">
-    <MudPaper Class="pa-8">
-        <MudText Typo="Typo.h5" Class="mb-6">Rejestracja salonu</MudText>
+<div class="auth">
+    <div class="auth__card auth__card--wide">
+        <a class="auth__mark" href="https://groomsli.pl">Groomsli</a>
+        <h1 class="auth__title">Rejestracja</h1>
+        <p class="auth__lead">Pierwsze 30 dni bez opłat. Bez podawania karty.</p>
 
         <MudTextField @bind-Value="salonName" Label="Nazwa salonu"
                       Variant="Variant.Outlined" Class="mb-3" />
 
         <MudTextField @bind-Value="phone" Label="Telefon kontaktowy"
-                      Variant="Variant.Outlined" Class="mb-4" />
-
-        <MudText Typo="Typo.subtitle2" Class="mb-2">Adres</MudText>
-
-        <MudGrid Class="mb-4">
-            <MudItem xs="12" md="8">
-                <MudTextField @bind-Value="street" Label="Ulica" Variant="Variant.Outlined" />
-            </MudItem>
-            <MudItem xs="6" md="2">
-                <MudTextField @bind-Value="buildingNumber" Label="Nr budynku" Variant="Variant.Outlined" />
-            </MudItem>
-            <MudItem xs="6" md="2">
-                <MudTextField @bind-Value="apartmentNumber" Label="Nr lokalu" Variant="Variant.Outlined" />
-            </MudItem>
-            <MudItem xs="12" md="4">
-                <MudTextField @bind-Value="postalCode" Label="Kod pocztowy" Variant="Variant.Outlined" />
-            </MudItem>
-            <MudItem xs="12" md="8">
-                <MudTextField @bind-Value="city" Label="Miasto" Variant="Variant.Outlined" />
-            </MudItem>
-        </MudGrid>
-
-        <MudText Typo="Typo.subtitle2" Class="mb-2">Konto właściciela</MudText>
+                      InputType="InputType.Telephone"
+                      Variant="Variant.Outlined" Class="mb-3" />
 
         <MudTextField @bind-Value="email" Label="E-mail"
+                      InputType="InputType.Email"
                       Variant="Variant.Outlined" Class="mb-3" />
 
         <MudTextField @bind-Value="password" Label="Hasło"
@@ -48,24 +30,152 @@
 
         <MudTextField @bind-Value="confirmPassword" Label="Powtórz hasło"
                       InputType="InputType.Password"
-                      Variant="Variant.Outlined" Class="mb-4" />
+                      Variant="Variant.Outlined" Class="mb-3" />
+
+        <button type="button" class="auth__toggle" @onclick="() => showAddress = !showAddress">
+            @(showAddress ? "Ukryj adres salonu" : "Dodaj adres salonu (opcjonalnie)")
+        </button>
+
+        @if (showAddress)
+        {
+            <div class="auth__address">
+                <MudGrid Spacing="2">
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="street" Label="Ulica" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="buildingNumber" Label="Nr budynku" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudTextField @bind-Value="apartmentNumber" Label="Nr lokalu" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="5">
+                        <MudTextField @bind-Value="postalCode" Label="Kod pocztowy" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="7">
+                        <MudTextField @bind-Value="city" Label="Miasto" Variant="Variant.Outlined" />
+                    </MudItem>
+                </MudGrid>
+            </div>
+        }
 
         @if (errorMessage != null)
         {
-            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+            <div class="auth__error">@errorMessage</div>
         }
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
-                   Disabled="isLoading" OnClick="RegisterAsync" Class="mb-3">
-            @(isLoading ? "Rejestracja..." : "Załóż konto")
-        </MudButton>
+        <button class="auth__btn" disabled="@isLoading" @onclick="RegisterAsync">
+            @(isLoading ? "Zakładanie konta..." : "Załóż konto")
+        </button>
 
-        <MudButton Variant="Variant.Text" FullWidth="true"
-                   OnClick="@(() => Navigation.NavigateTo("/login"))">
-            Mam już konto
-        </MudButton>
-    </MudPaper>
-</MudContainer>
+        <p class="auth__alt">
+            Masz już konto?
+            <a href="/login">Zaloguj się</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    
+    html, body{
+        background:#F2EDE3;
+        overscroll-behavior-y:none;
+    }
+    
+    .auth{
+        --pine:#0E2C24;
+        --pine-mid:#2C6350;
+        --amber:#E0A93B;
+        --line:#DDD6C9;
+        --ink-soft:#4E5B54;
+
+        --mud-palette-primary:#2C6350;
+        --mud-palette-primary-text:#FCFBF8;
+
+        min-height:100dvh;
+        display:flex;align-items:center;justify-content:center;
+        padding:2.5rem 1rem;
+        background:#F2EDE3;
+    }
+
+    .auth__card{
+        width:100%;max-width:26rem;
+        background:#fff;
+        border:1px solid var(--line);
+        border-radius:16px;
+        padding:2.5rem 2rem;
+        box-shadow:0 20px 50px -35px rgba(14,44,36,.6);
+    }
+    .auth__card--wide{max-width:30rem}
+
+    .auth__mark{
+        display:block;
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:700;font-size:1.5rem;letter-spacing:-.03em;
+        color:var(--pine);text-decoration:none;
+        margin-bottom:1.75rem;
+    }
+
+    .auth__title{
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:600;font-size:1.6rem;line-height:1.15;letter-spacing:-.02em;
+        color:var(--pine);margin:0 0 .5rem;
+    }
+
+    .auth__lead{
+        color:var(--ink-soft);font-size:.95rem;
+        margin:0 0 1.75rem;
+    }
+
+    .auth__toggle{
+        display:block;width:100%;
+        font:inherit;font-size:.93rem;font-weight:600;
+        text-align:left;
+        background:none;border:0;
+        color:var(--pine-mid);
+        padding:.5rem 0;margin-bottom:.5rem;
+        cursor:pointer;
+        text-decoration:underline;text-underline-offset:3px;
+    }
+    .auth__toggle:focus-visible{outline:3px solid var(--amber);outline-offset:2px;border-radius:4px}
+
+    .auth__address{margin-bottom:1rem}
+
+    .auth__btn{
+        width:100%;
+        font:inherit;font-weight:600;font-size:1rem;
+        padding:.9rem 1.5rem;
+        border:0;border-radius:10px;
+        background:var(--amber);color:var(--pine);
+        cursor:pointer;
+        transition:background .15s ease;
+    }
+    .auth__btn:hover:not(:disabled){background:#EFBB4E}
+    .auth__btn:disabled{opacity:.6;cursor:default}
+    .auth__btn:focus-visible{outline:3px solid var(--pine);outline-offset:3px}
+
+    .auth__error{
+        background:#FBEAE6;color:#8C2F1B;
+        border-radius:8px;padding:.75rem .9rem;
+        font-size:.93rem;margin-bottom:1rem;
+    }
+
+    .auth__alt{
+        margin:1.5rem 0 0;text-align:center;
+        font-size:.93rem;color:var(--ink-soft);
+    }
+    .auth__alt a{color:var(--pine-mid);font-weight:600;text-underline-offset:3px}
+
+        @@media (max-width:480px){
+        html, body{background:#fff}
+        .auth{padding:0;background:#fff}
+        .auth__card{
+            max-width:none;min-height:100dvh;
+            border:0;border-radius:0;box-shadow:none;
+            padding:3rem 1.5rem;
+        }
+    }
+</style>
 
 @code {
     private string salonName = string.Empty;
@@ -79,6 +189,7 @@
     private string confirmPassword = string.Empty;
     private string phone = string.Empty;
 
+    private bool showAddress;
     private string? errorMessage;
     private bool isLoading;
 
@@ -97,7 +208,7 @@
             errorMessage = "Podaj numer telefonu";
             return;
         }
-        
+
         if (string.IsNullOrWhiteSpace(email))
         {
             errorMessage = "Podaj adres e-mail";

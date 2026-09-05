@@ -1,6 +1,6 @@
 ﻿@rendermode InteractiveServer
 
-<MudThemeProvider />
+<MudThemeProvider Theme="GroomsliTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -11,3 +11,84 @@
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code {
+    // Paleta z landingu — zmiana tutaj przechodzi na wszystkie komponenty MudBlazora.
+    private static readonly MudTheme GroomsliTheme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#2C6350",
+            PrimaryContrastText = "#FCFBF8",
+            Secondary = "#E0A93B",
+            SecondaryContrastText = "#0E2C24",
+            Tertiary = "#0E2C24",
+
+            Background = "#FCFBF8",
+            BackgroundGray = "#F2EDE3",
+            Surface = "#FFFFFF",
+
+            AppbarBackground = "#0E2C24",
+            AppbarText = "#FCFBF8",
+            DrawerBackground = "#FFFFFF",
+            DrawerText = "#141A17",
+            DrawerIcon = "#2C6350",
+
+            TextPrimary = "#141A17",
+            TextSecondary = "#4E5B54",
+
+            Success = "#2C6350",
+            Warning = "#C58A20",
+            Error = "#A33A22",
+            Info = "#2C6350",
+
+            LinesDefault = "#DDD6C9",
+            TableLines = "#EDE8DE",
+            Divider = "#DDD6C9",
+        },
+
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = new[] { "Instrument Sans", "Segoe UI", "sans-serif" },
+                FontSize = ".95rem",
+                LineHeight = "1.55",
+            },
+            H4 = new H4Typography
+            {
+                FontFamily = new[] { "Bricolage Grotesque", "Segoe UI", "sans-serif" },
+                FontWeight = "600",
+                LetterSpacing = "-.02em",
+            },
+            H5 = new H5Typography
+            {
+                FontFamily = new[] { "Bricolage Grotesque", "Segoe UI", "sans-serif" },
+                FontWeight = "600",
+                LetterSpacing = "-.02em",
+            },
+            H6 = new H6Typography
+            {
+                FontFamily = new[] { "Bricolage Grotesque", "Segoe UI", "sans-serif" },
+                FontWeight = "600",
+                LetterSpacing = "-.02em",
+            },
+            Subtitle1 = new Subtitle1Typography
+            {
+                FontFamily = new[] { "Bricolage Grotesque", "Segoe UI", "sans-serif" },
+                FontWeight = "600",
+            },
+            Button = new ButtonTypography
+            {
+                FontFamily = new[] { "Instrument Sans", "Segoe UI", "sans-serif" },
+                FontWeight = "600",
+                TextTransform = "none",
+            },
+        },
+
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "10px",
+        },
+    };
+}

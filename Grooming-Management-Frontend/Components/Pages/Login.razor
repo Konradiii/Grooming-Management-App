@@ -1,53 +1,136 @@
 ﻿@page "/login"
 @rendermode InteractiveServer
-@inherits AuthenticatedPage
+@layout EmptyLayout
 @using Grooming_Management_App.DTOs.AuthDTO
 @using Grooming_Management_Frontend.Services
 @inject IHttpClientFactory HttpClientFactory
 @inject TokenStore TokenStore
-@layout EmptyLayout
+@inject NavigationManager Navigation
 
-
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
-    <MudPaper Class="pa-8">
-        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-1">Grooming Management</MudText>
-        <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-6">Zaloguj się do panelu</MudText>
+<div class="auth">
+    <div class="auth__card">
+        <a class="auth__mark" href="https://groomsli.pl">Groomsli</a>
+        <h1 class="auth__title">Zaloguj się</h1>
 
         <MudTextField @bind-Value="email"
                       Label="E-mail"
+                      InputType="InputType.Email"
                       Variant="Variant.Outlined"
-                      Class="mb-4"/>
+                      Class="mb-4" />
 
         <MudTextField @bind-Value="password"
                       Label="Hasło"
                       InputType="InputType.Password"
                       Variant="Variant.Outlined"
-                      Class="mb-4"/>
+                      Class="mb-4"
+                      OnKeyDown="OnKeyDownAsync" />
 
         @if (errorMessage != null)
         {
-            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+            <div class="auth__error">@errorMessage</div>
         }
 
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   FullWidth="true"
-                   Disabled="isLoading"
-                   OnClick="LoginAsync">
+        <button class="auth__btn" disabled="@isLoading" @onclick="LoginAsync">
             @(isLoading ? "Logowanie..." : "Zaloguj")
-        </MudButton>
-        <MudButton Variant="Variant.Text" FullWidth="true" Class="mt-3"
-                   OnClick="@(() => Navigation.NavigateTo("/rejestracja"))">
-            Nie masz konta? Zarejestruj salon
-        </MudButton>
-    </MudPaper>
-</MudContainer>
+        </button>
+
+        <p class="auth__alt">
+            Nie masz konta?
+            <a href="/rejestracja">Zarejestruj u nas swój salon</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    html, body{
+        background:#F2EDE3;
+        overscroll-behavior-y:none;
+    }
+    
+    .auth{
+        --pine:#0E2C24;
+        --pine-mid:#2C6350;
+        --amber:#E0A93B;
+        --line:#DDD6C9;
+        --ink-soft:#4E5B54;
+
+        --mud-palette-primary:#2C6350;
+        --mud-palette-primary-text:#FCFBF8;
+
+        min-height:100dvh;
+        display:flex;align-items:center;justify-content:center;
+        padding:1.5rem 1rem;
+        background:#F2EDE3;
+    }
+
+    .auth__card{
+        width:100%;max-width:26rem;
+        background:#fff;
+        border:1px solid var(--line);
+        border-radius:16px;
+        padding:2.5rem 2rem;
+        box-shadow:0 20px 50px -35px rgba(14,44,36,.6);
+    }
+
+    .auth__mark{
+        display:block;
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:700;font-size:1.5rem;letter-spacing:-.03em;
+        color:var(--pine);text-decoration:none;
+        margin-bottom:1.75rem;
+    }
+
+    .auth__title{
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:600;font-size:1.6rem;line-height:1.15;letter-spacing:-.02em;
+        color:var(--pine);margin:0 0 1.75rem;
+    }
+
+    .auth__btn{
+        width:100%;
+        font:inherit;font-weight:600;font-size:1rem;
+        padding:.9rem 1.5rem;
+        border:0;border-radius:10px;
+        background:var(--amber);color:var(--pine);
+        cursor:pointer;
+        transition:background .15s ease;
+    }
+    .auth__btn:hover:not(:disabled){background:#EFBB4E}
+    .auth__btn:disabled{opacity:.6;cursor:default}
+    .auth__btn:focus-visible{outline:3px solid var(--pine);outline-offset:3px}
+
+    .auth__error{
+        background:#FBEAE6;color:#8C2F1B;
+        border-radius:8px;padding:.75rem .9rem;
+        font-size:.93rem;margin-bottom:1rem;
+    }
+
+    .auth__alt{
+        margin:1.5rem 0 0;text-align:center;
+        font-size:.93rem;color:var(--ink-soft);
+    }
+    .auth__alt a{color:var(--pine-mid);font-weight:600;text-underline-offset:3px}
+
+    @@media (max-width:480px){
+        .auth{padding:0;background:#fff}
+        .auth__card{
+            max-width:none;min-height:100dvh;
+            border:0;border-radius:0;box-shadow:none;
+            padding:3rem 1.5rem;
+        }
+    }
+</style>
 
 @code {
     private string email = string.Empty;
     private string password = string.Empty;
     private string? errorMessage;
     private bool isLoading;
+
+    private async Task OnKeyDownAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await LoginAsync();
+    }
 
     private async Task LoginAsync()
     {
