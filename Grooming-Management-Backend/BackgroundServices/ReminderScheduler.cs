@@ -16,51 +16,63 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
         {
             try
             {
-                var windowStart = DateTime.UtcNow.AddHours(24);
-                var windowEnd = windowStart.Add(_interval);
-
                 using var scope = scopeFactory.CreateScope();
                 var ctx = scope.ServiceProvider.GetRequiredService<GroomingDbContext>();
                 var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
 
-                var correctVisits = await ctx.Visits
-                    .IgnoreQueryFilters()
-                    .Where(e => windowStart < e.Date && e.Date <= windowEnd)
-                    .Where(e => e.Status == StatusEnum.Scheduled)
+                var salons = await ctx.Salons
+                    .Where(s => s.RemindersEnabled)
+                    .Where(s => s.SubscriptionStatus != SubscriptionStatusEnum.Suspended)
+                    .Select(s => new { s.Id, s.ReminderHoursBefore })
                     .ToListAsync(stoppingToken);
 
-                if (correctVisits.Count > 0)
+                foreach (var salon in salons)
                 {
+                    var windowStart = DateTime.UtcNow.AddHours(salon.ReminderHoursBefore);
+                    var windowEnd = windowStart.Add(_interval);
+
+                    var visits = await ctx.Visits
+                        .IgnoreQueryFilters()
+                        .Where(v => v.SalonId == salon.Id)
+                        .Where(v => windowStart < v.Date && v.Date <= windowEnd)
+                        .Where(v => v.Status == StatusEnum.Scheduled)
+                        .ToListAsync(stoppingToken);
+
+                    if (visits.Count == 0) continue;
+
                     logger.LogInformation(
-                        "Found {Count} visits to remind in window {WindowStart} - {WindowEnd}",
-                        correctVisits.Count, windowStart, windowEnd);
-                }
-                
+                        "Found {Count} visits to remind in salon {SalonId}, window {WindowStart} - {WindowEnd}",
+                        visits.Count, salon.Id, windowStart, windowEnd);
 
-                foreach (var visit in correctVisits)
-                {
-                    try
+                    foreach (var visit in visits)
                     {
-                        await notificationService.SendVisitReminderAsync(
-                            visit.SalonId,
-                            visit.Id,
-                            stoppingToken);
+                        try
+                        {
+                            await notificationService.SendVisitReminderAsync(
+                                visit.SalonId,
+                                visit.Id,
+                                stoppingToken);
 
-                        logger.LogInformation("Reminder sent for visit {VisitId}", visit.Id);
-                    }
-                    catch (ConflictException ex) when (ex.Message == ErrorCodes.SmsLimitExceeded)
-                    {
-                        logger.LogInformation(
-                            "Skipping reminder for visit {VisitId} - salon {SalonId} has no SMS left",
-                            visit.Id, visit.SalonId);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex,
-                            "Failed to send reminder for visit {VisitId} in salon {SalonId}",
-                            visit.Id, visit.SalonId);
+                            logger.LogInformation("Reminder sent for visit {VisitId}", visit.Id);
+                        }
+                        catch (ConflictException ex) when (ex.Message == ErrorCodes.SmsLimitExceeded)
+                        {
+                            logger.LogInformation(
+                                "Skipping reminder for visit {VisitId} - salon {SalonId} has no SMS left",
+                                visit.Id, visit.SalonId);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex,
+                                "Failed to send reminder for visit {VisitId} in salon {SalonId}",
+                                visit.Id, visit.SalonId);
+                        }
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
             catch (Exception ex)
             {

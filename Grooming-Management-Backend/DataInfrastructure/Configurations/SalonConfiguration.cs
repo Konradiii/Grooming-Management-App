@@ -58,7 +58,7 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
         
         builder.Property(s => s.Phone).HasMaxLength(20);
         
-        builder.Property(s => s.RemindersEnabled).HasDefaultValue(true);
+        builder.Property(s => s.RemindersEnabled).HasDefaultValue(false);
         builder.Property(s => s.ReminderHoursBefore).HasDefaultValue(24);
 
         builder.HasIndex(s => s.ProviderCustomerId);

@@ -113,20 +113,17 @@ else
 
         <div class="d-flex align-center gap-3 mb-1">
             <MudText Typo="Typo.subtitle1">Automatyczne przypomnienia</MudText>
-            <MudChip T="string" Size="Size.Small" Color="Color.Default">Wkrótce</MudChip>
         </div>
         <MudText Typo="Typo.body2" Class="mb-4">
             Wiadomość wysyłana klientowi przed umówioną wizytą.
         </MudText>
 
-        <MudSwitch T="bool" @bind-Value="remindersEnabled" Color="Color.Primary"
-                   Disabled="true" Class="mb-3">
+        <MudSwitch T="bool" @bind-Value="remindersEnabled" Color="Color.Primary" Class="mb-3">
             Wysyłaj przypomnienia o wizytach
         </MudSwitch>
 
         <MudSelect T="int" @bind-Value="reminderHoursBefore"
-                   Label="Wyprzedzenie" Variant="Variant.Outlined"
-                   Disabled="true" Class="mb-3" Style="max-width: 400px;">
+                   Label="Wyprzedzenie" Variant="Variant.Outlined" Class="mb-3" Style="max-width: 400px;">
             <MudSelectItem T="int" Value="2">2 godziny przed wizytą</MudSelectItem>
             <MudSelectItem T="int" Value="6">6 godzin przed wizytą</MudSelectItem>
             <MudSelectItem T="int" Value="12">12 godzin przed wizytą</MudSelectItem>
