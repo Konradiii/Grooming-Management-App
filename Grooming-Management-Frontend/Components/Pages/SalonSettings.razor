@@ -87,8 +87,8 @@ else
             </MudGrid>
 
             <MudText Typo="Typo.body2" Class="mb-4">
-                W abonamencie masz 200 wiadomości miesięcznie. Niewykorzystane nie przechodzą
-                na kolejny miesiąc. Dokupione pakiety nie wygasają.
+                W abonamencie masz @SubscriptionSmsPackage wiadomości miesięcznie.
+                Niewykorzystane nie przechodzą na kolejny miesiąc. Dokupione pakiety nie wygasają.
             </MudText>
 
             <MudText Typo="Typo.subtitle2" Class="mb-2">Doładuj pakiet</MudText>
@@ -115,7 +115,8 @@ else
             <MudText Typo="Typo.subtitle1">Automatyczne przypomnienia</MudText>
         </div>
         <MudText Typo="Typo.body2" Class="mb-4">
-            Wiadomość wysyłana klientowi przed umówioną wizytą.
+            Wiadomość wysyłana klientowi przed umówioną wizytą. Każde przypomnienie
+            zużywa jedną wiadomość z pakietu.
         </MudText>
 
         <MudSwitch T="bool" @bind-Value="remindersEnabled" Color="Color.Primary" Class="mb-3">
@@ -130,6 +131,7 @@ else
             <MudSelectItem T="int" Value="24">Dzień przed wizytą</MudSelectItem>
             <MudSelectItem T="int" Value="48">Dwa dni przed wizytą</MudSelectItem>
         </MudSelect>
+
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    Disabled="isSaving" OnClick="SaveAsync">
             @(isSaving ? "Zapisywanie..." : "Zapisz ustawienia przypomnień")
@@ -182,7 +184,8 @@ else
             @if (subscription.Status == SubscriptionStatusEnum.Active)
             {
                 <MudText Typo="Typo.body2" Class="mb-3">
-                    Abonament odnawia się automatycznie co miesiąc. W panelu płatności zmienisz kartę,
+                    Plan @PlanLabel(subscription.PlanType) — @PlanPrice(subscription.PlanType) miesięcznie.
+                    Odnawia się automatycznie. W panelu płatności zmienisz kartę,
                     pobierzesz faktury albo anulujesz subskrypcję.
                 </MudText>
 
@@ -193,15 +196,45 @@ else
             }
             else
             {
-                <MudText Typo="Typo.body2" Class="mb-3">
-                    Plan miesięczny - 109 zł. Pełny dostęp, bez limitu pracowników i wizyt,
-                    200 wiadomości SMS miesięcznie.
-                    Abonament odnawia się automatycznie, możesz zrezygnować w każdej chwili.
+                <MudText Typo="Typo.body2" Class="mb-4">
+                    Wybierz plan. Oba dają pełen dostęp do aplikacji, bez limitu wizyt
+                    i pracowników — różnią się liczbą wiadomości SMS w miesiącu.
                 </MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mb-6"
-                           Disabled="isRedirecting" OnClick="StartCheckoutAsync">
-                    @(isRedirecting ? "Przekierowanie..." : "Opłać abonament")
-                </MudButton>
+
+                <MudGrid Class="mb-6" Spacing="3">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Outlined="true" Class="pa-4" Style="height:100%;">
+                            <MudText Typo="Typo.subtitle1">Basic</MudText>
+                            <MudText Typo="Typo.h5" Class="my-2">
+                                69 zł<span style="font-size:.9rem;font-weight:400;"> / miesiąc</span>
+                            </MudText>
+                            <MudText Typo="Typo.body2" Class="mb-4">50 wiadomości SMS miesięcznie</MudText>
+
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+                                       Disabled="isRedirecting"
+                                       OnClick="@(() => StartCheckoutAsync(PlanTypeEnum.Basic))">
+                                Wybierz Basic
+                            </MudButton>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Outlined="true" Class="pa-4"
+                                  Style="height:100%;border-color:#2C6350;border-width:2px;">
+                            <MudText Typo="Typo.subtitle1">Standard</MudText>
+                            <MudText Typo="Typo.h5" Class="my-2">
+                                109 zł<span style="font-size:.9rem;font-weight:400;"> / miesiąc</span>
+                            </MudText>
+                            <MudText Typo="Typo.body2" Class="mb-4">200 wiadomości SMS miesięcznie</MudText>
+
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true"
+                                       Disabled="isRedirecting"
+                                       OnClick="@(() => StartCheckoutAsync(PlanTypeEnum.Standard))">
+                                Wybierz Standard
+                            </MudButton>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
             }
 
             <MudText Typo="Typo.subtitle2" Class="mb-3">Historia płatności</MudText>
@@ -262,6 +295,8 @@ else
 
     private bool remindersEnabled;
     private int reminderHoursBefore = 24;
+
+    private int SubscriptionSmsPackage => subscription?.PlanType == PlanTypeEnum.Basic ? 50 : 200;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -379,7 +414,8 @@ else
         }
     }
 
-    private async Task StartCheckoutAsync() => await RedirectToStripeAsync("api/Subscription/checkout");
+    private async Task StartCheckoutAsync(PlanTypeEnum plan)
+        => await RedirectToStripeAsync($"api/Subscription/checkout?plan={plan}");
 
     private async Task TopUpAsync(int packageSize)
         => await RedirectToStripeAsync($"api/Subscription/sms-topup?packageSize={packageSize}");
@@ -419,6 +455,20 @@ else
             isRedirecting = false;
         }
     }
+
+    private static string PlanLabel(PlanTypeEnum plan) => plan switch
+    {
+        PlanTypeEnum.Basic => "Basic",
+        PlanTypeEnum.Standard => "Standard",
+        _ => plan.ToString()
+    };
+
+    private static string PlanPrice(PlanTypeEnum plan) => plan switch
+    {
+        PlanTypeEnum.Basic => "69 zł",
+        PlanTypeEnum.Standard => "109 zł",
+        _ => "-"
+    };
 
     private static string StatusLabel(SubscriptionStatusEnum status) => status switch
     {

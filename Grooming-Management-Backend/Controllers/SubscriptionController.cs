@@ -1,4 +1,5 @@
 ﻿using Grooming_Management_App.DTOs.SubscriptionDTO;
+using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.CurrentUserServ;
 using Grooming_Management_App.Services.SalonServ;
@@ -18,18 +19,13 @@ public class SubscriptionController(ISubscriptionService service, ICurrentUserSe
     [HttpPost("checkout")]
     [Authorize(Roles = "Owner")]
     [EndpointSummary("Tworzy sesję płatności Stripe i zwraca adres do przekierowania")]
-    public async Task<ActionResult<string>> CreateCheckout(CancellationToken ct)
+    public async Task<ActionResult<string>> CreateCheckout(PlanTypeEnum plan, CancellationToken ct)
     {
-        
-        var claims = string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"));
-        Console.WriteLine(claims);
-        
-        
         var salonId = currentUser.SalonId;
         var salon = await salonService.GetSalonAsync(salonId, ct);
 
         var url = await stripeService.CreateCheckoutSessionAsync(
-            salonId, salon.Name, currentUser.Email, ct);
+            salonId, salon.Name, currentUser.Email, plan, ct);
 
         return Ok(url);
     }

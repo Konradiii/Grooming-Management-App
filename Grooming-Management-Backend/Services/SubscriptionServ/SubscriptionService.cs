@@ -10,9 +10,14 @@ namespace Grooming_Management_App.Services.SubscriptionServ;
 public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 {
     private const int GracePeriodDays = 7;
-    public const int MonthlySmsPackage = 200;
     
-    public async Task<DateOnly> RegisterPaymentAsync(int salonId, RegisterPaymentDto dto, CancellationToken ct)
+    
+    private const int BasicSmsPackage = 50;
+    private const int StandardSmsPackage = 200;
+    
+    
+    
+    public async Task<DateOnly> RegisterPaymentAsync(int salonId, RegisterPaymentDto dto, PlanTypeEnum plan, CancellationToken ct)
     {
         
         var salon = await ctx.Salons.Where(s => s.Id == salonId).FirstOrDefaultAsync(ct);
@@ -20,6 +25,7 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         {
             throw new NotFoundException(ErrorCodes.SalonNotFound);
         }
+        
         
         var alreadyProcessed = await ctx.Payments.AnyAsync(p=> p.ProviderId == dto.ProviderId, ct);
 
@@ -38,6 +44,7 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         
         salon.SubscriptionValidUntil = periodEnd;
         salon.SubscriptionStatus = SubscriptionStatusEnum.Active;
+        salon.PlanType = plan;
 
         var payment = new Payment
         {
@@ -247,6 +254,15 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
         await ctx.SaveChangesAsync(ct);
     }
     
+    
+    public static int SmsPackageFor(PlanTypeEnum plan) => plan switch
+    {
+        PlanTypeEnum.Basic => BasicSmsPackage,
+        PlanTypeEnum.Standard => StandardSmsPackage,
+        _ => BasicSmsPackage
+    };
+    
+    
     public async Task<int> ResetMonthlySmsPackagesAsync(CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -258,7 +274,7 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 
         foreach (var salon in salons)
         {
-            salon.SmsIncluded = MonthlySmsPackage;
+            salon.SmsIncluded = SmsPackageFor(salon.PlanType);;
             salon.SmsResetDate = today.AddMonths(1);
         }
 
@@ -266,6 +282,7 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 
         return salons.Count;
     }
+   
     
     public async Task AddPurchasedSmsAsync(int salonId, int smsCount, RegisterPaymentDto dto, CancellationToken ct)
     {

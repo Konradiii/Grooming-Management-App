@@ -9,4 +9,5 @@ public class GetSubscriptionDto
     public bool HasActiveSubscription { get; set; }
     public List<GetPaymentDto> Payments { get; set; } = new();
     public bool CancelAtPeriodEnd { get; set; }
+    public PlanTypeEnum PlanType { get; set; }
 }

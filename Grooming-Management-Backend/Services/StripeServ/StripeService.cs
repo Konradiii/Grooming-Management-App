@@ -1,4 +1,5 @@
 ﻿using Grooming_Management_App.DTOs.SubscriptionDTO;
+using Grooming_Management_App.Enums;
 using Grooming_Management_App.Exceptions;
 using Grooming_Management_App.Services.SubscriptionServ;
 using Stripe;
@@ -11,10 +12,9 @@ public class StripeService(
     ISubscriptionService subscriptionService,
     ILogger<StripeService> logger) : IStripeService
 {
-    public async Task<string> CreateCheckoutSessionAsync(int salonId, string salonName, string email, CancellationToken ct)
+    public async Task<string> CreateCheckoutSessionAsync(int salonId, string salonName, string email, PlanTypeEnum plan, CancellationToken ct)
     {
-        var priceId = configuration["Stripe:PriceId"]
-                      ?? throw new InvalidOperationException("Stripe PriceId is not configured");
+        var priceId = PriceIdFor(plan);
 
         var successUrl = configuration["Stripe:SuccessUrl"]
                          ?? throw new InvalidOperationException("Stripe SuccessUrl is not configured");
@@ -52,8 +52,57 @@ public class StripeService(
 
         return session.Url;
     }
-    
-    
+
+    public async Task<string> CreateSmsTopUpSessionAsync(int salonId, string email, int packageSize, CancellationToken ct)
+    {
+        var priceId = configuration[$"Stripe:SmsPackages:{packageSize}"];
+
+        if (string.IsNullOrWhiteSpace(priceId))
+        {
+            throw new ConflictException(ErrorCodes.InvalidSmsPackage);
+        }
+
+        var options = new SessionCreateOptions
+        {
+            Mode = "payment",
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new() { Price = priceId, Quantity = 1 }
+            },
+            CustomerEmail = string.IsNullOrWhiteSpace(email) ? null : email,
+            ClientReferenceId = salonId.ToString(),
+            Metadata = new Dictionary<string, string>
+            {
+                ["salonId"] = salonId.ToString(),
+                ["type"] = "sms_topup",
+                ["smsCount"] = packageSize.ToString()
+            },
+            SuccessUrl = configuration["Stripe:SuccessUrl"],
+            CancelUrl = configuration["Stripe:CancelUrl"]
+        };
+
+        var service = new SessionService();
+        var session = await service.CreateAsync(options, cancellationToken: ct);
+
+        return session.Url;
+    }
+
+    public async Task<string> CreatePortalSessionAsync(string customerId, CancellationToken ct)
+    {
+        var returnUrl = configuration["Stripe:SuccessUrl"]
+                        ?? throw new InvalidOperationException("Stripe SuccessUrl is not configured");
+
+        var options = new Stripe.BillingPortal.SessionCreateOptions
+        {
+            Customer = customerId,
+            ReturnUrl = returnUrl
+        };
+
+        var service = new Stripe.BillingPortal.SessionService();
+        var session = await service.CreateAsync(options, cancellationToken: ct);
+
+        return session.Url;
+    }
 
     public async Task HandleWebhookAsync(string json, string signature, CancellationToken ct)
     {
@@ -88,70 +137,22 @@ public class StripeService(
             case "invoice.payment_failed":
                 await HandleInvoiceFailedAsync(stripeEvent, ct);
                 break;
-            
+
             case "customer.subscription.deleted":
                 await HandleSubscriptionDeletedAsync(stripeEvent, ct);
                 break;
-            
+
             case "customer.subscription.updated":
                 await HandleSubscriptionUpdatedAsync(stripeEvent, ct);
                 break;
-            
 
             default:
                 logger.LogInformation("Ignoring Stripe event type {EventType}", stripeEvent.Type);
                 break;
         }
     }
-    private async Task HandleInvoicePaidAsync(Event stripeEvent, CancellationToken ct)
-    {
-        if (stripeEvent.Data.Object is not Invoice invoice)
-        {
-            logger.LogWarning("invoice.paid without invoice object");
-            return;
-        }
-        
-        if (invoice.Parent?.SubscriptionDetails?.SubscriptionId == null)
-        {
-            logger.LogInformation("Invoice {InvoiceId} is not subscription-related, ignoring", invoice.Id);
-            return;
-        }
 
-        var salonId = await subscriptionService.GetSalonIdByCustomerIdAsync(invoice.CustomerId, ct);
-
-        if (salonId == null)
-        {
-            salonId = await ResolveSalonIdFromSubscriptionAsync(invoice, ct);
-        }
-
-        if (salonId == null)
-        {
-            logger.LogWarning("invoice.paid for unknown customer {CustomerId}", invoice.CustomerId);
-            return;
-        }
-
-        var dto = new RegisterPaymentDto
-        {
-            Amount = invoice.AmountPaid / 100m,
-            Currency = invoice.Currency.ToUpperInvariant(),
-            ProviderId = invoice.Id,
-            InvoiceUrl = invoice.HostedInvoiceUrl
-        };
-
-        try
-        {
-            var validUntil = await subscriptionService.RegisterPaymentAsync(salonId.Value, dto, ct);
-
-            logger.LogInformation("Payment registered for salon {SalonId}, valid until {ValidUntil}",
-                salonId, validUntil);
-        }
-        catch (ConflictException)
-        {
-            logger.LogInformation("Invoice {InvoiceId} already processed, ignoring", invoice.Id);
-        }
-    }
-
-       private async Task HandleCheckoutCompletedAsync(Event stripeEvent, CancellationToken ct)
+    private async Task HandleCheckoutCompletedAsync(Event stripeEvent, CancellationToken ct)
     {
         if (stripeEvent.Data.Object is not Session session)
         {
@@ -210,6 +211,56 @@ public class StripeService(
         }
     }
 
+    private async Task HandleInvoicePaidAsync(Event stripeEvent, CancellationToken ct)
+    {
+        if (stripeEvent.Data.Object is not Invoice invoice)
+        {
+            logger.LogWarning("invoice.paid without invoice object");
+            return;
+        }
+
+        if (invoice.Parent?.SubscriptionDetails?.SubscriptionId == null)
+        {
+            logger.LogInformation("Invoice {InvoiceId} is not subscription-related, ignoring", invoice.Id);
+            return;
+        }
+
+        var salonId = await subscriptionService.GetSalonIdByCustomerIdAsync(invoice.CustomerId, ct);
+
+        if (salonId == null)
+        {
+            salonId = await ResolveSalonIdFromSubscriptionAsync(invoice, ct);
+        }
+
+        if (salonId == null)
+        {
+            logger.LogWarning("invoice.paid for unknown customer {CustomerId}", invoice.CustomerId);
+            return;
+        }
+
+        var dto = new RegisterPaymentDto
+        {
+            Amount = invoice.AmountPaid / 100m,
+            Currency = invoice.Currency.ToUpperInvariant(),
+            ProviderId = invoice.Id,
+            InvoiceUrl = invoice.HostedInvoiceUrl
+        };
+
+        var plan = ResolvePlan(invoice);
+
+        try
+        {
+            var validUntil = await subscriptionService.RegisterPaymentAsync(salonId.Value, dto, plan, ct);
+
+            logger.LogInformation("Payment registered for salon {SalonId}, plan {Plan}, valid until {ValidUntil}",
+                salonId, plan, validUntil);
+        }
+        catch (ConflictException)
+        {
+            logger.LogInformation("Invoice {InvoiceId} already processed, ignoring", invoice.Id);
+        }
+    }
+
     private async Task HandleInvoiceFailedAsync(Event stripeEvent, CancellationToken ct)
     {
         if (stripeEvent.Data.Object is not Invoice invoice)
@@ -217,7 +268,7 @@ public class StripeService(
             logger.LogWarning("invoice.payment_failed without invoice object");
             return;
         }
-        
+
         if (invoice.Parent?.SubscriptionDetails?.SubscriptionId == null)
         {
             logger.LogInformation("Invoice {InvoiceId} is not subscription-related, ignoring", invoice.Id);
@@ -251,6 +302,32 @@ public class StripeService(
         }
     }
 
+    private async Task HandleSubscriptionDeletedAsync(Event stripeEvent, CancellationToken ct)
+    {
+        if (stripeEvent.Data.Object is not Subscription subscription)
+        {
+            logger.LogWarning("customer.subscription.deleted without subscription object");
+            return;
+        }
+
+        await subscriptionService.ClearSubscriptionAsync(subscription.CustomerId, ct);
+
+        logger.LogInformation("Subscription {SubscriptionId} cancelled for customer {CustomerId}",
+            subscription.Id, subscription.CustomerId);
+    }
+
+    private async Task HandleSubscriptionUpdatedAsync(Event stripeEvent, CancellationToken ct)
+    {
+        if (stripeEvent.Data.Object is not Subscription subscription)
+            return;
+
+        await subscriptionService.SetCancelAtPeriodEndAsync(
+            subscription.CustomerId, subscription.CancelAtPeriodEnd, ct);
+
+        logger.LogInformation("Subscription {SubscriptionId} cancel_at_period_end = {Value}",
+            subscription.Id, subscription.CancelAtPeriodEnd);
+    }
+
     private static bool TryGetSalonId(
         IDictionary<string, string>? metadata, string? clientReferenceId, out int salonId)
     {
@@ -265,7 +342,7 @@ public class StripeService(
 
         return int.TryParse(clientReferenceId, out salonId);
     }
-    
+
     private async Task<int?> ResolveSalonIdFromSubscriptionAsync(Invoice invoice, CancellationToken ct)
     {
         var subscriptionId = invoice.Parent?.SubscriptionDetails?.SubscriptionId;
@@ -287,83 +364,26 @@ public class StripeService(
 
         return salonId;
     }
-    
-    public async Task<string> CreatePortalSessionAsync(string customerId, CancellationToken ct)
+
+    private string PriceIdFor(PlanTypeEnum plan)
     {
-        var returnUrl = configuration["Stripe:SuccessUrl"]
-                        ?? throw new InvalidOperationException("Stripe SuccessUrl is not configured");
+        var key = plan == PlanTypeEnum.Basic ? "Stripe:BasicPriceId" : "Stripe:PriceId";
 
-        var options = new Stripe.BillingPortal.SessionCreateOptions
-        {
-            Customer = customerId,
-            ReturnUrl = returnUrl
-        };
-
-        var service = new Stripe.BillingPortal.SessionService();
-        var session = await service.CreateAsync(options, cancellationToken: ct);
-
-        return session.Url;
+        return configuration[key]
+               ?? throw new InvalidOperationException($"{key} is not configured");
     }
-    
-    private async Task HandleSubscriptionDeletedAsync(Event stripeEvent, CancellationToken ct)
+
+    // Webhook nie wie, który plan opłacono — trzeba to odczytać z ceny na fakturze.
+    private PlanTypeEnum ResolvePlan(Invoice invoice)
     {
-        if (stripeEvent.Data.Object is not Subscription subscription)
-        {
-            logger.LogWarning("customer.subscription.deleted without subscription object");
-            return;
-        }
+        var priceId = invoice.Lines?.Data?.FirstOrDefault()?.Pricing?.PriceDetails?.Price?.Id;
 
-        await subscriptionService.ClearSubscriptionAsync(subscription.CustomerId, ct);
+        if (priceId == configuration["Stripe:BasicPriceId"]) return PlanTypeEnum.Basic;
+        if (priceId == configuration["Stripe:PriceId"]) return PlanTypeEnum.Standard;
 
-        logger.LogInformation("Subscription {SubscriptionId} cancelled for customer {CustomerId}",
-            subscription.Id, subscription.CustomerId);
+        logger.LogWarning("Unknown price {PriceId} on invoice {InvoiceId}, defaulting to Basic",
+            priceId, invoice.Id);
+
+        return PlanTypeEnum.Basic;
     }
-    
-    private async Task HandleSubscriptionUpdatedAsync(Event stripeEvent, CancellationToken ct)
-    {
-        if (stripeEvent.Data.Object is not Stripe.Subscription subscription)
-            return;
-
-        await subscriptionService.SetCancelAtPeriodEndAsync(
-            subscription.CustomerId, subscription.CancelAtPeriodEnd, ct);
-
-        logger.LogInformation("Subscription {SubscriptionId} cancel_at_period_end = {Value}",
-            subscription.Id, subscription.CancelAtPeriodEnd);
-    }
-    
-    public async Task<string> CreateSmsTopUpSessionAsync(int salonId, string email, int packageSize, CancellationToken ct)
-    {
-        var priceId = configuration[$"Stripe:SmsPackages:{packageSize}"];
-
-        if (string.IsNullOrWhiteSpace(priceId))
-        {
-            throw new ConflictException(ErrorCodes.InvalidSmsPackage);
-        }
-
-        var options = new SessionCreateOptions
-        {
-            Mode = "payment",
-            LineItems = new List<SessionLineItemOptions>
-            {
-                new() { Price = priceId, Quantity = 1 }
-            },
-            CustomerEmail = email,
-            ClientReferenceId = salonId.ToString(),
-            Metadata = new Dictionary<string, string>
-            {
-                ["salonId"] = salonId.ToString(),
-                ["type"] = "sms_topup",
-                ["smsCount"] = packageSize.ToString()
-            },
-            SuccessUrl = configuration["Stripe:SuccessUrl"],
-            CancelUrl = configuration["Stripe:CancelUrl"]
-        };
-
-        var service = new SessionService();
-        var session = await service.CreateAsync(options, cancellationToken: ct);
-
-        return session.Url;
-    }
-    
-    
 }

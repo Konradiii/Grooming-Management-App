@@ -1,10 +1,11 @@
 ﻿using Grooming_Management_App.DTOs.SubscriptionDTO;
+using Grooming_Management_App.Enums;
 
 namespace Grooming_Management_App.Services.SubscriptionServ;
 
 public interface ISubscriptionService
 {
-    Task<DateOnly> RegisterPaymentAsync(int salonId, RegisterPaymentDto dto, CancellationToken ct);
+    Task<DateOnly> RegisterPaymentAsync(int salonId, RegisterPaymentDto dto, PlanTypeEnum plan, CancellationToken ct);
     
     Task MarkPaymentFailedAsync(int salonId, RegisterPaymentDto dto, CancellationToken ct);
     

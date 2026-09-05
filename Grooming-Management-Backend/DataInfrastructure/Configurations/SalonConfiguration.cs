@@ -1,4 +1,5 @@
-﻿using Grooming_Management_App.Models;
+﻿using Grooming_Management_App.Enums;
+using Grooming_Management_App.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -65,6 +66,8 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
         
         builder.Property(s => s.SmsIncluded).HasDefaultValue(100);
         builder.Property(s => s.SmsPurchased).HasDefaultValue(0);
+        
+        builder.Property(s => s.PlanType).HasDefaultValue(PlanTypeEnum.Basic);
 
     }
     
