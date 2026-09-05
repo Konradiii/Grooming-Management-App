@@ -85,7 +85,16 @@ public class ApiClient(IHttpClientFactory factory, TokenStore tokenStore)
     {
         try
         {
-            var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+            var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+            if (problem?.Errors is { Count: > 0 })
+            {
+                var details = problem.Errors
+                    .SelectMany(e => e.Value.Select(msg => $"{e.Key}: {msg}"));
+
+                return string.Join(" | ", details);
+            }
+
             if (!string.IsNullOrWhiteSpace(problem?.Title))
                 return ErrorMessages.Translate(problem.Title);
         }

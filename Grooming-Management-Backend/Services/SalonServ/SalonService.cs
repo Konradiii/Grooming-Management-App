@@ -20,6 +20,7 @@ public class SalonService(GroomingDbContext ctx) : ISalonService
         {
             Id = salonInfo.Id,
             Name = salonInfo.Name,
+            Phone = salonInfo.Phone,
             Street = salonInfo.Street,
             BuildingNumber = salonInfo.BuildingNumber,
             ApartmentNumber = salonInfo.ApartmentNumber,

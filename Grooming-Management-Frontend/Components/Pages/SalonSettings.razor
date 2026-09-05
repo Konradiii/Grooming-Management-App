@@ -130,6 +130,10 @@ else
             <MudSelectItem T="int" Value="24">Dzień przed wizytą</MudSelectItem>
             <MudSelectItem T="int" Value="48">Dwa dni przed wizytą</MudSelectItem>
         </MudSelect>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="isSaving" OnClick="SaveAsync">
+            @(isSaving ? "Zapisywanie..." : "Zapisz ustawienia przypomnień")
+        </MudButton>
     </MudPaper>
 
     <MudPaper Class="pa-6">

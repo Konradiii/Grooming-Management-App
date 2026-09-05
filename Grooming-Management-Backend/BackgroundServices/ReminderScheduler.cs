@@ -30,6 +30,9 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
                 {
                     var windowStart = DateTime.UtcNow.AddHours(salon.ReminderHoursBefore);
                     var windowEnd = windowStart.Add(_interval);
+                    
+                    logger.LogInformation("Salon {SalonId} reminder window: {Start} - {End}",
+                        salon.Id, windowStart, windowEnd);
 
                     var visits = await ctx.Visits
                         .IgnoreQueryFilters()

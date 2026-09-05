@@ -126,8 +126,8 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
         var localVisitTime = TimeZoneInfo.ConvertTimeFromUtc(
             DateTime.SpecifyKind(visit.Date, DateTimeKind.Utc), PolishTime);
 
-        var msg = $"Przypominamy o jutrzejszej wizycie Państwa pupila {visit.Dog.Name} " +
-                  $"o godzinie {localVisitTime:HH:mm} w salonie {visit.Salon.Name}. Do zobaczenia!";
+        var msg = $"Przypominamy o wizycie Państwa pupila {visit.Dog.Name} " +
+                  $"{FormatVisitDate(localVisitTime)} w salonie {visit.Salon.Name}. Do zobaczenia!";
 
         var phoneNumber = visit.DogOwner.Phone;
 
@@ -171,5 +171,21 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
         }
 
         salon.SmsPurchased--;
+    }
+    
+    // Data w treści zależy od tego, jak daleko jest wizyta — salon sam ustala
+    // wyprzedzenie, więc "jutro" nie zawsze jest prawdą.
+    private static string FormatVisitDate(DateTime localVisitTime)
+    {
+        var todayLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, PolishTime).Date;
+        var visitDay = localVisitTime.Date;
+
+        if (visitDay == todayLocal)
+            return $"dzisiaj o godzinie {localVisitTime:HH:mm}";
+
+        if (visitDay == todayLocal.AddDays(1))
+            return $"jutro o godzinie {localVisitTime:HH:mm}";
+
+        return $"{localVisitTime:dd.MM} o godzinie {localVisitTime:HH:mm}";
     }
 }
