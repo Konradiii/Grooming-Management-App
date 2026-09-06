@@ -16,6 +16,7 @@ using Grooming_Management_App.Services.EarningServ;
 using Grooming_Management_App.Services.GroomerScheduleServ;
 using Grooming_Management_App.Services.GroomerServ;
 using Grooming_Management_App.Services.GroomerTimeOffServ;
+using Grooming_Management_App.Services.NextVisitServ;
 using Grooming_Management_App.Services.NotificationServ;
 using Grooming_Management_App.Services.PasswordHasherServ;
 using Grooming_Management_App.Services.SalonServ;
@@ -140,6 +141,9 @@ builder.Services.AddScopedWithInterfaces<BlacklistService>(
 builder.Services.AddScopedWithInterfaces<AuthenticationService>(
     typeof(ILoginService), typeof(IPasswordService),
     typeof(IRegistrationService), typeof(ITokenSessionService));
+
+// -------------- Serwisy Statystyczne -------------
+builder.Services.AddScopedWithInterfaces<NextVisitService>(typeof(INextVisitReaderService));
 
 // ---------- Serwisy infrastrukturalne ----------
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
