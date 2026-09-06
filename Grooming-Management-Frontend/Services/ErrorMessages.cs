@@ -73,7 +73,7 @@ public static class ErrorMessages
         
         ["INVALID_POSTAL_CODE"] = "Nieprawidłowy kod pocztowy (format 00-000)",
         ["NO_ACTIVE_SUBSCRIPTION"] = "Brak aktywnej subskrypcji",
-        ["SUBSCRIPTION_SUSPENDED"] = "Dostęp wstrzymany — opłać abonament w ustawieniach salonu",
+        ["SUBSCRIPTION_SUSPENDED"] = "Dostęp wstrzymany - opłać abonament w ustawieniach salonu",
         ["INVALID_REMINDER_SETTINGS"] = "Nieprawidłowe ustawienia przypomnień",
         
         
@@ -84,6 +84,7 @@ public static class ErrorMessages
         ["SMS_LIMIT_EXCEEDED"] = "Wyczerpano limit SMS-ów. Doładuj pakiet w ustawieniach",
         ["INVALID_SMS_PACKAGE"] = "Nieprawidłowy pakiet SMS",
         ["BREED_NAME_TAKEN"] = "Taka rasa już istnieje",
+        ["PAYMENT_METHOD_REQUIRED"] = "Wybierz plan i podaj dane karty, żeby zacząć korzystać z aplikacji",
     };
 
     public static string Translate(string? code)

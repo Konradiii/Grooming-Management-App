@@ -17,15 +17,19 @@ public class SubscriptionController(ISubscriptionService service, ICurrentUserSe
 {
     
     [HttpPost("checkout")]
-    [Authorize(Roles = "Owner")]
     [EndpointSummary("Tworzy sesję płatności Stripe i zwraca adres do przekierowania")]
     public async Task<ActionResult<string>> CreateCheckout(PlanTypeEnum plan, CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
         var salon = await salonService.GetSalonAsync(salonId, ct);
 
+        // Trial należy się raz — salon, który już był podpięty do Stripe, dostaje
+        // subskrypcję płatną od pierwszego dnia.
+        var customerId = await service.GetProviderCustomerIdAsync(salonId, ct);
+        var withTrial = customerId == null;
+
         var url = await stripeService.CreateCheckoutSessionAsync(
-            salonId, salon.Name, currentUser.Email, plan, ct);
+            salonId, salon.Name, currentUser.Email, plan, withTrial, ct);
 
         return Ok(url);
     }

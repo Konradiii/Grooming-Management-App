@@ -77,4 +77,5 @@ public static class ErrorCodes
     public const string SmsLimitExceeded = "SMS_LIMIT_EXCEEDED";
     public const string InvalidSmsPackage = "INVALID_SMS_PACKAGE";
     public const string BreedNameTaken = "BREED_NAME_TAKEN";
+    public const string PaymentMethodRequired = "PAYMENT_METHOD_REQUIRED";
 }

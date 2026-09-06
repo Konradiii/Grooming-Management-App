@@ -1,0 +1,233 @@
+﻿@page "/wybierz-plan"
+@rendermode InteractiveServer
+@layout EmptyLayout
+@using Grooming_Management_App.Enums
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject TokenStore TokenStore
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<div class="auth auth--wide">
+    <div class="auth__card auth__card--plans">
+        <a class="auth__mark" href="https://groomsli.pl">Groomsli</a>
+        <h1 class="auth__title">Konto gotowe. Wybierz plan.</h1>
+        <p class="auth__lead">
+            Pierwsze 30 dni są bezpłatne. Podajesz dane karty, ale pierwsza płatność
+            zostanie pobrana dopiero po okresie próbnym. Możesz zrezygnować w każdej chwili.
+        </p>
+
+        <div class="plans">
+            <div class="plan">
+                <span class="plan__name">Basic</span>
+                <div class="plan__amount">69 zł<span class="plan__per"> / miesiąc</span></div>
+                <p class="plan__for">Dla salonu, który wysyła kilka wiadomości tygodniowo.</p>
+                <ul class="plan__list">
+                    <li><b>50</b> wiadomości SMS miesięcznie</li>
+                    <li>Bez limitu wizyt, psów i pracowników</li>
+                    <li>Konto dla każdego pracownika</li>
+                    <li>Pomoc telefoniczna</li>
+                </ul>
+                <button class="auth__btn auth__btn--ghost" disabled="@isRedirecting"
+                        @onclick="@(() => ChooseAsync(PlanTypeEnum.Basic))">
+                    @(isRedirecting ? "Chwileczkę..." : "Wybieram Basic")
+                </button>
+            </div>
+
+            <div class="plan plan--lead">
+                <span class="plan__name">Standard <span class="plan__tag">polecany</span></span>
+                <div class="plan__amount">109 zł<span class="plan__per"> / miesiąc</span></div>
+                <p class="plan__for">Dla salonu, który przypomina o każdej wizycie.</p>
+                <ul class="plan__list">
+                    <li><b>200</b> wiadomości SMS miesięcznie</li>
+                    <li>Bez limitu wizyt, psów i pracowników</li>
+                    <li>Konto dla każdego pracownika</li>
+                    <li>Pomoc telefoniczna</li>
+                </ul>
+                <button class="auth__btn" disabled="@isRedirecting"
+                        @onclick="@(() => ChooseAsync(PlanTypeEnum.Standard))">
+                    @(isRedirecting ? "Chwileczkę..." : "Wybieram Standard")
+                </button>
+            </div>
+        </div>
+
+        <p class="auth__alt">
+            <a href="/" @onclick:preventDefault @onclick="SkipAsync">Zrobię to później</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    html, body{background:#F2EDE3;overscroll-behavior-y:none}
+
+    .auth{
+        --pine:#0E2C24;
+        --pine-mid:#2C6350;
+        --amber:#E0A93B;
+        --line:#DDD6C9;
+        --ink-soft:#4E5B54;
+
+        min-height:100dvh;
+        display:flex;align-items:center;justify-content:center;
+        padding:2.5rem 1rem;
+        background:#F2EDE3;
+    }
+
+    .auth__card{
+        width:100%;
+        background:#fff;
+        border:1px solid var(--line);
+        border-radius:16px;
+        padding:2.5rem 2rem;
+        box-shadow:0 20px 50px -35px rgba(14,44,36,.6);
+    }
+    .auth__card--plans{max-width:46rem}
+
+    .auth__mark{
+        display:block;
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:700;font-size:1.5rem;letter-spacing:-.03em;
+        color:var(--pine);text-decoration:none;
+        margin-bottom:1.75rem;
+    }
+
+    .auth__title{
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:600;font-size:1.6rem;line-height:1.15;letter-spacing:-.02em;
+        color:var(--pine);margin:0 0 .6rem;
+    }
+
+    .auth__lead{color:var(--ink-soft);font-size:.95rem;margin:0 0 2rem;max-width:44ch}
+
+    .plans{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+
+    .plan{
+        border:1px solid var(--line);border-radius:14px;
+        padding:1.75rem 1.5rem;
+        display:flex;flex-direction:column;
+    }
+    .plan--lead{border-color:var(--pine);border-width:2px;padding:calc(1.75rem - 1px) calc(1.5rem - 1px)}
+
+    .plan__name{
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:600;font-size:1.1rem;color:var(--pine);
+        display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
+    }
+    .plan__tag{
+        font-family:"Instrument Sans","Segoe UI",sans-serif;
+        font-size:.7rem;font-weight:600;
+        background:var(--amber);color:var(--pine);
+        padding:.15rem .5rem;border-radius:20px;
+    }
+
+    .plan__amount{
+        font-family:"Bricolage Grotesque","Segoe UI",sans-serif;
+        font-weight:700;font-size:2.1rem;line-height:1;letter-spacing:-.04em;
+        color:var(--pine);margin:.8rem 0 .5rem;
+    }
+    .plan__per{font-size:.85rem;font-weight:400;color:var(--ink-soft);letter-spacing:0}
+
+    .plan__for{font-size:.9rem;color:var(--ink-soft);margin:0 0 1.2rem}
+
+    .plan__list{list-style:none;margin:0 0 1.5rem;padding:0;display:grid;gap:.5rem;flex:1}
+    .plan__list li{
+        font-size:.92rem;padding-left:1.1rem;position:relative;
+    }
+    .plan__list li::before{
+        content:"";position:absolute;left:0;top:.55rem;
+        width:.4rem;height:.4rem;border-radius:50%;background:var(--pine-mid);
+    }
+
+    .auth__btn{
+        width:100%;
+        font:inherit;font-weight:600;font-size:.98rem;
+        padding:.8rem 1.2rem;
+        border:1.5px solid transparent;border-radius:10px;
+        background:var(--amber);color:var(--pine);
+        cursor:pointer;
+        transition:background .15s ease;
+    }
+    .auth__btn:hover:not(:disabled){background:#EFBB4E}
+    .auth__btn--ghost{background:none;border-color:var(--pine);color:var(--pine)}
+    .auth__btn--ghost:hover:not(:disabled){background:var(--pine);color:#fff}
+    .auth__btn:disabled{opacity:.6;cursor:default}
+    .auth__btn:focus-visible{outline:3px solid var(--pine);outline-offset:3px}
+
+    .auth__alt{
+        margin:2rem 0 0;text-align:center;
+        font-size:.92rem;color:var(--ink-soft);
+    }
+    .auth__alt a{color:var(--ink-soft);text-underline-offset:3px}
+
+    @@media (max-width:700px){
+        html, body{background:#fff}
+        .auth{padding:0;background:#fff}
+        .auth__card{
+            max-width:none;min-height:100dvh;
+            border:0;border-radius:0;box-shadow:none;
+            padding:2.5rem 1.5rem 3rem;
+        }
+        .plans{grid-template-columns:1fr}
+    }
+</style>
+
+@code {
+    private bool isRedirecting;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        if (!TokenStore.IsLoggedIn)
+        {
+            await TokenStore.LoadFromStorageAsync();
+        }
+
+        if (!TokenStore.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task ChooseAsync(PlanTypeEnum plan)
+    {
+        isRedirecting = true;
+
+        try
+        {
+            var response = await Api.PostAsync<object?>(
+                $"api/Subscription/checkout?plan={plan}", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
+                return;
+            }
+
+            var url = (await response.Content.ReadAsStringAsync()).Trim('"');
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                Snackbar.Add("Nie udało się otworzyć strony płatności", Severity.Error);
+                return;
+            }
+
+            // Bez nowej karty — po płatności Stripe wraca na SuccessUrl w tym samym oknie.
+            Navigation.NavigateTo(url, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isRedirecting = false;
+        }
+    }
+
+    private void SkipAsync() => Navigation.NavigateTo("/");
+}

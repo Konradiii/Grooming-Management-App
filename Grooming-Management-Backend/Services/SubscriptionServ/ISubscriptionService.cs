@@ -27,4 +27,6 @@ public interface ISubscriptionService
     Task<int> ResetMonthlySmsPackagesAsync(CancellationToken ct);
     
     Task AddPurchasedSmsAsync(int salonId, int smsCount, RegisterPaymentDto dto, CancellationToken ct);
+    
+    Task StartTrialAsync(int salonId, PlanTypeEnum plan, DateOnly validUntil, CancellationToken ct);
 }

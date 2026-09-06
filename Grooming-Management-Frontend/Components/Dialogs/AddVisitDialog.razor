@@ -37,6 +37,7 @@
                              SearchFunc="SearchBreeds"
                              ToStringFunc="@(b => b == null ? "" : b.Name)"
                              CoerceText="false"
+                             CoerceValue="true"
                              Variant="Variant.Outlined"
                              MaxItems="null"
                              Class="mb-1" />
@@ -44,7 +45,7 @@
             @if (IsNewBreed)
             {
                 <MudText Typo="Typo.caption" Class="d-block mb-3" Style="color:var(--mud-palette-text-secondary);">
-                    Nie ma takiej rasy na liście — zostanie dodana do słownika Twojego salonu.
+                    Nie ma takiej rasy na liście - zostanie dodana do słownika Twojego salonu.
                 </MudText>
             }
             else
@@ -81,7 +82,7 @@
                     @foreach (var sb in availableServices)
                     {
                         <MudSelectItem T="GetServiceBreedDto" Value="sb">
-                            @sb.ServiceName (@sb.BreedName) — @sb.Price.ToString("0.00") zł, @EnumLabels.Duration(sb.Duration)
+                            @sb.ServiceName (@sb.BreedName) - @sb.Price.ToString("0.00") zł, @EnumLabels.Duration(sb.Duration)
                         </MudSelectItem>
                     }
                 </MudSelect>

@@ -12,7 +12,9 @@ public class StripeService(
     ISubscriptionService subscriptionService,
     ILogger<StripeService> logger) : IStripeService
 {
-    public async Task<string> CreateCheckoutSessionAsync(int salonId, string salonName, string email, PlanTypeEnum plan, CancellationToken ct)
+    private const int TrialDays = 30;
+    
+    public async Task<string> CreateCheckoutSessionAsync(int salonId, string salonName, string email, PlanTypeEnum plan, bool withTrial, CancellationToken ct)
     {
         var priceId = PriceIdFor(plan);
 
@@ -40,9 +42,13 @@ public class StripeService(
             },
             SubscriptionData = new SessionSubscriptionDataOptions
             {
+                // Przy trialu nie ma faktury, więc plan musi jechać w metadanych —
+                // ResolvePlanAsync nie miałby go skąd wziąć przy checkout.session.completed.
+                TrialPeriodDays = withTrial ? TrialDays : null,
                 Metadata = new Dictionary<string, string>
                 {
-                    ["salonId"] = salonId.ToString()
+                    ["salonId"] = salonId.ToString(),
+                    ["plan"] = plan.ToString()
                 }
             }
         };
@@ -176,6 +182,8 @@ public class StripeService(
 
         await subscriptionService.LinkProviderIdsAsync(
             salonId, session.CustomerId, session.SubscriptionId, ct);
+        
+        await ApplySubscriptionFromStripeAsync(salonId, session.SubscriptionId, ct);
 
         logger.LogInformation("Salon {SalonId} linked to Stripe customer {CustomerId}",
             salonId, session.CustomerId);
@@ -378,20 +386,72 @@ public class StripeService(
     {
         var subscriptionId = invoice.Parent?.SubscriptionDetails?.SubscriptionId;
 
-        if (!string.IsNullOrEmpty(subscriptionId))
+        if (string.IsNullOrEmpty(subscriptionId)) return PlanTypeEnum.Basic;
+
+        var subService = new Stripe.SubscriptionService();
+        var subscription = await subService.GetAsync(subscriptionId, cancellationToken: ct);
+
+        var plan = PlanFromMetadata(subscription.Metadata)
+                   ?? PlanFromPriceId(subscription.Items?.Data?.FirstOrDefault()?.Price?.Id);
+
+        if (plan == null)
         {
-            var subService = new Stripe.SubscriptionService();
-            var subscription = await subService.GetAsync(subscriptionId, cancellationToken: ct);
-
-            var priceId = subscription.Items?.Data?.FirstOrDefault()?.Price?.Id;
-
-            if (priceId == configuration["Stripe:BasicPriceId"]) return PlanTypeEnum.Basic;
-            if (priceId == configuration["Stripe:PriceId"]) return PlanTypeEnum.Standard;
-
-            logger.LogWarning("Unknown price {PriceId} on subscription {SubscriptionId}",
-                priceId, subscriptionId);
+            logger.LogWarning("Unknown plan on subscription {SubscriptionId}, defaulting to Basic", subscriptionId);
         }
 
-        return PlanTypeEnum.Basic;
+        return plan ?? PlanTypeEnum.Basic;
+    }
+    
+   
+    
+    
+    // Przy trialu invoice.paid przyjdzie dopiero po 30 dniach — plan i datę ważności
+    // trzeba ustawić już przy checkout, inaczej salon zostałby bez dostępu.
+    private async Task ApplySubscriptionFromStripeAsync(int salonId, string? subscriptionId, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(subscriptionId)) return;
+
+        var subService = new Stripe.SubscriptionService();
+        var subscription = await subService.GetAsync(subscriptionId, cancellationToken: ct);
+
+        var item = subscription.Items?.Data?.FirstOrDefault();
+
+        var plan = PlanFromMetadata(subscription.Metadata)
+                   ?? PlanFromPriceId(item?.Price?.Id)
+                   ?? PlanTypeEnum.Basic;
+
+        var validUntil = subscription.TrialEnd ?? item?.CurrentPeriodEnd;
+
+        if (validUntil == null)
+        {
+            logger.LogWarning("Subscription {SubscriptionId} without trial end or period end", subscriptionId);
+            return;
+        }
+
+        await subscriptionService.StartTrialAsync(
+            salonId, plan, DateOnly.FromDateTime(validUntil.Value), ct);
+
+        logger.LogInformation("Salon {SalonId} started {Plan} with access until {ValidUntil}",
+            salonId, plan, validUntil);
+    }
+
+    private static PlanTypeEnum? PlanFromMetadata(IDictionary<string, string>? metadata)
+    {
+        if (metadata != null
+            && metadata.TryGetValue("plan", out var raw)
+            && Enum.TryParse<PlanTypeEnum>(raw, out var plan))
+        {
+            return plan;
+        }
+
+        return null;
+    }
+
+    private PlanTypeEnum? PlanFromPriceId(string? priceId)
+    {
+        if (priceId == configuration["Stripe:BasicPriceId"]) return PlanTypeEnum.Basic;
+        if (priceId == configuration["Stripe:PriceId"]) return PlanTypeEnum.Standard;
+
+        return null;
     }
 }

@@ -264,7 +264,7 @@
             }
 
             await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken, result.RequiresPasswordChange);
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/wybierz-plan");
         }
         catch (Exception ex)
         {

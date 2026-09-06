@@ -8,6 +8,7 @@ public class TokenStore(ILocalStorageService localStorage)
     private const string AccessTokenKey = "accessToken";
     private const string RefreshTokenKey = "refreshToken";
     private const string RequiresPasswordChangeKey = "requiresPasswordChange";
+    public bool IsAwaitingPayment => SubscriptionStatus == "AwaitingPayment";
     
 
     public event Action? OnChange;

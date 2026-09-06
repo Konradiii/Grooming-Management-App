@@ -52,7 +52,7 @@ else
     </MudGrid>
 
     <MudPaper Class="pa-4 mb-6" Elevation="1">
-        <MudText Typo="Typo.subtitle1" Class="mb-1">Plan miesięczny — 89 zł</MudText>
+        <MudText Typo="Typo.subtitle1" Class="mb-1">Plan miesięczny - 89 zł</MudText>
         <MudText Typo="Typo.body2" Class="mb-4">
             Pełny dostęp do systemu, bez limitu pracowników i wizyt.
         </MudText>
@@ -188,6 +188,7 @@ else
         SubscriptionStatusEnum.Active => "Aktywna",
         SubscriptionStatusEnum.PastDue => "Zaległość",
         SubscriptionStatusEnum.Suspended => "Wstrzymana",
+        SubscriptionStatusEnum.AwaitingPayment => "Oczekuje na dane karty",
         _ => status.ToString()
     };
 

@@ -5,5 +5,6 @@ public enum SubscriptionStatusEnum
     Trial,      // okres próbny
     Active,     // opłacone
     PastDue,    // wygasło, trwa tydzień karencji
-    Suspended   // karencja minęła, dostęp odcięty
+    Suspended,   // karencja minęła, dostęp odcięty
+    AwaitingPayment
 }

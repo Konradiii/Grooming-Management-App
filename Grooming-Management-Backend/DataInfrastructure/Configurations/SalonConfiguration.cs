@@ -64,7 +64,7 @@ public class SalonConfiguration : IEntityTypeConfiguration<Salon>
 
         builder.HasIndex(s => s.ProviderCustomerId);
         
-        builder.Property(s => s.SmsIncluded).HasDefaultValue(100);
+        builder.Property(s => s.SmsIncluded).HasDefaultValue(0);
         builder.Property(s => s.SmsPurchased).HasDefaultValue(0);
         
         builder.Property(s => s.PlanType).HasDefaultValue(PlanTypeEnum.Basic);

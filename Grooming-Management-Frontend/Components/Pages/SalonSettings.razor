@@ -62,13 +62,13 @@ else
         }
         else
         {
-            @if (smsBalance.Remaining == 0)
+            @if (smsBalance.Remaining == 0 && subscription?.Status != SubscriptionStatusEnum.AwaitingPayment)
             {
                 <MudAlert Severity="Severity.Error" Class="mb-4">
                     Wyczerpano limit. Powiadomienia SMS nie będą wysyłane, dopóki nie doładujesz pakietu.
                 </MudAlert>
             }
-            else if (smsBalance.Remaining <= 20)
+            else if (smsBalance.Remaining <= 20 && subscription?.Status != SubscriptionStatusEnum.AwaitingPayment)
             {
                 <MudAlert Severity="Severity.Warning" Class="mb-4">
                     Zostało niewiele wiadomości. Warto doładować pakiet.
@@ -147,7 +147,15 @@ else
         }
         else
         {
-            @if (subscription.Status == SubscriptionStatusEnum.Suspended)
+            
+            @if (subscription.Status == SubscriptionStatusEnum.AwaitingPayment)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-4">
+                    Wybierz plan i podaj dane karty. Pierwsze 30 dni jest bezpłatne - pierwsza
+                    płatność zostanie pobrana dopiero po okresie próbnym.
+                </MudAlert>
+            }
+            else if (subscription.Status == SubscriptionStatusEnum.Suspended)
             {
                 <MudAlert Severity="Severity.Error" Class="mb-4">
                     Dostęp został wstrzymany z powodu braku płatności. Opłać abonament, aby odblokować dodawanie wizyt.
@@ -181,12 +189,19 @@ else
                 </MudItem>
             </MudGrid>
 
-            @if (subscription.Status == SubscriptionStatusEnum.Active)
+            @if (subscription.HasActiveSubscription)
             {
                 <MudText Typo="Typo.body2" Class="mb-3">
                     Plan @PlanLabel(subscription.PlanType) - @PlanPrice(subscription.PlanType) miesięcznie.
-                    Odnawia się automatycznie. W panelu płatności zmienisz kartę,
-                    pobierzesz faktury albo anulujesz subskrypcję.
+                    @if (subscription.Status == SubscriptionStatusEnum.Trial)
+                    {
+                        <text>Pierwsza płatność zostanie pobrana @(subscription.ValidUntil?.ToString("dd.MM.yyyy")).</text>
+                    }
+                    else
+                    {
+                        <text>Odnawia się automatycznie.</text>
+                    }
+                    W panelu płatności zmienisz kartę, pobierzesz faktury albo anulujesz subskrypcję.
                 </MudText>
 
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Class="mb-6"
@@ -311,8 +326,8 @@ else
 
         if (query["platnosc"] == "ok")
         {
-            if (subscription?.Status == SubscriptionStatusEnum.Active
-                && TokenStore.SubscriptionStatus != "Active")
+            if (subscription != null
+                && TokenStore.SubscriptionStatus != subscription.Status.ToString())
             {
                 await Api.RefreshTokenAsync();
             }

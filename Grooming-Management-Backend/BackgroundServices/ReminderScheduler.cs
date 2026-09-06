@@ -22,7 +22,8 @@ public class ReminderScheduler(IServiceScopeFactory scopeFactory, ILogger<Remind
 
                 var salons = await ctx.Salons
                     .Where(s => s.RemindersEnabled)
-                    .Where(s => s.SubscriptionStatus != SubscriptionStatusEnum.Suspended)
+                    .Where(s => s.SubscriptionStatus != SubscriptionStatusEnum.Suspended
+                                && s.SubscriptionStatus != SubscriptionStatusEnum.AwaitingPayment)
                     .Select(s => new { s.Id, s.ReminderHoursBefore })
                     .ToListAsync(stoppingToken);
 

@@ -271,12 +271,13 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 
         var salons = await ctx.Salons
             .Where(s => s.SmsResetDate <= today)
-            .Where(s => s.SubscriptionStatus != SubscriptionStatusEnum.Suspended)
+            .Where(s => s.SubscriptionStatus != SubscriptionStatusEnum.Suspended
+                        && s.SubscriptionStatus != SubscriptionStatusEnum.AwaitingPayment)
             .ToListAsync(ct);
 
         foreach (var salon in salons)
         {
-            salon.SmsIncluded = SmsPackageFor(salon.PlanType);;
+            salon.SmsIncluded = SmsPackageFor(salon.PlanType);
             salon.SmsResetDate = today.AddMonths(1);
         }
 
@@ -322,6 +323,29 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
 
         ctx.Payments.Add(payment);
         await ctx.SaveChangesAsync(ct);
+        
     }
+
+    public async Task StartTrialAsync(int salonId, PlanTypeEnum plan, DateOnly validUntil, CancellationToken ct)
+    {
+        var salon = await ctx.Salons.FirstOrDefaultAsync(s => s.Id == salonId, ct);
+
+        if (salon == null)
+        {
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        salon.PlanType = plan;
+        salon.SubscriptionStatus = SubscriptionStatusEnum.Trial;
+        salon.SubscriptionValidUntil = validUntil;
+        salon.SmsIncluded = SmsPackageFor(plan);
+        salon.SmsResetDate = today.AddMonths(1);
+
+        // Status zostaje Trial — Active ustawi dopiero pierwsza faktura.
+        await ctx.SaveChangesAsync(ct);
+    }
+    
     
 }

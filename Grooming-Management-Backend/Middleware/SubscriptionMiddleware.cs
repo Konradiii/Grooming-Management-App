@@ -49,6 +49,17 @@ public class SubscriptionMiddleware(RequestDelegate next)
             .Select(s=>s.SubscriptionStatus)
             .FirstOrDefaultAsync();
         
+        if (status == SubscriptionStatusEnum.AwaitingPayment)
+        {
+            context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
+            await context.Response.WriteAsJsonAsync(new ProblemDetails
+            {
+                Status = StatusCodes.Status402PaymentRequired,
+                Title = ErrorCodes.PaymentMethodRequired
+            });
+            return;
+        }
+
         if (status == SubscriptionStatusEnum.Suspended)
         {
             context.Response.StatusCode = StatusCodes.Status402PaymentRequired;

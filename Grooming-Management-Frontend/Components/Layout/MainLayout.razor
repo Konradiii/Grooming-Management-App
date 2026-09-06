@@ -22,6 +22,16 @@
     </MudDrawer>
 
     <MudMainContent>
+        @if (TokenStore.IsAwaitingPayment)
+        {
+            <MudAlert Severity="Severity.Warning" Square="true" Class="mb-0">
+                Dokończ konfigurację - podaj dane karty, żeby zacząć 30 dni bezpłatnego okresu próbnego.
+                @if (TokenStore.IsOwner)
+                {
+                    <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Wybierz plan</b></MudLink>
+                }
+            </MudAlert>
+        }
         @if (TokenStore.IsSuspended)
         {
             <MudAlert Severity="Severity.Error" Square="true" Class="mb-0">
@@ -36,15 +46,8 @@
                 <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Przejdź do ustawień</b></MudLink>
             </MudAlert>
         }
-        else if (TokenStore.IsTrial)
-        {
-            <MudAlert Severity="Severity.Info" Square="true" Class="mb-0">
-                Korzystasz z bezpłatnego okresu próbnego.
-                <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Zobacz szczegóły</b></MudLink>
-            </MudAlert>
-        }
 
-        @if (TokenStore.IsSmsEmpty && !TokenStore.SmsWarningDismissed)
+        @if (TokenStore.IsSmsEmpty && !TokenStore.SmsWarningDismissed && !TokenStore.IsAwaitingPayment)
         {
             <MudAlert Severity="Severity.Error" Square="true" Class="mb-0"
                       ShowCloseIcon="true" CloseIconClicked="TokenStore.DismissSmsWarning">
@@ -55,7 +58,7 @@
                 }
             </MudAlert>
         }
-        else if (TokenStore.IsSmsLow && !TokenStore.SmsWarningDismissed)
+        else if (TokenStore.IsSmsLow && !TokenStore.SmsWarningDismissed && !TokenStore.IsAwaitingPayment)
         {
             <MudAlert Severity="Severity.Warning" Square="true" Class="mb-0"
                       ShowCloseIcon="true" CloseIconClicked="TokenStore.DismissSmsWarning">

@@ -71,7 +71,7 @@ public class GroomerController(IGroomerReaderService readerService, IGroomerWrit
 
     [HttpGet("basic")]
     [Authorize(Roles = "Owner,Groomer")]
-    [EndpointSummary("Zwraca uproszczoną listę groomerów salonu — bez danych rozliczeniowych")]
+    [EndpointSummary("Zwraca uproszczoną listę groomerów salonu - bez danych rozliczeniowych")]
     public async Task<ActionResult<List<GetGroomerBasicDto>>> GetAllBasic(CancellationToken ct)
     {
         var salonId = currentUser.SalonId;
