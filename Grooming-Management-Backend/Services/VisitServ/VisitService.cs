@@ -322,6 +322,9 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
         }
     }
 
+   
+    
+    
     var startTime = dto.Date;
     var endTime = dto.Date.AddMinutes(dto.DurationMinutes);
 
@@ -354,6 +357,12 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
     {
         throw new ConflictException(ErrorCodes.GroomerUnavailable);
     }
+    
+    if (visit.Date != dto.Date)
+    {
+        visit.OriginalDate ??= visit.Date;
+        visit.RescheduleCount++;
+    }
 
     visit.Date = dto.Date;
     visit.GroomerId = dto.GroomerId;
@@ -365,20 +374,29 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
     await ctx.SaveChangesAsync(ct);
 }
 
-    public async Task ChangeVisitStatusAsync(int salonId, int visitId, StatusEnum status, CancellationToken ct)
+public async Task ChangeVisitStatusAsync(int salonId, int visitId, StatusEnum status, CancellationToken ct)
+{
+    var visit = await ctx.Visits
+        .Where(v => v.SalonId == salonId && v.Id == visitId)
+        .FirstOrDefaultAsync(ct);
+
+    if (visit == null)
     {
-        var visit = await ctx.Visits
-            .Where(v => v.SalonId == salonId && v.Id == visitId)
-            .FirstOrDefaultAsync(ct);
-
-        if (visit == null)
-        {
-            throw new NotFoundException(ErrorCodes.VisitNotFound);
-        }
-
-        visit.Status = status;
-        await ctx.SaveChangesAsync(ct);
+        throw new NotFoundException(ErrorCodes.VisitNotFound);
     }
+
+    if (status == StatusEnum.Cancelled && visit.Status != StatusEnum.Cancelled)
+    {
+        visit.CancelledAt = DateTime.UtcNow;
+    }
+    else if (status != StatusEnum.Cancelled && visit.Status == StatusEnum.Cancelled)
+    {
+        visit.CancelledAt = null;
+    }
+
+    visit.Status = status;
+    await ctx.SaveChangesAsync(ct);
+}
 
     public async Task UpdateFinalPriceAsync(int salonId, int visitId, decimal finalPrice, CancellationToken ct)
     {

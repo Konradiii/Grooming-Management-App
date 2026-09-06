@@ -73,5 +73,8 @@ public class VisitConfiguration : IEntityTypeConfiguration<Visit>
             .WithMany()
             .HasForeignKey(v => v.AssistantGroomerId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Property(v => v.RescheduleCount).HasDefaultValue(0);
+        
     }
 }

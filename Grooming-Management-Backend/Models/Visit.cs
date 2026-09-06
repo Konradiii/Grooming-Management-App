@@ -7,6 +7,9 @@ public class Visit
     public int Id { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime Date { get; set; }
+    public DateTime? CancelledAt { get; set; }
+    public int RescheduleCount { get; set; }
+    public DateTime? OriginalDate { get; set; }
     public int EstimatedDuration { get; set; }
     public decimal ProposedPrice { get; set; }
     public decimal? FinalPrice { get; set; }
