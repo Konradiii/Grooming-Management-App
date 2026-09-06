@@ -77,6 +77,7 @@ public class VisitService(GroomingDbContext ctx, IBlacklistCheckService blacklis
                 Status = v.Status,
                 Notes = v.Notes,
                 DogName = v.Dog.Name,
+                DogNotes = v.Dog.Notes,
                 DogOwnerFullName = v.DogOwner.FirstName + " " + v.DogOwner.LastName,
                 GroomerFullName = v.Groomer.FirstName + " " + v.Groomer.LastName,
                 ServiceName = v.ServiceBreed != null

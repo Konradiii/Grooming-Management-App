@@ -12,6 +12,7 @@ public class GetVisitDetailsDto
     public decimal? FinalPrice { get; set; }
     public StatusEnum Status { get; set; }
     public string? Notes { get; set; }
+    public string? DogNotes { get; set; }
     public string DogName { get; set; }
     public string DogOwnerFullName { get; set; }
     public string GroomerFullName { get; set; }

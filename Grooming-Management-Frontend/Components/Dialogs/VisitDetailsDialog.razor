@@ -21,6 +21,16 @@
         {
             <MudText Typo="Typo.h6">@visit.DogName</MudText>
             <MudText Typo="Typo.body2" Class="mb-4">@visit.BreedName</MudText>
+            
+            <MudText Typo="Typo.h6">@visit.DogName</MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">@visit.BreedName</MudText>
+
+            @if (!string.IsNullOrWhiteSpace(visit.DogNotes))
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                    @visit.DogNotes
+                </MudAlert>
+            }
 
             @if (!isEditing)
             {
