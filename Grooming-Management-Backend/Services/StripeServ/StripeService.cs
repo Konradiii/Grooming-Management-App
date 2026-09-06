@@ -232,6 +232,12 @@ public class StripeService(
             logger.LogInformation("Invoice {InvoiceId} is not subscription-related, ignoring", invoice.Id);
             return;
         }
+        
+        if (invoice.AmountPaid == 0)
+        {
+            logger.LogInformation("Invoice {InvoiceId} has zero amount (trial), ignoring", invoice.Id);
+            return;
+        }
 
         var salonId = await subscriptionService.GetSalonIdByCustomerIdAsync(invoice.CustomerId, ct);
 
