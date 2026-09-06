@@ -85,6 +85,8 @@ public static class ErrorMessages
         ["INVALID_SMS_PACKAGE"] = "Nieprawidłowy pakiet SMS",
         ["BREED_NAME_TAKEN"] = "Taka rasa już istnieje",
         ["PAYMENT_METHOD_REQUIRED"] = "Wybierz plan i podaj dane karty, żeby zacząć korzystać z aplikacji",
+        ["PLAN_DOES_NOT_ALLOW_ACCOUNTS"] = "Konta dla pracowników są dostępne w planie Standard",
+        ["ACCOUNT_INACTIVE"] = "Konto zostało dezaktywowane. Skontaktuj się z właścicielem salonu",
     };
 
     public static string Translate(string? code)

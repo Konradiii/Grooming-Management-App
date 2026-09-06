@@ -58,6 +58,21 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             InvoiceUrl = dto.InvoiceUrl,
             SalonId = salonId
         };
+        
+        if (plan == PlanTypeEnum.Basic)
+        {
+            var groomerUserIds = await ctx.Groomers
+                .Where(g => g.SalonId == salonId && g.UserId != null)
+                .Select(g => g.UserId!.Value)
+                .ToListAsync(ct);
+
+            if (groomerUserIds.Count > 0)
+            {
+                await ctx.Users
+                    .Where(u => groomerUserIds.Contains(u.Id))
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.ActiveStatus, ActiveStatusEnum.Inactive), ct);
+            }
+        }
 
         ctx.Payments.Add(payment);
         await ctx.SaveChangesAsync(ct);

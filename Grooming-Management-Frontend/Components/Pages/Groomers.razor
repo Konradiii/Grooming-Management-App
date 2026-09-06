@@ -2,11 +2,13 @@
 @rendermode InteractiveServer
 @inherits OwnerOnlyPage
 @using Grooming_Management_App.DTOs.GroomerDTO
+@using Grooming_Management_App.DTOs.SubscriptionDTO
 @using Grooming_Management_App.Enums
 @using Grooming_Management_Frontend.Components.Dialogs
 @using Grooming_Management_Frontend.Services
 @inject ApiClient Api
 @inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <MudText Typo="Typo.h5" Class="mb-4">Groomerzy</MudText>
 
@@ -20,12 +22,17 @@
 {
     <MudProgressCircular Indeterminate="true" />
 }
-else if (errorMessage != null)
-{
-    <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
-}
 else
 {
+    @if (!CanCreateAccounts)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            W planie Basic pracownicy nie mają własnych kont. Grafiki i rozliczenia
+            prowadzisz sama.
+            <MudLink Href="/ustawienia" Color="Color.Inherit"><b>Zobacz plan Standard</b></MudLink>
+        </MudAlert>
+    }
+
     <MudTable Items="groomers" Hover="true" Striped="true">
         <HeaderContent>
             <MudTh>Imię</MudTh>
@@ -53,9 +60,18 @@ else
 
                     @if (!context.HasAccount)
                     {
-                        <MudMenuItem Icon="@Icons.Material.Filled.Key" OnClick="@(() => OpenAccountDialog(context))">
-                            Utwórz konto
-                        </MudMenuItem>
+                        @if (CanCreateAccounts)
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Key" OnClick="@(() => OpenAccountDialog(context))">
+                                Utwórz konto
+                            </MudMenuItem>
+                        }
+                        else
+                        {
+                            <MudMenuItem Icon="@Icons.Material.Filled.Lock" Disabled="true">
+                                Utwórz konto (plan Standard)
+                            </MudMenuItem>
+                        }
                     }
 
                     @if (context.ActiveStatus == ActiveStatusEnum.Active)
@@ -78,8 +94,11 @@ else
 
 @code {
     private List<GetGroomerDto> groomers = new();
+    private GetSubscriptionDto? subscription;
     private bool isLoading = true;
-    private string? errorMessage;
+
+    // Konta pracowników są funkcją planu Standard.
+    private bool CanCreateAccounts => subscription?.PlanType == PlanTypeEnum.Standard;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -87,21 +106,21 @@ else
 
         if (firstRender)
         {
-            await LoadGroomersAsync();
+            await LoadDataAsync();
             StateHasChanged();
         }
     }
 
-    private async Task LoadGroomersAsync()
+    private async Task LoadDataAsync()
     {
         try
         {
-            var result = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer");
-            groomers = result ?? new();
+            groomers = await Api.GetAsync<List<GetGroomerDto>>("api/Groomer") ?? new();
+            subscription = await Api.GetAsync<GetSubscriptionDto>("api/Subscription");
         }
         catch (Exception ex)
         {
-            errorMessage = $"Nie udało się pobrać danych: {ex.Message}";
+            Snackbar.Add($"Nie udało się pobrać danych: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -122,7 +141,7 @@ else
 
         if (result is { Canceled: false })
         {
-            await LoadGroomersAsync();
+            await LoadDataAsync();
             StateHasChanged();
         }
     }
@@ -140,7 +159,7 @@ else
 
         if (result is { Canceled: false })
         {
-            await LoadGroomersAsync();
+            await LoadDataAsync();
             StateHasChanged();
         }
     }
@@ -150,16 +169,16 @@ else
         var action = activate ? "ActivateGroomer" : "DeactivateGroomer";
         var response = await Api.PutAsync<object?>($"api/Groomer/{groomer.Id}/{action}", null);
 
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
-            await LoadGroomersAsync();
-            StateHasChanged();
+            Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
+            return;
         }
-        else
-        {
-            errorMessage = await ApiClient.ReadErrorAsync(response);
-        }
+
+        await LoadDataAsync();
+        StateHasChanged();
     }
+
     private async Task OpenAccountDialog(GetGroomerDto groomer)
     {
         var parameters = new DialogParameters<CreateGroomerAccountDialog>
@@ -174,7 +193,7 @@ else
 
         if (result is { Canceled: false })
         {
-            await LoadGroomersAsync();
+            await LoadDataAsync();
             StateHasChanged();
         }
     }

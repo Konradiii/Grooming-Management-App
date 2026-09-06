@@ -78,4 +78,6 @@ public static class ErrorCodes
     public const string InvalidSmsPackage = "INVALID_SMS_PACKAGE";
     public const string BreedNameTaken = "BREED_NAME_TAKEN";
     public const string PaymentMethodRequired = "PAYMENT_METHOD_REQUIRED";
+    public const string PlanDoesNotAllowAccounts = "PLAN_DOES_NOT_ALLOW_ACCOUNTS";
+    public const string AccountInactive = "ACCOUNT_INACTIVE";
 }

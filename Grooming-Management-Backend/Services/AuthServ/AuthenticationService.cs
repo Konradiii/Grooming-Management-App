@@ -15,6 +15,21 @@ public class AuthenticationService(GroomingDbContext ctx, IPasswordHasher passwo
     public async Task<CreateGroomerAccountResultDto> RegisterGroomerAccountAsync(int salonId, int groomerId, CreateAccountDto dto, CancellationToken ct)
     {
         
+        var salon = await ctx.Salons
+            .Where(s => s.Id == salonId)
+            .Select(s => new { s.PlanType })
+            .FirstOrDefaultAsync(ct);
+
+        if (salon == null)
+        {
+            throw new NotFoundException(ErrorCodes.SalonNotFound);
+        }
+
+        if (salon.PlanType == PlanTypeEnum.Basic)
+        {
+            throw new ConflictException(ErrorCodes.PlanDoesNotAllowAccounts);
+        }
+        
         Validate.Email(dto.Email);
         
         var groomer = await ctx.Groomers
@@ -178,6 +193,11 @@ public async Task<LoginResponseDto> LoginAsync(LoginDto dto, CancellationToken c
     if (user == null)
     {
         throw new UnauthorizedException(ErrorCodes.InvalidCredentials);
+    }
+    
+    if (user.ActiveStatus != ActiveStatusEnum.Active)
+    {
+        throw new UnauthorizedException(ErrorCodes.AccountInactive);
     }
 
     if (!passwordHasher.VerifyHashedPassword(dto.Password, user.PasswordHash))
