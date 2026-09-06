@@ -36,9 +36,21 @@
                              Placeholder="Wpisz nazwę rasy"
                              SearchFunc="SearchBreeds"
                              ToStringFunc="@(b => b == null ? "" : b.Name)"
+                             CoerceText="false"
                              Variant="Variant.Outlined"
                              MaxItems="null"
-                             Class="mb-4" />
+                             Class="mb-1" />
+
+            @if (IsNewBreed)
+            {
+                <MudText Typo="Typo.caption" Class="d-block mb-3" Style="color:var(--mud-palette-text-secondary);">
+                    Nie ma takiej rasy na liście — zostanie dodana do słownika Twojego salonu.
+                </MudText>
+            }
+            else
+            {
+                <div class="mb-4"></div>
+            }
         }
         else
         {
@@ -140,7 +152,7 @@
 
     <DialogActions>
         <MudButton OnClick="Cancel">Anuluj</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="SaveAsync">
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="isSaving" OnClick="@(() => SaveAsync())">
             @(isSaving ? "Zapisywanie..." : "Zapisz")
         </MudButton>
     </DialogActions>
@@ -155,14 +167,13 @@
     private bool withAssistant;
     private bool fromPriceList = true;
 
-    private bool ignoreOverlap;
-
     private string firstName = string.Empty;
     private string lastName = string.Empty;
     private string phone = string.Empty;
     private string dogName = string.Empty;
     private int ageInMonths;
     private GetBreedDto? selectedBreed;
+    private string? breedSearchText;
 
     private List<GetDogDto> dogs = new();
     private List<GetGroomerBasicDto> groomers = new();
@@ -184,7 +195,16 @@
 
     private bool isSaving;
 
-    private bool HasBreedSelected => withNewDog ? selectedBreed != null : selectedDog != null;
+    private bool HasBreedSelected => withNewDog
+        ? selectedBreed != null || !string.IsNullOrWhiteSpace(breedSearchText)
+        : selectedDog != null;
+
+    // Wpisany tekst nie pasuje do żadnej znanej rasy — przy zapisie powstanie nowa.
+    private bool IsNewBreed =>
+        withNewDog
+        && selectedBreed == null
+        && !string.IsNullOrWhiteSpace(breedSearchText)
+        && !breeds.Any(b => string.Equals(b.Name, breedSearchText.Trim(), StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
@@ -231,6 +251,9 @@
 
     private Task<IEnumerable<GetBreedDto>> SearchBreeds(string value, CancellationToken ct)
     {
+        // Zapamiętujemy wpisany tekst — jeśli nic nie pasuje, posłuży do utworzenia rasy.
+        breedSearchText = value;
+
         if (string.IsNullOrWhiteSpace(value))
             return Task.FromResult<IEnumerable<GetBreedDto>>(breeds);
 
@@ -251,6 +274,10 @@
     {
         selectedBreed = breed;
         selectedService = null;
+
+        if (breed != null)
+            breedSearchText = breed.Name;
+
         FilterServices(breed?.Name);
     }
 
@@ -279,6 +306,35 @@
             durationMinutes = service.Duration;
     }
 
+    // Zwraca Id rasy: wybranej z listy, dopasowanej po nazwie albo nowo utworzonej.
+    private async Task<int?> ResolveBreedIdAsync()
+    {
+        if (selectedBreed != null) return selectedBreed.Id;
+
+        var typed = breedSearchText?.Trim();
+
+        if (string.IsNullOrWhiteSpace(typed)) return null;
+
+        // Ktoś wpisał nazwę bez klikania podpowiedzi — nie twórz duplikatu.
+        var existing = breeds.FirstOrDefault(b =>
+            string.Equals(b.Name, typed, StringComparison.OrdinalIgnoreCase));
+
+        if (existing != null) return existing.Id;
+
+        var response = await Api.PostAsync("api/Breed", new CreateBreedDto { Name = typed });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
+            return null;
+        }
+
+        breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
+
+        return breeds.FirstOrDefault(b =>
+            string.Equals(b.Name, typed, StringComparison.OrdinalIgnoreCase))?.Id;
+    }
+
     private async Task<bool> ConfirmOverlapAsync()
     {
         var parameters = new DialogParameters<ConfirmDialog>
@@ -294,7 +350,9 @@
         return result is { Canceled: false };
     }
 
-    private async Task SaveAsync()
+    // Flaga nakładania jest parametrem, nie polem — inaczej po jednym potwierdzeniu
+    // zostawałaby włączona i kolejny zapis przeszedłby bez pytania.
+    private async Task SaveAsync(bool ignoreOverlap = false)
     {
         if (withNewDog)
         {
@@ -316,9 +374,9 @@
                 return;
             }
 
-            if (selectedBreed == null)
+            if (selectedBreed == null && string.IsNullOrWhiteSpace(breedSearchText))
             {
-                Snackbar.Add("Wybierz rasę", Severity.Warning);
+                Snackbar.Add("Wybierz lub wpisz rasę", Severity.Warning);
                 return;
             }
         }
@@ -379,6 +437,17 @@
 
         try
         {
+            int breedId = 0;
+
+            if (withNewDog)
+            {
+                var resolved = await ResolveBreedIdAsync();
+
+                if (resolved == null) return;   // komunikat już poszedł
+
+                breedId = resolved.Value;
+            }
+
             var visitDate = Dates.ToUtc(selectedDate.Value.Date.Add(selectedTime.Value));
             var assistantId = withAssistant ? selectedAssistant?.Id : null;
 
@@ -397,7 +466,7 @@
                     Phone = phone,
                     DogName = dogName,
                     AgeInMonths = ageInMonths,
-                    BreedId = selectedBreed!.Id,
+                    BreedId = breedId,
                     GroomerId = selectedGroomer.Id,
                     AssistantGroomerId = assistantId,
                     ServiceBreedId = serviceBreedId,
@@ -442,8 +511,7 @@
 
                     if (!confirmed) return;
 
-                    ignoreOverlap = true;
-                    await SaveAsync();
+                    await SaveAsync(true);
                     return;
                 }
 

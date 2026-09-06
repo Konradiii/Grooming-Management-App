@@ -10,4 +10,6 @@ public interface IStripeService
     Task<string> CreatePortalSessionAsync(string customerId, CancellationToken ct);
 
     Task<string> CreateSmsTopUpSessionAsync(int salonId, string email, int packageSize, CancellationToken ct);
+
+    
 }

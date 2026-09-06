@@ -52,6 +52,7 @@ public class GroomingDbContext : DbContext
         modelBuilder.Entity<Waitlist>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<GroomerSchedule>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
         modelBuilder.Entity<GroomerTimeOff>().HasQueryFilter(e=> e.SalonId == _currentUser.SalonId);
+       
 
 
 

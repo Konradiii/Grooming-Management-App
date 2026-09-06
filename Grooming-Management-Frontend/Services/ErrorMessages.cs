@@ -83,6 +83,7 @@ public static class ErrorMessages
         ["INVALID_PICKUP_TIME"] = "Podaj, za ile minut zapraszasz po psa",
         ["SMS_LIMIT_EXCEEDED"] = "Wyczerpano limit SMS-ów. Doładuj pakiet w ustawieniach",
         ["INVALID_SMS_PACKAGE"] = "Nieprawidłowy pakiet SMS",
+        ["BREED_NAME_TAKEN"] = "Taka rasa już istnieje",
     };
 
     public static string Translate(string? code)

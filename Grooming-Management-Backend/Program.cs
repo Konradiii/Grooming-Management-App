@@ -157,6 +157,8 @@ else
 builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScopedWithInterfaces<BreedService>(
+    typeof(IBreedReaderService), typeof(IBreedWriterService));
 
 // ---------- Zadania w tle ----------
 builder.Services.AddHostedService<ReminderScheduler>();

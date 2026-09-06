@@ -183,7 +183,8 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
                 s.SubscriptionStatus,
                 s.SubscriptionValidUntil,
                 s.ProviderSubscriptionId,
-                s.SubscriptionCancelAtPeriodEnd
+                s.SubscriptionCancelAtPeriodEnd,
+                s.PlanType
             })
             .FirstOrDefaultAsync(ct);
 
@@ -211,6 +212,7 @@ public class SubscriptionService(GroomingDbContext ctx) : ISubscriptionService
             ValidUntil = salon.SubscriptionValidUntil,
             HasActiveSubscription = salon.ProviderSubscriptionId != null,
             CancelAtPeriodEnd = salon.SubscriptionCancelAtPeriodEnd,
+            PlanType = salon.PlanType,
             Payments = payments
         };
     }

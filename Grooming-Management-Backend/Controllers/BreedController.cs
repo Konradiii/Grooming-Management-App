@@ -8,14 +8,16 @@ namespace Grooming_Management_App.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BreedController(IBreedReaderService readerService, ICurrentUserService currentUser) : ControllerBase
+public class BreedController(IBreedReaderService readerService, IBreedWriterService writerService, ICurrentUserService currentUser) : ControllerBase
 {
     [HttpGet]
     [Authorize]
     [EndpointSummary("Zwraca listę wszystkich dostępnych ras")]
     public async Task<List<GetBreedDto>> GetAllBreeds(CancellationToken ct)
     {
-        return await readerService.GetAllBreedsAsync(ct);
+        var salonId = currentUser.SalonId;
+
+        return await readerService.GetAllBreedsAsync(salonId, ct);
     }
 
     [HttpGet("{Id:int}")]
@@ -24,6 +26,17 @@ public class BreedController(IBreedReaderService readerService, ICurrentUserServ
     public async Task<GetBreedDto> GetBreedAsync(int Id, CancellationToken ct)
     {
         return await readerService.GetBreedAsync(Id, ct);
+    }
+    
+    [HttpPost]
+    [Authorize(Roles = "Owner,Groomer")]
+    [EndpointSummary("Dodaje rasę widoczną tylko w tym salonie")]
+    public async Task<IActionResult> CreateBreed(CreateBreedDto dto, CancellationToken ct)
+    {
+        var salonId = currentUser.SalonId;
+        var newBreedId = await writerService.CreateBreedAsync(salonId, dto, ct);
+
+        return Created($"api/Breed/{newBreedId}", null);
     }
     
 }

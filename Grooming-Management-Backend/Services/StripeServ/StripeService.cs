@@ -246,7 +246,7 @@ public class StripeService(
             InvoiceUrl = invoice.HostedInvoiceUrl
         };
 
-        var plan = ResolvePlan(invoice);
+        var plan = await ResolvePlanAsync(invoice, ct);
 
         try
         {
@@ -374,15 +374,23 @@ public class StripeService(
     }
 
     // Webhook nie wie, który plan opłacono — trzeba to odczytać z ceny na fakturze.
-    private PlanTypeEnum ResolvePlan(Invoice invoice)
+    private async Task<PlanTypeEnum> ResolvePlanAsync(Invoice invoice, CancellationToken ct)
     {
-        var priceId = invoice.Lines?.Data?.FirstOrDefault()?.Pricing?.PriceDetails?.Price?.Id;
+        var subscriptionId = invoice.Parent?.SubscriptionDetails?.SubscriptionId;
 
-        if (priceId == configuration["Stripe:BasicPriceId"]) return PlanTypeEnum.Basic;
-        if (priceId == configuration["Stripe:PriceId"]) return PlanTypeEnum.Standard;
+        if (!string.IsNullOrEmpty(subscriptionId))
+        {
+            var subService = new Stripe.SubscriptionService();
+            var subscription = await subService.GetAsync(subscriptionId, cancellationToken: ct);
 
-        logger.LogWarning("Unknown price {PriceId} on invoice {InvoiceId}, defaulting to Basic",
-            priceId, invoice.Id);
+            var priceId = subscription.Items?.Data?.FirstOrDefault()?.Price?.Id;
+
+            if (priceId == configuration["Stripe:BasicPriceId"]) return PlanTypeEnum.Basic;
+            if (priceId == configuration["Stripe:PriceId"]) return PlanTypeEnum.Standard;
+
+            logger.LogWarning("Unknown price {PriceId} on subscription {SubscriptionId}",
+                priceId, subscriptionId);
+        }
 
         return PlanTypeEnum.Basic;
     }

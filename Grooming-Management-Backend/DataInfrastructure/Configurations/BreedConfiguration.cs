@@ -15,5 +15,12 @@ public class BreedConfiguration : IEntityTypeConfiguration<Breed>
             .IsRequired()
             .HasMaxLength(50);
         
+        builder.HasOne(b => b.Salon)
+            .WithMany()
+            .HasForeignKey(b => b.SalonId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        
+        
     }
 }

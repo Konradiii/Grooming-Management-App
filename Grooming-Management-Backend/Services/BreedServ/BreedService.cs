@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Grooming_Management_App.Services.Breed;
 
-public class BreedService(GroomingDbContext ctx) : IBreedReaderService
+public class BreedService(GroomingDbContext ctx) : IBreedReaderService, IBreedWriterService
 {
 
     public async Task<GetBreedDto> GetBreedAsync(int breedId, CancellationToken ct)
@@ -28,17 +28,43 @@ public class BreedService(GroomingDbContext ctx) : IBreedReaderService
         return breed;
     }
 
-    public async Task<List<GetBreedDto>> GetAllBreedsAsync(CancellationToken ct)
+    public async Task<List<GetBreedDto>> GetAllBreedsAsync(int salonId, CancellationToken ct)
     {
-
-        
         return await ctx.Breeds
-            .Select(e=> new GetBreedDto
+            .Where(b => b.SalonId == null || b.SalonId == salonId)
+            .OrderBy(b => b.Name)
+            .Select(e => new GetBreedDto
             {
                 Id = e.Id,
                 Name = e.Name
-            }).ToListAsync(ct);
-
+            })
+            .ToListAsync(ct);
     }
+    
+        public async Task<int> CreateBreedAsync(int salonId, CreateBreedDto dto, CancellationToken ct)
+        {
+            Validate.NotEmpty(dto.Name, ErrorCodes.NameRequired);
+
+            var trimmedName = dto.Name.Trim();
+
+            var exists = await ctx.Breeds
+                .AnyAsync(b => b.Name.ToLower() == trimmedName.ToLower(), ct);
+
+            if (exists)
+            {
+                throw new ConflictException(ErrorCodes.BreedNameTaken);
+            }
+
+            var breed = new Models.Breed
+            {
+                Name = trimmedName,
+                SalonId = salonId
+            };
+
+            ctx.Breeds.Add(breed);
+            await ctx.SaveChangesAsync(ct);
+
+            return breed.Id;
+        }
     
 }

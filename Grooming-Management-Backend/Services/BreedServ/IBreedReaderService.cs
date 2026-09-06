@@ -5,5 +5,5 @@ namespace Grooming_Management_App.Services.Breed;
 public interface IBreedReaderService
 {
     Task<GetBreedDto> GetBreedAsync(int Id, CancellationToken cancellationToken);
-    Task<List<GetBreedDto>> GetAllBreedsAsync(CancellationToken ct);
+    Task<List<GetBreedDto>> GetAllBreedsAsync(int salonId, CancellationToken ct);
 }
