@@ -26,8 +26,9 @@
                 <ul class="plan__list">
                     <li><b>50</b> wiadomości SMS miesięcznie</li>
                     <li>Bez limitu wizyt, psów i pracowników</li>
-                    <li>Konto dla każdego pracownika</li>
+                    <li>Grafik i rozliczenia prowadzi właściciel</li>
                     <li>Pomoc telefoniczna</li>
+                    <li class="plan__list--off">Bez kont dla pracowników</li>
                 </ul>
                 <button class="auth__btn auth__btn--ghost" disabled="@isRedirecting"
                         @onclick="@(() => ChooseAsync(PlanTypeEnum.Basic))">
@@ -42,7 +43,7 @@
                 <ul class="plan__list">
                     <li><b>200</b> wiadomości SMS miesięcznie</li>
                     <li>Bez limitu wizyt, psów i pracowników</li>
-                    <li>Konto dla każdego pracownika</li>
+                    <li><b>Konto dla każdego pracownika</b> z osobnymi uprawnieniami</li>
                     <li>Pomoc telefoniczna</li>
                 </ul>
                 <button class="auth__btn" disabled="@isRedirecting"

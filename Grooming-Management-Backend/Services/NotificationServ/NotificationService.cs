@@ -15,7 +15,7 @@ public class NotificationService(GroomingDbContext ctx, ISmsService smsService) 
 
     public async Task SendReadyForPickupNotificationAsync(int salonId, int visitId, int timeToPickUpDogInMin, CancellationToken ct)
     {
-        if (timeToPickUpDogInMin <= 0)
+        if (timeToPickUpDogInMin <= 0 || timeToPickUpDogInMin > 480)
         {
             throw new ConflictException(ErrorCodes.InvalidPickupTime);
         }
