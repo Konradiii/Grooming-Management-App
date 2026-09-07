@@ -1,6 +1,6 @@
 @using Grooming_Management_App.DTOs.DogDTO
-@using Grooming_Management_App.DTOs.Breed
 @using Grooming_Management_Frontend.Services
+@using Grooming_Management_Frontend.Components.Shared
 @inject ApiClient Api
 @inject ISnackbar Snackbar
 
@@ -12,17 +12,9 @@
             <AgePicker @bind-Value="ageInMonths" />
         </div>
 
-        <MudAutocomplete T="GetBreedDto"
-                         @bind-Value="selectedBreed"
-                         Label="Rasa"
-                         Placeholder="Wpisz nazwę rasy"
-                         SearchFunc="SearchBreeds"
-                         ToStringFunc="@(b => b == null ? "" : b.Name)"
-                         Variant="Variant.Outlined"
-                         MaxItems="null"
-                         Class="mb-3" />
+        <BreedPicker @ref="breedPicker" InitialBreedName="@Dog.BreedName" />
 
-        <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="3" />
+        <MudTextField @bind-Value="notes" Label="Notatki" Variant="Variant.Outlined" Lines="3" Class="mt-2" />
     </DialogContent>
 
     <DialogActions>
@@ -37,33 +29,19 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public GetDogDetailsDto Dog { get; set; } = default!;
 
+    private BreedPicker breedPicker = default!;
+
     private string dogName = string.Empty;
     private int ageInMonths;
-    private GetBreedDto? selectedBreed;
     private string? notes;
 
-    private List<GetBreedDto> breeds = new();
     private bool isSaving;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         dogName = Dog.Name;
         ageInMonths = Dog.AgeInMonths ?? 0;
         notes = Dog.Notes;
-
-        breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
-        selectedBreed = breeds.FirstOrDefault(b => b.Name == Dog.BreedName);
-    }
-
-    private Task<IEnumerable<GetBreedDto>> SearchBreeds(string value, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return Task.FromResult<IEnumerable<GetBreedDto>>(breeds);
-
-        var filtered = breeds.Where(b =>
-            b.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
-
-        return Task.FromResult(filtered);
     }
 
     private async Task SaveAsync()
@@ -74,9 +52,9 @@
             return;
         }
 
-        if (selectedBreed == null)
+        if (!breedPicker.HasSelection)
         {
-            Snackbar.Add("Wybierz rasę", Severity.Warning);
+            Snackbar.Add("Wybierz lub wpisz rasę", Severity.Warning);
             return;
         }
 
@@ -84,11 +62,15 @@
 
         try
         {
+            var breedId = await breedPicker.ResolveBreedIdAsync();
+
+            if (breedId == null) return;
+
             var dto = new UpdateDogDto
             {
                 Name = dogName,
                 AgeInMonths = ageInMonths,
-                BreedId = selectedBreed.Id,
+                BreedId = breedId.Value,
                 Notes = notes,
                 DogOwnerId = Dog.DogOwnerId
             };

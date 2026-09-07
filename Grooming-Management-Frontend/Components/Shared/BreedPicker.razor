@@ -1,0 +1,114 @@
+﻿@using Grooming_Management_App.DTOs.Breed
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudAutocomplete T="GetBreedDto"
+                 Value="selectedBreed"
+                 ValueChanged="OnBreedChanged"
+                 Label="@Label"
+                 Placeholder="Wpisz nazwę rasy"
+                 SearchFunc="SearchBreeds"
+                 ToStringFunc="@(b => b == null ? "" : b.Name)"
+                 Clearable="true"
+                 Variant="Variant.Outlined"
+                 MaxItems="null"
+                 Class="mb-2" />
+
+@if (selectedBreed == null)
+{
+    <MudTextField T="string"
+                  Value="newBreedName"
+                  ValueChanged="@((string? v) => OnTypedChanged(v))"
+                  Label="Nie ma tej rasy? Wpisz własną"
+                  Variant="Variant.Outlined"
+                  Immediate="true"
+                  Class="mb-2" />
+}
+
+@code {
+    [Parameter] public string? InitialBreedName { get; set; }
+    [Parameter] public string Label { get; set; } = "Rasa";
+
+    // Rodzic potrzebuje nazwy do filtrowania cennika po rasie.
+    [Parameter] public EventCallback<string?> OnNameChanged { get; set; }
+
+    private List<GetBreedDto> breeds = new();
+    private GetBreedDto? selectedBreed;
+
+    // Osobne pole, bo MudAutocomplete czyści wpisany tekst przy utracie fokusu,
+    // gdy nic nie zostało wybrane z listy.
+    private string? newBreedName;
+
+    public bool HasSelection => selectedBreed != null || !string.IsNullOrWhiteSpace(newBreedName);
+
+    public string? SelectedName => selectedBreed?.Name
+        ?? (string.IsNullOrWhiteSpace(newBreedName) ? null : newBreedName.Trim());
+
+    protected override async Task OnInitializedAsync()
+    {
+        breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
+
+        if (!string.IsNullOrWhiteSpace(InitialBreedName))
+        {
+            selectedBreed = breeds.FirstOrDefault(b =>
+                string.Equals(b.Name, InitialBreedName, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private Task<IEnumerable<GetBreedDto>> SearchBreeds(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<GetBreedDto>>(breeds);
+
+        return Task.FromResult(breeds.Where(b =>
+            b.Name.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private async Task OnBreedChanged(GetBreedDto? breed)
+    {
+        selectedBreed = breed;
+
+        // Wybór z listy unieważnia ręcznie wpisaną nazwę.
+        if (breed != null) newBreedName = null;
+
+        await OnNameChanged.InvokeAsync(SelectedName);
+    }
+
+    private async Task OnTypedChanged(string? value)
+    {
+        newBreedName = value;
+        await OnNameChanged.InvokeAsync(SelectedName);
+    }
+
+    // Zwraca Id rasy: wybranej z listy, dopasowanej po nazwie albo nowo utworzonej.
+    // Wołane przy zapisie, nie przy wpisywaniu — porzucony formularz nie zostawia
+    // śmiecia w słowniku.
+    public async Task<int?> ResolveBreedIdAsync()
+    {
+        if (selectedBreed != null) return selectedBreed.Id;
+
+        var typed = newBreedName?.Trim();
+
+        if (string.IsNullOrWhiteSpace(typed)) return null;
+
+        // Ktoś wpisał nazwę rasy, która już istnieje — nie twórz duplikatu.
+        var existing = breeds.FirstOrDefault(b =>
+            string.Equals(b.Name, typed, StringComparison.OrdinalIgnoreCase));
+
+        if (existing != null) return existing.Id;
+
+        var response = await Api.PostAsync("api/Breed", new CreateBreedDto { Name = typed });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Snackbar.Add(await ApiClient.ReadErrorAsync(response), Severity.Error);
+            return null;
+        }
+
+        breeds = await Api.GetAsync<List<GetBreedDto>>("api/Breed") ?? new();
+
+        return breeds.FirstOrDefault(b =>
+            string.Equals(b.Name, typed, StringComparison.OrdinalIgnoreCase))?.Id;
+    }
+}
