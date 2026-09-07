@@ -6,6 +6,7 @@ using Radzen;
 using System.Globalization;
 using MudBlazor;
 
+
 var culture = new CultureInfo("pl-PL");
 CultureInfo.DefaultThreadCurrentCulture = culture;
 CultureInfo.DefaultThreadCurrentUICulture = culture;

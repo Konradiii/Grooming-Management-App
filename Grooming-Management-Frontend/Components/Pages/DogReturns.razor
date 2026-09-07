@@ -1,0 +1,169 @@
+﻿@page "/powroty"
+@rendermode InteractiveServer
+@inherits AuthenticatedPage
+@using Grooming_Management_App.DTOs.NextVisitDTO
+@using Grooming_Management_Frontend.Services
+@inject ApiClient Api
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h5" Class="mb-1">Czas na wizytę</MudText>
+<MudText Typo="Typo.body2" Class="mb-6" Style="color:var(--mud-palette-text-secondary)">
+    Psy, które według swojego zwykłego cyklu powinny już wrócić do salonu.
+</MudText>
+
+@if (isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+else if (loadError != null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@loadError</MudAlert>
+}
+else if (dueDogs.Count == 0)
+{
+    <MudPaper Elevation="0" Class="pa-8 text-center" Style="border:1px solid var(--mud-palette-lines-default);border-radius:12px">
+        <MudIcon Icon="@Icons.Material.Outlined.EventAvailable" Size="Size.Large"
+                 Style="color:var(--mud-palette-primary);opacity:.5" />
+
+        <MudText Typo="Typo.h6" Class="mt-3 mb-2">Żaden pies nie jest spóźniony</MudText>
+
+        <MudText Typo="Typo.body2" Class="mx-auto" Style="max-width:38rem;color:var(--mud-palette-text-secondary)">
+            Ta lista wypełni się sama. Żeby rozpoznać cykl konkretnego psa, potrzebujemy
+            <b>co najmniej trzech zakończonych wizyt</b> - dopiero wtedy widać, co ile
+            tygodni klient zwykle wraca. Przy typowym cyklu sześciotygodniowym pierwsze
+            psy pojawią się tu po kilku miesiącach prowadzenia kalendarza.
+        </MudText>
+
+        <MudText Typo="Typo.body2" Class="mt-4 mx-auto" Style="max-width:38rem;color:var(--mud-palette-text-secondary)">
+            Psy z już umówioną kolejną wizytą nigdy się tu nie pokażą.
+        </MudText>
+    </MudPaper>
+}
+else
+{
+    <div class="d-flex align-center gap-3 mb-4 flex-wrap">
+        <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
+            @dueDogs.Count @Pluralize(dueDogs.Count)
+        </MudChip>
+
+        <MudTextField @bind-Value="searchText" Placeholder="Szukaj po psie lub właścicielu"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true" Clearable="true" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Class="flex-grow-1" Style="max-width:26rem" />
+    </div>
+
+    <MudTable Items="dueDogs" Filter="Filter" Hover="true" Breakpoint="Breakpoint.Sm"
+              Elevation="0" Class="border rounded" Dense="false">
+        <HeaderContent>
+            <MudTh>Pies</MudTh>
+            <MudTh>Właściciel</MudTh>
+            <MudTh>Ostatnia wizyta</MudTh>
+            <MudTh>Zwykły cykl</MudTh>
+            <MudTh>Spóźnienie</MudTh>
+            <MudTh Style="text-align:right">Kontakt</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd DataLabel="Pies">
+                <MudLink Href="@($"/psy/{context.DogId}")" Underline="Underline.None">
+                    <b>@context.DogName</b>
+                </MudLink>
+                <MudText Typo="Typo.caption" Class="d-block"
+                         Style="color:var(--mud-palette-text-secondary)">@context.BreedName</MudText>
+            </MudTd>
+
+            <MudTd DataLabel="Właściciel">
+                <MudLink Href="@($"/wlasciciele/{context.DogOwnerId}")" Underline="Underline.None">
+                    @context.DogOwnerFullName
+                </MudLink>
+            </MudTd>
+
+            <MudTd DataLabel="Ostatnia wizyta">
+                @context.LastVisitDate.ToString("dd.MM.yyyy")
+            </MudTd>
+
+            <MudTd DataLabel="Zwykły cykl">
+                co @context.TypicalIntervalDays dni
+                <MudText Typo="Typo.caption" Class="d-block"
+                         Style="color:var(--mud-palette-text-secondary)">
+                    z @context.VisitsCount wizyt
+                </MudText>
+            </MudTd>
+
+            <MudTd DataLabel="Spóźnienie">
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                         Color="@OverdueColor(context.DaysOverdue)">
+                    @context.DaysOverdue dni
+                </MudChip>
+            </MudTd>
+
+            <MudTd DataLabel="Kontakt" Style="text-align:right">
+                <MudButton Href="@($"tel:{context.DogOwnerPhone}")"
+                           StartIcon="@Icons.Material.Filled.Phone"
+                           Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary">
+                    @context.DogOwnerPhone
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+
+        <NoRecordsContent>
+            <MudText Typo="Typo.body2" Class="pa-4">Nic nie pasuje do wyszukiwania.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+
+    <MudText Typo="Typo.caption" Class="mt-4 d-block" Style="color:var(--mud-palette-text-secondary)">
+        Termin jest szacowany na podstawie historii psa i bywa nietrafiony - przed kontaktem
+        warto spojrzeć na kartę klienta.
+    </MudText>
+}
+
+@code {
+    private List<GetDueDogDto> dueDogs = new();
+    private bool isLoading = true;
+    private string? loadError;
+    private string searchText = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender) return;
+
+        await LoadDataAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            dueDogs = await Api.GetAsync<List<GetDueDogDto>>("api/NextVisit/due") ?? new();
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool Filter(GetDueDogDto dog)
+    {
+        if (string.IsNullOrWhiteSpace(searchText)) return true;
+
+        return dog.DogName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+               || dog.BreedName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+               || dog.DogOwnerFullName.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static Color OverdueColor(int days) => days switch
+    {
+        <= 14 => Color.Info,
+        <= 30 => Color.Warning,
+        _ => Color.Error
+    };
+
+    private static string Pluralize(int count) => count == 1 ? "pies czeka" : "psów czeka";
+}

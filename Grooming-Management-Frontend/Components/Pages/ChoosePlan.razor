@@ -22,7 +22,7 @@
             <div class="plan">
                 <span class="plan__name">Basic</span>
                 <div class="plan__amount">69 zł<span class="plan__per"> / miesiąc</span></div>
-                <p class="plan__for">Dla salonu, który wysyła kilka wiadomości tygodniowo.</p>
+                <p class="plan__for">Dla salonu, w którym pracujesz sama.</p>
                 <ul class="plan__list">
                     <li><b>50</b> wiadomości SMS miesięcznie</li>
                     <li>Bez limitu wizyt, psów i pracowników</li>
@@ -39,7 +39,7 @@
             <div class="plan plan--lead">
                 <span class="plan__name">Standard <span class="plan__tag">polecany</span></span>
                 <div class="plan__amount">109 zł<span class="plan__per"> / miesiąc</span></div>
-                <p class="plan__for">Dla salonu, który przypomina o każdej wizycie.</p>
+                <p class="plan__for">Dla salonu, w którym pracuje zespół.</p>
                 <ul class="plan__list">
                     <li><b>200</b> wiadomości SMS miesięcznie</li>
                     <li>Bez limitu wizyt, psów i pracowników</li>
@@ -53,8 +53,12 @@
             </div>
         </div>
 
+        <p class="auth__note">
+            Plan zmienisz w każdej chwili w ustawieniach salonu.
+        </p>
+
         <p class="auth__alt">
-            <a href="/" @onclick:preventDefault @onclick="SkipAsync">Zrobię to później</a>
+            <a href="/" @onclick:preventDefault @onclick="Skip">Zrobię to później</a>
         </p>
     </div>
 </div>
@@ -140,6 +144,12 @@
         width:.4rem;height:.4rem;border-radius:50%;background:var(--pine-mid);
     }
 
+    .plan__list li.plan__list--off{color:var(--ink-soft)}
+    .plan__list li.plan__list--off::before{
+        background:none;border:1.5px solid var(--line);
+        width:.3rem;height:.3rem;top:.52rem;
+    }
+
     .auth__btn{
         width:100%;
         font:inherit;font-weight:600;font-size:.98rem;
@@ -155,8 +165,13 @@
     .auth__btn:disabled{opacity:.6;cursor:default}
     .auth__btn:focus-visible{outline:3px solid var(--pine);outline-offset:3px}
 
+    .auth__note{
+        margin:1.75rem 0 0;text-align:center;
+        font-size:.87rem;color:var(--ink-soft);
+    }
+
     .auth__alt{
-        margin:2rem 0 0;text-align:center;
+        margin:1rem 0 0;text-align:center;
         font-size:.92rem;color:var(--ink-soft);
     }
     .auth__alt a{color:var(--ink-soft);text-underline-offset:3px}
@@ -230,5 +245,5 @@
         }
     }
 
-    private void SkipAsync() => Navigation.NavigateTo("/");
+    private void Skip() => Navigation.NavigateTo("/");
 }
