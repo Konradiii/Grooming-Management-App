@@ -72,3 +72,4 @@ secrets.json
 ## Test Results
 [Tt]est[Rr]esult*/
 *.trx
+*.sql
